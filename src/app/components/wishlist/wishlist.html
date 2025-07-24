@@ -1,3 +1,6 @@
+<div *ngIf="toastMessage" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded shadow-lg z-50 transition">
+  {{ toastMessage }}
+</div>
 <div class="w-full mt-10 px-[10px]">
   <div class="flex gap-8">
     <!-- Sidebar -->
@@ -78,46 +81,41 @@
       <div *ngIf="filteredWishlist.length === 0" class="text-gray-400 text-center py-16 text-lg border rounded-lg bg-gray-50">
         No products in wishlist match the selected filters.
       </div>
-      <div class="grid md:grid-cols-2 gap-8" *ngIf="filteredWishlist.length > 0">
-        <div *ngFor="let product of filteredWishlist" class="border rounded-xl p-6 bg-white shadow-lg flex flex-col items-center hover:shadow-2xl transition relative">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" *ngIf="filteredWishlist.length > 0">
+        <div *ngFor="let product of filteredWishlist" class="group w-72 bg-white rounded-xl border shadow p-4 flex flex-col items-center relative transition-transform duration-200">
           <!-- Heart icon in top-right corner -->
-          <span class="absolute top-4 right-4 text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" class="w-6 h-6">
+          <span class="absolute top-3 right-3 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" class="w-5 h-5">
               <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
             </svg>
           </span>
-          <img
-            [src]="product.productPicsPathes[0]"
-            alt="{{ product.name }}"
-            class="w-full h-48 object-contain mb-4 rounded-lg bg-gray-50"
-          />
-          <div class="font-bold text-xl mb-2 text-gray-800 text-center">{{ product.name }}</div>
-          <div class="text-yellow-500 flex items-center mb-2 justify-center">
+          <div class="w-full h-32 mb-2 rounded bg-gray-50 overflow-hidden flex items-center justify-center">
+            <img [src]="product.productPicsPathes[0]" alt="{{ product.name }}" class="transition-transform duration-300 ease-in-out group-hover:scale-110" />
+          </div>
+          <div class="font-semibold text-base mb-1 text-center">{{ product.name }}</div>
+          <div class="flex items-center mb-1">
             <span *ngFor="let r of [1,2,3,4,5]">
-              <svg *ngIf="product.rating && r <= product.rating" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="inline w-5 h-5" viewBox="0 0 16 16"><path d="M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z"/></svg>
-              <svg *ngIf="!(product.rating && r <= product.rating)" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" class="inline w-5 h-5" viewBox="0 0 16 16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z"/></svg>
+              <svg *ngIf="product.rating && r <= product.rating" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="inline w-4 h-4 text-yellow-400" viewBox="0 0 16 16"><path d="M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z"/></svg>
+              <svg *ngIf="!(product.rating && r <= product.rating)" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" class="inline w-4 h-4 text-yellow-400" viewBox="0 0 16 16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z"/></svg>
             </span>
-            <span class="ml-3 text-gray-600 text-base">{{ product.rating || '-' }}</span>
+            <span class="ml-1 text-xs text-gray-500">({{ product.rating || '-' }})</span>
           </div>
-          <div class="mb-3 text-gray-600 text-center text-sm min-h-[48px]">{{ product.description }}</div>
-          <div class="mb-3 flex items-center justify-center gap-2">
+          <div class="text-xs text-gray-600 mb-1 text-center line-clamp-2">{{ product.description }}</div>
+          <div class="mb-1 flex items-center justify-center gap-1">
             <span class="text-green-600 font-bold text-lg">{{ product.pricePerPiece }} EGP</span>
-            <span class="text-xs text-gray-500">({{ product.minNumToFactoryOrder }} Min Order)</span>
+            <span class="text-xs text-gray-500">({{ product.minNumToFactoryOrder }} Min)</span>
           </div>
-          <div class="flex flex-wrap gap-2 mb-3 justify-center">
+          <div class="mb-1">
             <span *ngIf="product.shipping === 'Free'" class="text-green-500 text-xs font-bold bg-green-50 px-2 py-1 rounded">Free Shipping</span>
             <span *ngIf="product.shipping === 'FreeINSameGovernate'" class="text-blue-500 text-xs font-bold bg-blue-50 px-2 py-1 rounded">Free in Same Governate</span>
             <span *ngIf="product.shipping === 'Paid'" class="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">Paid Shipping</span>
             <span *ngIf="product.shipping === 'None'" class="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded">No Delivery</span>
           </div>
-          <div class="flex items-center gap-4 mb-4 text-xs text-gray-500 justify-center">
+          <div class="flex items-center gap-2 mb-2 text-xs text-gray-500 justify-center">
             <span>Stock: <span class="font-semibold">{{ product.noInStock }}</span></span>
             <span>Warranty: <span class="font-semibold">{{ product.warrantyNMonths ? product.warrantyNMonths + ' months' : 'None' }}</span></span>
           </div>
-          <button
-            class="bg-red-500 px-4 py-2 text-white rounded-lg shadow hover:bg-red-600 transition w-full mt-auto cursor-pointer"
-            (click)="removeFromWishlist(product.id)"
-          >
+          <button class="bg-red-500 px-3 py-1 text-white rounded shadow hover:bg-red-600 transition w-full mt-auto cursor-pointer text-sm" (click)="removeFromWishlist(product.id)">
             Remove from Wishlist
           </button>
         </div>

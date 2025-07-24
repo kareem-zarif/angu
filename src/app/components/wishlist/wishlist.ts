@@ -20,6 +20,15 @@ export class WishlistComponent implements OnInit {
   selectedShipping: string | null = null;
   selectedAddress: string | null = null; // Placeholder for address
 
+  toastMessage: string | null = null;
+
+  showToast(message: string) {
+    this.toastMessage = message;
+    setTimeout(() => {
+      this.toastMessage = null;
+    }, 2000);
+  }
+
   get filteredWishlist(): IProduct[] {
     return this.wishlist.filter(product => {
       let matches = true;
@@ -50,8 +59,12 @@ export class WishlistComponent implements OnInit {
   }
 
   removeFromWishlist(productId: string) {
-    this.wishlistService.removeFromWishlist(productId);
-    this.refreshWishlist();
+    const confirmed = window.confirm('Are you sure you want to remove this item from your wishlist?');
+    if (confirmed) {
+      this.wishlistService.removeFromWishlist(productId);
+      this.refreshWishlist();
+      this.showToast('Item removed from wishlist.');
+    }
   }
 
   isInWishlist(productId: string): boolean {
