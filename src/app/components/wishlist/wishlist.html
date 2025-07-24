@@ -1,0 +1,127 @@
+<div class="w-full mt-10 px-[10px]">
+  <div class="flex gap-8">
+    <!-- Sidebar -->
+    <aside class="w-72 bg-white rounded-xl shadow p-6 h-fit sticky top-8">
+      <!-- Best Sellers (placeholder, not functional) -->
+      <div class="mb-6">
+        <h3 class="font-bold text-lg mb-2">Best Sellers</h3>
+        <div class="text-gray-500 text-sm">(Coming soon)</div>
+      </div>
+      <!-- Customer Review -->
+      <div class="mb-6">
+        <h3 class="font-bold text-lg mb-2">Customer Review</h3>
+        <div class="flex flex-col gap-1">
+          <button class="flex items-center gap-1 text-gray-700 hover:text-blue-600 cursor-pointer" (click)="setRatingFilter(4)">
+            <span class="flex text-yellow-400">
+              <ng-container *ngFor="let i of [1,2,3,4]"><svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'><path d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z'/></svg></ng-container>
+            </span>
+            &amp; Up
+          </button>
+          <button class="flex items-center gap-1 text-gray-700 hover:text-blue-600 cursor-pointer" (click)="setRatingFilter(3)">
+            <span class="flex text-yellow-400">
+              <ng-container *ngFor="let i of [1,2,3]"><svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'><path d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z'/></svg></ng-container>
+            </span>
+            &amp; Up
+          </button>
+          <button class="flex items-center gap-1 text-gray-700 hover:text-blue-600 cursor-pointer" (click)="setRatingFilter(2)">
+            <span class="flex text-yellow-400">
+              <ng-container *ngFor="let i of [1,2]"><svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'><path d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z'/></svg></ng-container>
+            </span>
+            &amp; Up
+          </button>
+          <button class="flex items-center gap-1 text-gray-700 hover:text-blue-600 cursor-pointer" (click)="setRatingFilter(null)">
+            All Ratings
+          </button>
+        </div>
+      </div>
+      <!-- Warranty -->
+      <div class="mb-6">
+        <h3 class="font-bold text-lg mb-2">Warranty</h3>
+        <div class="flex flex-col gap-1">
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setWarrantyFilter(0.5)">14 Days</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setWarrantyFilter(1)">1 Month</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setWarrantyFilter(3)">3 Months</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setWarrantyFilter(12)">1 Year</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setWarrantyFilter(null)">Any</button>
+        </div>
+      </div>
+      <!-- Address (placeholder) -->
+      <div class="mb-6">
+        <h3 class="font-bold text-lg mb-2">Address</h3>
+        <div class="text-gray-500 text-sm">(Coming soon)</div>
+      </div>
+      <!-- Shipping -->
+      <div class="mb-6">
+        <h3 class="font-bold text-lg mb-2">Shipping</h3>
+        <div class="flex flex-col gap-1">
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('Free')">Free</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('FreeINSameGovernate')">Free in Same Governate</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('Paid')">Paid</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('None')">No Delivery</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter(null)">Any</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Wishlist Items -->
+    <div class="flex-1">
+      <h2 class="text-3xl font-extrabold text-gray-800 mb-6 text-center tracking-tight">Wishlist</h2>
+      <div class="flex justify-end mb-6">
+        <button
+          class="bg-red-600 text-white px-6 py-2 rounded-lg shadow transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          (click)="clearWishlist()"
+          [disabled]="wishlist.length === 0"
+        >
+          Clear All
+        </button>
+      </div>
+      <div *ngIf="filteredWishlist.length === 0" class="text-gray-400 text-center py-16 text-lg border rounded-lg bg-gray-50">
+        No products in wishlist match the selected filters.
+      </div>
+      <div class="grid md:grid-cols-2 gap-8" *ngIf="filteredWishlist.length > 0">
+        <div *ngFor="let product of filteredWishlist" class="border rounded-xl p-6 bg-white shadow-lg flex flex-col items-center hover:shadow-2xl transition relative">
+          <!-- Heart icon in top-right corner -->
+          <span class="absolute top-4 right-4 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" class="w-6 h-6">
+              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+            </svg>
+          </span>
+          <img
+            [src]="product.productPicsPathes[0]"
+            alt="{{ product.name }}"
+            class="w-full h-48 object-contain mb-4 rounded-lg bg-gray-50"
+          />
+          <div class="font-bold text-xl mb-2 text-gray-800 text-center">{{ product.name }}</div>
+          <div class="text-yellow-500 flex items-center mb-2 justify-center">
+            <span *ngFor="let r of [1,2,3,4,5]">
+              <svg *ngIf="product.rating && r <= product.rating" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="inline w-5 h-5" viewBox="0 0 16 16"><path d="M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z"/></svg>
+              <svg *ngIf="!(product.rating && r <= product.rating)" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" class="inline w-5 h-5" viewBox="0 0 16 16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z"/></svg>
+            </span>
+            <span class="ml-3 text-gray-600 text-base">{{ product.rating || '-' }}</span>
+          </div>
+          <div class="mb-3 text-gray-600 text-center text-sm min-h-[48px]">{{ product.description }}</div>
+          <div class="mb-3 flex items-center justify-center gap-2">
+            <span class="text-green-600 font-bold text-lg">{{ product.pricePerPiece }} EGP</span>
+            <span class="text-xs text-gray-500">({{ product.minNumToFactoryOrder }} Min Order)</span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-3 justify-center">
+            <span *ngIf="product.shipping === 'Free'" class="text-green-500 text-xs font-bold bg-green-50 px-2 py-1 rounded">Free Shipping</span>
+            <span *ngIf="product.shipping === 'FreeINSameGovernate'" class="text-blue-500 text-xs font-bold bg-blue-50 px-2 py-1 rounded">Free in Same Governate</span>
+            <span *ngIf="product.shipping === 'Paid'" class="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">Paid Shipping</span>
+            <span *ngIf="product.shipping === 'None'" class="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded">No Delivery</span>
+          </div>
+          <div class="flex items-center gap-4 mb-4 text-xs text-gray-500 justify-center">
+            <span>Stock: <span class="font-semibold">{{ product.noInStock }}</span></span>
+            <span>Warranty: <span class="font-semibold">{{ product.warrantyNMonths ? product.warrantyNMonths + ' months' : 'None' }}</span></span>
+          </div>
+          <button
+            class="bg-red-500 px-4 py-2 text-white rounded-lg shadow hover:bg-red-600 transition w-full mt-auto cursor-pointer"
+            (click)="removeFromWishlist(product.id)"
+          >
+            Remove from Wishlist
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
