@@ -7,5 +7,15 @@ import { Component } from '@angular/core';
   styleUrl: './header.css'
 })
 export class Header {
+  selectedLang = { code: 'en', label: 'Eng' };
+
+changeLang(code: string, label: string) {
+  this.selectedLang = { code, label };
+
+
+  // لو بتستخدم ngx-translate أو أي مكتبة ترجمة:
+  // this.translate.use(code);
+}
+
 
 }
