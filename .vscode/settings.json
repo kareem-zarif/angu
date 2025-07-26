@@ -1,0 +1,33 @@
+{
+    // Disable Trae
+  "trae.enableCodelens": {
+    "enableInlineDocumentation": false,
+    "enableInlineExplain": false,
+    "enableInlineUnitTest": false,
+    "enableExploreIde": false
+  },
+  "trae.enableInlineCommand": false,
+
+  // Disable other AI tools
+  "tabnine.experimentalAutoImports": false,
+  "bitoAI.codeCompletion.enableCommentToCode": false,
+  "codeium.enableConfig": {
+    "*": false
+  },
+
+  // Disable inline suggestions
+  "editor.inlineSuggest.enabled": false,
+  "editor.inlineSuggest.showToolbar": "never",
+  "editor.inlineSuggest.suppressSuggestions": true,
+
+
+    // Completely disable certain features
+  "extensions.ignoreRecommendations": true,
+  "typescript.suggestionActions.enabled": false,
+  "javascript.suggestionActions.enabled": false,
+  "github.copilot.enable": {
+    "*": false
+  },
+
+
+}

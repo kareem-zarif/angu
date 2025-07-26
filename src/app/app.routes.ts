@@ -1,14 +1,18 @@
 import { Routes } from '@angular/router';
 import { WishlistComponent } from './components/wishlist/wishlist';
 import { OrdersComponent } from './components/orders/orders';
+import { ProductList } from './components/product/product-list/product-list';
+import { ProductDetails } from './components/product/product-details/product-details';
+import { Cart } from './components/cart/cart';
 
 export const routes: Routes = [
-    { path: '', redirectTo: 'products', pathMatch: 'full' },
-    { path: 'wishlist', component: WishlistComponent },
-    { path: 'orders', component: OrdersComponent },
+  { path: 'wishlist', component: WishlistComponent },
+  { path: 'orders', component: OrdersComponent },
+  { path: 'products', component: ProductList },
+  { path: 'products/:id', component: ProductDetails },
+  { path: 'cart', component: Cart },
 
+  { path: '', redirectTo: 'products', pathMatch: 'full' },
 
-
-    
-    { path: '**', redirectTo: 'not-found' },
+  { path: '**', redirectTo: 'not-found' },
 ];
