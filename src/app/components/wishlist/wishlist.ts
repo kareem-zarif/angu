@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { WishlistService } from '../../services/wishlist';
 import { IProduct } from '../../models/i-product';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Rating } from '../rating/rating/rating';
 
 @Component({
   selector: 'app-wishlist',
   standalone: true,
-  imports: [RouterOutlet , CommonModule],
+  imports: [RouterOutlet, RouterModule, CommonModule, Rating],
   templateUrl: './wishlist.html'
 })
 export class WishlistComponent implements OnInit {
@@ -18,81 +19,79 @@ export class WishlistComponent implements OnInit {
   selectedRating: number | null = null;
   selectedWarranty: number | null = null;
   selectedShipping: string | null = null;
-  selectedAddress: string | null = null; // Placeholder for address
+  selectedAddress: string | null = null;
 
+  // Placeholder for address
   toastMessage: string | null = null;
 
-  showToast(message: string) {
-    this.toastMessage = message;
-    setTimeout(() => {
-      this.toastMessage = null;
-    }, 2000);
-  }
-
-  get filteredWishlist(): IProduct[] {
-    return this.wishlist.filter(product => {
-      let matches = true;
-      if (this.selectedRating !== null) {
-        matches = matches && (product.rating ?? 0) >= this.selectedRating;
-      }
-      if (this.selectedWarranty !== null) {
-        matches = matches && (product.warrantyNMonths ?? 0) >= this.selectedWarranty;
-      }
-      if (this.selectedShipping !== null) {
-        matches = matches && product.shipping === this.selectedShipping;
-      }
-      // Address filter is a placeholder, implement as needed
-      return matches;
-    });
-  }
-
-  constructor(private wishlistService: WishlistService) {}
+  constructor(private wishlistService: WishlistService) { }
 
   ngOnInit(): void {
     this.products = this.wishlistService.getProducts();
     this.refreshWishlist();
   }
 
-  addToWishlist(product: IProduct) {
-    this.wishlistService.addToWishlist(product);
-    this.refreshWishlist();
+  refreshWishlist(): void {
+    this.wishlist = this.wishlistService.getWishlist();
   }
 
-  removeFromWishlist(productId: string) {
-    const confirmed = window.confirm('Are you sure you want to remove this item from your wishlist?');
-    if (confirmed) {
-      this.wishlistService.removeFromWishlist(productId);
-      this.refreshWishlist();
-      this.showToast('Item removed from wishlist.');
-    }
+  showToast(message: string): void {
+    this.toastMessage = message;
+    setTimeout(() => {
+      this.toastMessage = null;
+    }, 2000);
+  }
+
+  addToWishlist(product: IProduct): void {
+    this.wishlistService.addToWishlist(product);
+    this.refreshWishlist();
+    this.showToast(`${product.name} added to wishlist`);
+  }
+
+  removeFromWishlist(product: IProduct): void {
+    this.wishlistService.removeFromWishlist(product.id);
+    this.refreshWishlist();
+    this.showToast(`${product.name} removed from wishlist`);
   }
 
   isInWishlist(productId: string): boolean {
     return this.wishlistService.isInWishlist(productId);
   }
 
-  refreshWishlist() {
-    this.wishlist = this.wishlistService.getWishlist();
-  }
-
-  clearWishlist() {
-    this.wishlistService.clearWishlist();
-    this.refreshWishlist();
-  }
-
-  setRatingFilter(rating: number | null) {
+  setRatingFilter(rating: number | null): void {
     this.selectedRating = rating;
   }
 
-  setWarrantyFilter(warranty: number | null) {
-    (this.selectedWarranty) = warranty;
+  setWarrantyFilter(months: number | null): void {
+    this.selectedWarranty = months;
   }
 
-  setShippingFilter(shipping: string | null) {
+  setShippingFilter(shipping: string | null): void {
     this.selectedShipping = shipping;
   }
 
-  setAddressFilter(address: string | null) {
-    this.selectedAddress = address;
+  get filteredWishlist(): IProduct[] {
+    return this.wishlist.filter(product => {
+      let matches = true;
+
+      if (this.selectedRating !== null) {
+        matches = matches && (product.rating ?? 0) >= this.selectedRating;
+      }
+
+      if (this.selectedWarranty !== null) {
+        matches = matches && (product.warrantyNMonths ?? 0) >= this.selectedWarranty;
+      }
+
+      if (this.selectedShipping !== null) {
+        matches = matches && product.shipping === this.selectedShipping;
+      }
+
+      // Address filter is a placeholder, implement as needed
+      return matches;
+    });
+  }
+
+  clearWishlist(){
+    this.wishlistService.clearWishlist()
   }
 }

@@ -15,11 +15,11 @@ export class ProductService {
       description: 'قطن خالص من مصانع اولاد هنداوي',
       pricePerPiece: 35,
       pricePer50Piece: 25,
-      pricePer100Piece:22,
+      pricePer100Piece: 22,
       noInStock: 100,
       minNumToFactoryOrder: 50,
       approvalStatus: 'Approved',
-      productPicsPathes: ['assets/1.png','assets/3.png'],
+      productPicsPathes: ['assets/1.png', 'assets/3.png'],
       shipping: 'Free',
       subCategoryId: 'sub-elastic-01',
       rating: 4.5
@@ -30,11 +30,11 @@ export class ProductService {
       description: 'خشب زان اصلي بالمتر',
       pricePerPiece: 40,
       pricePer50Piece: 30,
-      pricePer100Piece:25,
+      pricePer100Piece: 25,
       noInStock: 75,
       minNumToFactoryOrder: 40,
       approvalStatus: 'Pending',
-      productPicsPathes: ['assets/3.png','assets/1.png'],
+      productPicsPathes: ['assets/3.png', 'assets/1.png'],
       shipping: 'Paid',
       subCategoryId: 'sub-linning-02',
       rating: 4.2
@@ -108,17 +108,17 @@ export class ProductService {
       shipping: 'FreeINSameGovernate',
       subCategoryId: 'sub-steel-03',
       warrantyNMonths: 24
-    },{
+    }, {
       id: 'prod-001',
       name: 'روب و شبشبب قطن',
       description: 'قطن خالص من مصانع اولاد هنداوي',
       pricePerPiece: 35,
       pricePer50Piece: 25,
-      pricePer100Piece:22,
+      pricePer100Piece: 22,
       noInStock: 100,
       minNumToFactoryOrder: 50,
       approvalStatus: 'Approved',
-      productPicsPathes: ['assets/1.png','assets/3.png'],
+      productPicsPathes: ['assets/1.png', 'assets/3.png'],
       shipping: 'Free',
       subCategoryId: 'sub-elastic-01',
       rating: 4.5
@@ -129,11 +129,11 @@ export class ProductService {
       description: 'خشب زان اصلي بالمتر',
       pricePerPiece: 40,
       pricePer50Piece: 30,
-      pricePer100Piece:25,
+      pricePer100Piece: 25,
       noInStock: 75,
       minNumToFactoryOrder: 40,
       approvalStatus: 'Pending',
-      productPicsPathes: ['assets/3.png','assets/1.png'],
+      productPicsPathes: ['assets/3.png', 'assets/1.png'],
       shipping: 'Paid',
       subCategoryId: 'sub-linning-02',
       rating: 4.2
@@ -151,17 +151,17 @@ export class ProductService {
       shipping: 'FreeINSameGovernate',
       subCategoryId: 'sub-steel-03',
       warrantyNMonths: 24
-    },{
+    }, {
       id: 'prod-001',
       name: 'روب و شبشبب قطن',
       description: 'قطن خالص من مصانع اولاد هنداوي',
       pricePerPiece: 35,
       pricePer50Piece: 25,
-      pricePer100Piece:22,
+      pricePer100Piece: 22,
       noInStock: 100,
       minNumToFactoryOrder: 50,
       approvalStatus: 'Approved',
-      productPicsPathes: ['assets/1.png','assets/3.png'],
+      productPicsPathes: ['assets/1.png', 'assets/3.png'],
       shipping: 'Free',
       subCategoryId: 'sub-elastic-01',
       rating: 4.5
@@ -172,12 +172,12 @@ export class ProductService {
       description: 'خشب زان اصلي بالمتر',
       pricePerPiece: 40,
       pricePer50Piece: 30,
-      pricePer100Piece:25,
+      pricePer100Piece: 25,
       noInStock: 75,
       minNumToFactoryOrder: 40,
       approvalStatus: 'Pending',
-      productPicsPathes: ['assets/3.png','assets/1.png'],
-      warrantyNMonths:13,
+      productPicsPathes: ['assets/3.png', 'assets/1.png'],
+      warrantyNMonths: 13,
       shipping: 'Paid',
       subCategoryId: 'sub-linning-02',
       rating: 4.2
@@ -227,7 +227,7 @@ export class ProductService {
   ];
 
   getAllDummy() {
-   console.log(this.allProducts);
+    console.log(this.allProducts);
     return this.allProducts;
   }
   getByIdDummy(id: string) {
@@ -287,6 +287,27 @@ export class ProductService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this._baseUrl}/products/${id}`);
+  }
+
+  filterBySupplier(supplierName: string): IProduct[] {
+    if (!supplierName) {
+      return this.allProducts;
+    }
+
+    return this.allProducts.filter(product =>
+      product.supplierNames &&
+      product.supplierNames.some(name =>
+        name.toLowerCase().includes(supplierName.toLowerCase())
+      )
+    );
+  }
+
+
+  updateProduct(product: IProduct): void {
+    const index = this.allProducts.findIndex(p => p.id === product.id);
+    if (index !== -1) {
+      this.allProducts[index] = { ...product };
+    }
   }
 
 }

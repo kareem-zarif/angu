@@ -61,7 +61,7 @@
         <span class="font-normal text-gray-400 underline">Account & Lists</span>
       </div>
 
-      <a routerLink="/favorites"
+      <a routerLink="/wishlist"
         class="cursor-pointer hover:text-orange-500 relative transition-colors duration-200 inline-block">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
           class="w-8 h-8">
@@ -71,7 +71,7 @@
 
         <span
           class="absolute top-3 right-0 text-[7px] bg-purple-600 text-white rounded-full px-1.5 py-0.5 -translate-x-1/2 translate-y-1/2">
-          4
+          {{ wishlistCount }}
         </span>
       </a>
 

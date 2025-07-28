@@ -8,6 +8,7 @@ import { Rating } from '../../rating/rating/rating';
 import { WishlistService } from '../../../services/wishlist';
 import { CartService } from '../../../services/cart.service';
 import { FormsModule } from '@angular/forms';
+import { SupplierService } from '../../../services/supplier.service';
 
 @Component({
   selector: 'app-product-details',
@@ -24,6 +25,7 @@ export class ProductDetails implements OnInit, OnDestroy {
   selectedImageIndex: number = 0;
   quantity: number = 1;
   private subscription: Subscription | null = null;
+  supplierName: string = '';
 
   // Dynamic breadcrumbs
   breadcrumbs: { label: string, link?: string }[] = [
@@ -35,7 +37,8 @@ export class ProductDetails implements OnInit, OnDestroy {
     private router: Router,
     private productService: ProductService,
     private wishlistService: WishlistService,
-    private cartService: CartService
+    private cartService: CartService,
+    private supplierService: SupplierService
   ) { }
 
   ngOnInit(): void {
@@ -66,6 +69,26 @@ export class ProductDetails implements OnInit, OnDestroy {
         this.product = product;
         this.selectedImageIndex = 0;
         this.generateBreadcrumbs(product);
+
+        // Get supplier name
+        if (product.supplierNames && product.supplierNames.length > 0) {
+          this.supplierName = product.supplierNames[0];
+        } else {
+          // Try to find a supplier that might have this product
+          const suppliers = this.supplierService.getAllSuppliers();
+          for (const supplier of suppliers) {
+            const products = this.supplierService.getSupplierProducts(supplier.id);
+            if (products.some(p => p.id === product.id)) {
+              this.supplierName = supplier.UserName;
+              break;
+            }
+          }
+
+          // If still no supplier found, use a default
+          if (!this.supplierName) {
+            this.supplierName = 'مصنع الأمل';
+          }
+        }
       } else {
         this.error = 'Product not found';
       }

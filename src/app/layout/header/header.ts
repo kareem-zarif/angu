@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CartService } from '../../services/cart.service';
+import { WishlistService } from '../../services/wishlist';
 import { Subscription } from 'rxjs';
 
 interface Language {
@@ -20,12 +21,16 @@ export class Header implements OnInit, OnDestroy {
   cartCount: number = 0;
   cartTotal: number = 0;
   cartItems: any[] = [];
+  wishlistCount: number = 0;
   private subscription: Subscription = new Subscription();
 
   // Language settings
   selectedLang: Language = { code: 'en', label: 'Eng' };
 
-  constructor(private cartService: CartService) { }
+  constructor(
+    private cartService: CartService,
+    private wishlistService: WishlistService
+  ) { }
 
   ngOnInit(): void {
     // Subscribe to cart count
@@ -46,6 +51,13 @@ export class Header implements OnInit, OnDestroy {
     this.subscription.add(
       this.cartService.getCartItems().subscribe(items => {
         this.cartItems = items;
+      })
+    );
+
+    // Subscribe to wishlist count
+    this.subscription.add(
+      this.wishlistService.getWishlistCount().subscribe(count => {
+        this.wishlistCount = count;
       })
     );
 

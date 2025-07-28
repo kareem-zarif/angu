@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { IProduct } from '../../../models/i-product';
 import { Subscription } from 'rxjs';
 import { ProductService } from '../../../services/product-service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, Params } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Rating } from "../../rating/rating/rating";
 import { Sidebar } from "../products-sidebar/sidebar/sidebar";
@@ -34,6 +34,7 @@ export class ProductList implements OnInit, OnDestroy {
   maxPrice: number = 0;
   selectedSuppliers: string[] = [];
   includeOutOfStock: boolean = true;
+  supplierFilter: string | null = null;
 
   // Pagination
   currentPage: number = 1;
@@ -47,10 +48,22 @@ export class ProductList implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.allProducts = this._ProductService.getAllDummy();
-    this.calculatePriceRange();
-    this.filteredProducts = [...this.allProducts];
-    this.updateDisplayedProducts();
+    // Subscribe to query params to get supplier filter
+    this.ac.queryParams.subscribe((params: Params) => {
+      this.supplierFilter = params['supplier'] || null;
+
+      // Load products
+      this.allProducts = this._ProductService.getAllDummy();
+
+      // Apply supplier filter if present
+      if (this.supplierFilter) {
+        this.allProducts = this._ProductService.filterBySupplier(this.supplierFilter);
+      }
+
+      this.calculatePriceRange();
+      this.filteredProducts = [...this.allProducts];
+      this.updateDisplayedProducts();
+    });
   }
 
   ngOnDestroy(): void {
