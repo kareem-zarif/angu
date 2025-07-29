@@ -1,0 +1,6 @@
+.scrollbar-compensate th {
+  padding-right: 1px; /* Adjust this value to match the scrollbar width in your browser */
+}
+td{
+  text-align: center;
+}
