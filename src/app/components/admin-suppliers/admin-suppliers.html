@@ -1,0 +1,76 @@
+<div class="p-6">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-bold">Supplier List</h2>
+    <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" (click)="openAdd()">+ Add Supplier</button>
+  </div>
+  <div class="flex items-center gap-2 mb-4">
+    <input type="text" class="border rounded px-3 py-1 w-64 focus:outline-none focus:ring-2 focus:ring-orange-400" placeholder="Search..." [(ngModel)]="searchQuery" (input)="onSearch()" />
+  </div>
+  <div class="overflow-x-auto rounded shadow bg-white">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="px-3 py-2 cursor-pointer" (click)="onSort('id')">NO.</th>
+          <th class="px-3 py-2 cursor-pointer" (click)="onSort('name')">Name</th>
+          <th class="px-3 py-2 cursor-pointer" (click)="onSort('email')">Email</th>
+          <th class="px-3 py-2 cursor-pointer" (click)="onSort('status')">Status</th>
+          <th class="px-3 py-2">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let supplier of suppliers; let i = index" class="border-b">
+          <td style="text-align: center;" class="px-3 py-2">{{ (page - 1) * pageSize + i + 1 }}</td>
+          <td style="text-align: center;" class="px-3 py-2">{{ supplier.name }}</td>
+          <td style="text-align: center;" class="px-3 py-2">{{ supplier.email }}</td>
+          <td style="text-align: center;" class="px-3 py-2">
+            <span [ngClass]="supplier.status === 'Active' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'" class="px-2 py-1 rounded-full text-xs font-semibold">{{ supplier.status }}</span>
+          </td>
+          <td style="text-align: center; align-items: center; padding: inline 5px;" class="px-3 py-2 flex gap-2 items-center">
+            <button class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" (click)="openEdit(supplier)">Edit</button>
+            <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" (click)="deleteSupplier(supplier)">Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="suppliers.length === 0">
+          <td style="text-align: center;" colspan="5" class="text-center text-gray-400 py-6">No suppliers found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  <div class="flex justify-center items-center gap-2 mt-4">
+    <button class="px-2 py-1 rounded bg-gray-200" [disabled]="page === 1" (click)="onPageChange(page - 1)">&larr;</button>
+    <ng-container *ngFor="let p of pages">
+      <button class="px-3 py-1 rounded" [ngClass]="p === page ? 'bg-orange-500 text-white' : 'bg-gray-100'" (click)="onPageChange(p)">{{ p }}</button>
+    </ng-container>
+    <button class="px-2 py-1 rounded bg-gray-200" [disabled]="page === totalPages" (click)="onPageChange(page + 1)">&rarr;</button>
+  </div>
+
+  <!-- Modal for Add/Edit -->
+  <div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+      <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="showModal = false">&times;</button>
+      <h3 class="text-lg font-bold mb-4">{{ editSupplier ? 'Edit Supplier' : 'Add Supplier' }}</h3>
+      <form (ngSubmit)="saveSupplier()" #supplierForm="ngForm">
+        <div class="mb-3">
+          <label class="block mb-1">Name</label>
+          <input class="border rounded px-3 py-1 w-full" [(ngModel)]="form.name" name="name" required />
+        </div>
+        <div class="mb-3">
+          <label class="block mb-1">Email</label>
+          <input class="border rounded px-3 py-1 w-full" [(ngModel)]="form.email" name="email" required />
+        </div>
+        <div class="mb-3">
+          <label class="block mb-1">Status</label>
+          <select class="border rounded px-3 py-1 w-full" [(ngModel)]="form.status" name="status" required>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" class="px-4 py-2 rounded bg-gray-200" (click)="showModal = false">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded bg-orange-500 text-white">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div> 
