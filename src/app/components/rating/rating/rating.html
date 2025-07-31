@@ -1,0 +1,6 @@
+<div class="flex items-center gap-1 text-yellow-500 text-sm">
+  <ng-container *ngFor="let star of [1,2,3,4,5]; let i = index">
+    <span [class.text-gray-300]="i >= rating">&#9733;</span>
+  </ng-container>
+  <span class="text-xs text-gray-500">({{ rating.toFixed(1) }})</span>
+</div>

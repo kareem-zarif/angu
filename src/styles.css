@@ -1,1 +1,44 @@
 /* You can add global styles to this file, and also import other style files */
+@import "tailwindcss";
+/* @plugin "daisyui"; */
+@plugin "daisyui" {
+  themes: light --default;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .animate-slide-in-left {
+    animation: slideInLeft 0.6s ease-out forwards;
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+  .animate-fade-in-slow {
+    animation: fadeIn 1.2s ease-out forwards;
+  }
+
+  @keyframes slideInLeft {
+    0% {
+      transform: translateX(-20px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
