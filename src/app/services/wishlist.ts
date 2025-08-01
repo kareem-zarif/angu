@@ -1,170 +1,196 @@
 import { Injectable } from '@angular/core';
-import { IProduct, ProductApprovalStatus, ShippingTypes } from '../models/i-product';
+import { ProductApprovalStatus, ShippingTypes } from '../models/i-product';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
+import { catchError, map, tap, switchMap, take } from 'rxjs/operators';
+import { IProduct } from '../models/i-product';
+import {  IWishlist } from '../models/i-wishlist';
+
+export interface WishListCreateDto {
+  customerId: string;
+}
+
+export interface ProductWishlistCreateDto {
+  productId: string;
+  wishListId: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class WishlistService {
-  private wishlist: IProduct[] = [
-    {
-      id: '1',
-      name: 'Wireless Bluetooth Headphones',
-      description: 'High-quality wireless headphones with noise cancellation',
-      pricePerPiece: 99.99,
-      pricePer50Piece: 89.99,
-      pricePer100Piece: 79.99,
-      noINStock: 233,
-      minNumToFactoryOrder: 50,
-      approvalStatus: ProductApprovalStatus.Approved,
-      warrantyNMonths: 12,
-      shipping: ShippingTypes.Free,
-      subCategoryId: 'electronics-001',
-      rating: 4.5,
-      supplierNames: ['TechCorp', 'AudioMax'],
-      productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
-    },
-    {
-      id: '2',
-      name: 'Smart Fitness Watch',
-      description: 'Advanced fitness tracking with heart rate monitor',
-      pricePerPiece: 199.99,
-      pricePer50Piece: 179.99,
-      pricePer100Piece: 159.99,
-      noINStock: 150,
-      minNumToFactoryOrder: 25,
-      approvalStatus: ProductApprovalStatus.Approved,
-      warrantyNMonths: 24,
-      shipping: ShippingTypes.Paid,
-      subCategoryId: 'wearables-001',
-      rating: 4.8,
-      supplierNames: ['FitTech', 'HealthGear'],
-      productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
-    },
-    {
-      id: '3',
-      name: 'Portable Power Bank',
-      description: '20000mAh portable charger for all devices',
-      pricePerPiece: 49.99,
-      pricePer50Piece: 44.99,
-      pricePer100Piece: 39.99,
-      noINStock: 85,
-      minNumToFactoryOrder: 100,
-      approvalStatus: ProductApprovalStatus.Pending,
-      warrantyNMonths: 6,
-      shipping: ShippingTypes.FreeINSameGovernate,
-      subCategoryId: 'accessories-001',
-      rating: 4.2,
-      supplierNames: ['PowerTech'],
-      productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
+
+  private _baseUrl = 'https://localhost:7777/api/WishList';
+  private _productWishlistUrl = 'https://localhost:7777/api/ProductWishlist';
+  private wishlistKey = 'user_wishlist';
+  private wishlistSubject = new BehaviorSubject<IProduct[]>([]);
+  private wishlistCountSubject = new BehaviorSubject<number>(0);
+
+  constructor(private http: HttpClient) {
+    this.loadWishlistFromLocalStorage();
+  }
+
+  // Get API URLs for external use
+  getWishlistApiUrl(): string {
+    return this._baseUrl;
+  }
+
+  getProductWishlistApiUrl(): string {
+    return this._productWishlistUrl;
+  }
+
+  private loadWishlistFromLocalStorage(): void {
+    const storedWishlist = localStorage.getItem(this.wishlistKey);
+    if (storedWishlist) {
+      try {
+        const products = JSON.parse(storedWishlist);
+        this.wishlistSubject.next(products);
+        this.updateWishlistCount();
+      } catch (error) {
+        console.error('Error parsing wishlist from localStorage:', error);
+        this.wishlistSubject.next([]);
+        this.updateWishlistCount();
+      }
     }
-  ];
+  }
+
+  private saveWishlistToLocalStorage(products: IProduct[]): void {
+    localStorage.setItem(this.wishlistKey, JSON.stringify(products));
+    this.wishlistSubject.next(products);
+    this.updateWishlistCount();
+  }
+
+  private updateWishlistCount(): void {
+    this.wishlistCountSubject.next(this.wishlistSubject.getValue().length);
+  }
 
   getWishlist(): IProduct[] {
-    return this.wishlist;
+    return this.wishlistSubject.getValue();
   }
 
-  addToWishlist(product: IProduct): void {
-    if (!this.wishlist.find(item => item.id === product.id)) {
-      this.wishlist.push(product);
+  getWishlistObservable(): Observable<IProduct[]> {
+    return this.wishlistSubject.asObservable();
+  }
+
+  getWishlistCount(): Observable<number> {
+    return this.wishlistCountSubject.asObservable();
+  }
+
+  getWishlistFromApi(customerId: string): Observable<IWishlist> {
+    return this.http.get<IWishlist>(`${this._baseUrl}/${customerId}`).pipe(
+      tap(wishlist => {
+        if (wishlist && wishlist.products) {
+          this.saveWishlistToLocalStorage(wishlist.products);
+        }
+      }),
+      catchError(error => {
+        console.error('Error fetching wishlist from API:', error);
+        // Return local wishlist as fallback
+        return of({
+          id: customerId,
+          customerId: customerId,
+          products: this.getWishlist(),
+          customerName: ''
+        });
+      })
+    );
+  }
+
+  addToWishlist(product: IProduct, customerId?: string): void {
+    const currentWishlist = this.getWishlist();
+
+    // Check if product already exists in wishlist
+    if (!this.isInWishlist(product.id)) {
+      const updatedWishlist = [...currentWishlist, product];
+      this.saveWishlistToLocalStorage(updatedWishlist);
+
+      // Sync with API if user is authenticated
+      if (customerId) {
+        this.syncWithApi(customerId, product.id);
+      }
     }
   }
 
-  removeFromWishlist(productId: string): void {
-    this.wishlist = this.wishlist.filter(item => item.id !== productId);
+  removeFromWishlist(productId: string, customerId?: string): void {
+    const currentWishlist = this.getWishlist();
+    const updatedWishlist = currentWishlist.filter(p => p.id !== productId);
+    this.saveWishlistToLocalStorage(updatedWishlist);
+
+    // Sync with API if user is authenticated
+    if (customerId) {
+      this.removeFromApi(customerId, productId);
+    }
+  }
+
+
+  clearWishlist(): void {
+    this.saveWishlistToLocalStorage([]);
   }
 
   isInWishlist(productId: string): boolean {
-    return this.wishlist.some(item => item.id === productId);
+    return this.getWishlist().some(p => p.id === productId);
   }
 
-  // Mock data for testing
-  getMockProducts(): IProduct[] {
-    return [
-      {
-        id: '4',
-        name: 'Wireless Earbuds Pro',
-        description: 'Premium wireless earbuds with active noise cancellation',
-        pricePerPiece: 149.99,
-        pricePer50Piece: 134.99,
-        pricePer100Piece: 119.99,
-        noINStock: 233,
-        minNumToFactoryOrder: 30,
-        approvalStatus: ProductApprovalStatus.Approved,
-        warrantyNMonths: 18,
-        shipping: ShippingTypes.Free,
-        subCategoryId: 'audio-001',
-        rating: 4.7,
-        supplierNames: ['AudioPro', 'SoundMax'],
-        productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
+  refreshWishlist(customerId?: string): void {
+    if (!customerId) {
+      return;
+    }
+
+    this.getWishlistFromApi(customerId).subscribe({
+      next: (wishlist) => {
+        if (wishlist && wishlist.products) {
+          this.saveWishlistToLocalStorage(wishlist.products);
+        }
       },
-      {
-        id: '5',
-        name: 'Gaming Mouse RGB',
-        description: 'High-precision gaming mouse with customizable RGB lighting',
-        pricePerPiece: 79.99,
-        pricePer50Piece: 71.99,
-        pricePer100Piece: 63.99,
-        noINStock: 150,
-        minNumToFactoryOrder: 20,
-        approvalStatus: ProductApprovalStatus.Approved,
-        warrantyNMonths: 12,
-        shipping: ShippingTypes.Paid,
-        subCategoryId: 'gaming-001',
-        rating: 4.6,
-        supplierNames: ['GameTech', 'ProGaming'],
-        productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
-      },
-      {
-        id: '6',
-        name: 'Mechanical Keyboard',
-        description: 'Cherry MX Blue switches mechanical keyboard',
-        pricePerPiece: 129.99,
-        pricePer50Piece: 116.99,
-        pricePer100Piece: 103.99,
-        noINStock: 85,
-        minNumToFactoryOrder: 15,
-        approvalStatus: ProductApprovalStatus.Pending,
-        warrantyNMonths: 24,
-        shipping: ShippingTypes.FreeINSameGovernate,
-        subCategoryId: 'keyboards-001',
-        rating: 4.4,
-        supplierNames: ['KeyTech'],
-        productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
-      },
-      {
-        id: '7',
-        name: 'USB-C Hub',
-        description: '7-in-1 USB-C hub with HDMI, USB, and SD card slots',
-        pricePerPiece: 39.99,
-        pricePer50Piece: 35.99,
-        pricePer100Piece: 31.99,
-        noINStock: 50,
-        minNumToFactoryOrder: 50,
-        approvalStatus: ProductApprovalStatus.Approved,
-        warrantyNMonths: 12,
-        shipping: ShippingTypes.Free,
-        subCategoryId: 'accessories-002',
-        rating: 4.3,
-        supplierNames: ['HubTech', 'ConnectPro'],
-        productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
-      },
-      {
-        id: '8',
-        name: 'Wireless Charging Pad',
-        description: 'Fast wireless charging pad compatible with all Qi devices',
-        pricePerPiece: 29.99,
-        pricePer50Piece: 26.99,
-        pricePer100Piece: 23.99,
-        noINStock: 120,
-        minNumToFactoryOrder: 40,
-        approvalStatus: ProductApprovalStatus.Approved,
-        warrantyNMonths: 12,
-        shipping: ShippingTypes.Free,
-        subCategoryId: 'charging-001',
-        rating: 4.5,
-        supplierNames: ['ChargeTech', 'PowerPro'],
-        productPicsPathes: ["/assets/519wBXYrKuL.jpg"]
+      error: (error) => {
+        console.error('Error refreshing wishlist:', error);
       }
-    ];
+    });
+  }
+
+  private syncWithApi(customerId: string, productId: string): void {
+    // Check if wishlist exists for this customer
+    this.http.get<IWishlist>(`${this._baseUrl}/${customerId}`).pipe(
+      catchError(error => {
+        if (error.status === 404) {
+          // Wishlist doesn't exist, create it
+          const wishlistDto: WishListCreateDto = { customerId };
+          return this.http.post<IWishlist>(`${this._baseUrl}`, wishlistDto);
+        }
+        return throwError(() => error);
+      }),
+      switchMap((wishlist) => {
+        // Add product to wishlist
+        const productWishlistDto: ProductWishlistCreateDto = {
+          productId: productId,
+          wishListId: wishlist.id
+        };
+
+        return this.http.post(`${this._productWishlistUrl}`, productWishlistDto);
+      })
+    ).subscribe({
+      next: () => console.log('Product added to wishlist in API'),
+      error: (err) => console.error('Error adding product to wishlist in API:', err)
+    });
+  }
+
+  private removeFromApi(customerId: string, productId: string): void {
+    // Check if wishlist exists for this customer
+    this.http.get<IWishlist>(`${this._baseUrl}/${customerId}`).pipe(
+      catchError(error => {
+        if (error.status === 404) {
+          // Wishlist doesn't exist, nothing to remove
+          return throwError(() => error);
+        }
+        return throwError(() => error);
+      }),
+      switchMap((wishlist) => {
+        // Remove product from wishlist
+        return this.http.delete(`${this._productWishlistUrl}/${wishlist.id}/${productId}`);
+      })
+    ).subscribe({
+      next: () => console.log('Product removed from wishlist in API'),
+      error: (err) => console.error('Error removing product from wishlist in API:', err)
+    });
   }
 }

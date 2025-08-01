@@ -16,6 +16,7 @@ export interface IProduct {
   id: string;
   rating?: number;
   supplierNames?: string[];
+
   productPicsPathes: string[];
   name: string;
   description: string;
@@ -28,6 +29,7 @@ export interface IProduct {
   warrantyNMonths?: number;
   shipping: ShippingTypes;
   subCategoryId: string;
+  suppliers: string[];
 }
 
 // Create DTO interface
@@ -61,5 +63,5 @@ export interface ProductUpdateDto {
   warrantyNMonths?: number;
   shipping: ShippingTypes;
   subCategoryId: string;
-}
 
+}

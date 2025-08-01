@@ -1,0 +1,59 @@
+/* Product details specific styles */
+.container {
+  max-width: 1200px;
+}
+
+/* Image gallery styles */
+.thumbnail-active {
+  border-color: #483c21;
+}
+
+/* Price styles */
+.original-price {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+.current-price {
+  font-weight: bold;
+  color: #483c21;
+}
+
+/* Button styles */
+.add-to-cart-btn {
+  background-color: #483c21;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #362d19;
+}
+
+/* Wishlist button */
+.wishlist-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background-color: white;
+  border-radius: 9999px;
+  padding: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.wishlist-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .product-container {
+    flex-direction: column;
+  }
+
+  .product-image,
+  .product-info {
+    width: 100%;
+  }
+}
