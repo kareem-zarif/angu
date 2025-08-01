@@ -1,14 +1,19 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Header } from "./layout/header/header";
-import { Footer } from "./layout/footer/footer";
+
+import { Header } from './layout/header/header';
+import { Footer } from './layout/footer/footer';
+import { AboutUs } from "./components/about-us/about-us";
+import { RegisterSelection } from "./components/register-selection/register-selection";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header, Footer],
-  templateUrl: './app.html',
-  styleUrl: './app.css'
-})
+  standalone: true,
+  imports: [RouterOutlet, Header, Footer, AboutUs, RegisterSelection],
+ templateUrl: './app.html',
+  styleUrls: ['./app.css']
+}) 
+
 export class App {
-  protected readonly title = signal('angu');
+  title = 'angu';
 }

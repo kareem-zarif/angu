@@ -25,7 +25,13 @@ export interface User {
   providedIn: 'root'
 })
 export class AccountService {
-  private _baseUrl = 'https://localhost:7777/api/Customer';
+  // Placeholder for future account management logic
+  getAccountInfo() {
+    // This would fetch account info from backend in a real app
+    return { name: 'User', email: 'user@email.com' };
+  }
+//kareem logic 
+  private _baseUrl = 'https://localhost:7253/api/Customer';
   private userKey = 'current_user';
   private currentUserSubject = new BehaviorSubject<User | null>(null);
 
@@ -205,7 +211,5 @@ export class AccountService {
       });
     });
   }
-
-  
 }
 

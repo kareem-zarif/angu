@@ -1,3 +1,4 @@
+
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { WishlistService } from '../../services/wishlist';
 import { IProduct, ShippingTypes } from '../../models/i-product';
@@ -9,6 +10,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-wishlist',
   standalone: true,
+
   imports: [ RouterModule, CommonModule, Rating],
   templateUrl: './wishlist.html'
 })
