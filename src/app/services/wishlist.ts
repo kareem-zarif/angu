@@ -1,177 +1,193 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
+import { catchError, map, tap, switchMap, take } from 'rxjs/operators';
 import { IProduct } from '../models/i-product';
+import {  IWishlist } from '../models/i-wishlist';
+
+export interface WishListCreateDto {
+  customerId: string;
+}
+
+export interface ProductWishlistCreateDto {
+  productId: string;
+  wishListId: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class WishlistService {
-  // 1. Define the static product list here
-  private products: IProduct[] = [
-    {
-      id: '1',
-      name: 'بلاستيك شفاف',
-      description: 'مصنع أبو النمر للمنتجات البلاستيكية و الشفافة للصناعات الحديثة',
-      pricePerPiece: 35,
-      pricePer50Piece: 1600,
-      pricePer100Piece: 3100,
-      noInStock: 233,
-      minNumToFactoryOrder: 100,
-      approvalStatus: 'Approved',
-      productPicsPathes: ["assets/519wBXYrKuL.jpg"],
-      warrantyNMonths: 12,
-      shipping: 'FreeINSameGovernate',
-      subCategoryId: 'plastics',
-      rating: 4.2,
-      supplierNames: ['مصنع أبو النمر']
-    },
-    {
-      id: '2',
-      name: 'أنابيب ستانلس',
-      description: 'أنابيب ستانلس عالية الجودة للصناعات المتقدمة',
-      pricePerPiece: 120,
-      pricePer50Piece: 5800,
-      pricePer100Piece: 11000,
-      noInStock: 150,
-      minNumToFactoryOrder: 50,
-      approvalStatus: 'Approved',
-      productPicsPathes: ['assets/الفولاذ المقاوم للصدأ 310 الأنابيب.jpg'],
-      warrantyNMonths: 6,
-      shipping: 'Paid',
-      subCategoryId: 'steels',
-      rating: 4.6,
-      supplierNames: ['حديدكو']
-    },
-    {
-      id: '3',
-      name: 'لفائف ألومنيوم',
-      description: 'لفائف ألومنيوم للاستخدامات الصناعية والمنزلية',
-      pricePerPiece: 90,
-      pricePer50Piece: 4200,
-      pricePer100Piece: 8200,
-      noInStock: 85,
-      minNumToFactoryOrder: 25,
-      approvalStatus: 'Pending',
-      productPicsPathes: ['assets/zzc.jpg'],
-      warrantyNMonths: 3,
-      shipping: 'Free',
-      subCategoryId: 'aluminum',
-      rating: 3.9,
-      supplierNames: ['ألومكو']
-    }
-  ];
+  private _baseUrl = 'https://localhost:7777/api/WishList';
+  private _productWishlistUrl = 'https://localhost:7777/api/ProductWishlist';
+  private wishlistKey = 'user_wishlist';
+  private wishlistSubject = new BehaviorSubject<IProduct[]>([]);
+  private wishlistCountSubject = new BehaviorSubject<number>(0);
 
-  private wishlist: IProduct[] = [
-    {
-      id: '1',
-      name: 'بلاستيك شفاف',
-      description: 'مصنع أبو النمر للمنتجات البلاستيكية و الشفافة للصناعات الحديثة',
-      pricePerPiece: 35,
-      pricePer50Piece: 1600,
-      pricePer100Piece: 3100,
-      noInStock: 233,
-      minNumToFactoryOrder: 100,
-      approvalStatus: 'Approved',
-      productPicsPathes: ['assets/519wBXYrKuL.jpg'],
-      warrantyNMonths: 12,
-      shipping: 'FreeINSameGovernate',
-      subCategoryId: 'plastics',
-      rating: 4.2,
-      supplierNames: ['مصنع أبو النمر']
-    },
-    {
-      id: '2',
-      name: 'أنابيب ستانلس',
-      description: 'أنابيب ستانلس عالية الجودة للصناعات المتقدمة',
-      pricePerPiece: 120,
-      pricePer50Piece: 5800,
-      pricePer100Piece: 11000,
-      noInStock: 150,
-      minNumToFactoryOrder: 50,
-      approvalStatus: 'Approved',
-      productPicsPathes: ['assets/الفولاذ المقاوم للصدأ 310 الأنابيب.jpg'],
-      warrantyNMonths: 6,
-      shipping: 'Paid',
-      subCategoryId: 'steels',
-      rating: 4.6,
-      supplierNames: ['حديدكو']
-    },
-    {
-      id: '3',
-      name: 'لفائف ألومنيوم',
-      description: 'لفائف ألومنيوم للاستخدامات الصناعية والمنزلية',
-      pricePerPiece: 90,
-      pricePer50Piece: 4200,
-      pricePer100Piece: 8200,
-      noInStock: 85,
-      minNumToFactoryOrder: 25,
-      approvalStatus: 'Pending',
-      productPicsPathes: ['assets/zzc.jpg'],
-      warrantyNMonths: 3,
-      shipping: 'Free',
-      subCategoryId: 'aluminum',
-      rating: 3.9,
-      supplierNames: ['ألومكو']
-    },
-    {
-      id: '4',
-      name: 'High-Quality Kitchen Appliance Set',
-      description: 'Modern cooking set with multiple attachments and stainless steel bowl.',
-      pricePerPiece: 89.99,
-      pricePer50Piece: 4200,
-      pricePer100Piece: 8200,
-      noInStock: 50,
-      minNumToFactoryOrder: 10,
-      approvalStatus: 'Approved',
-      productPicsPathes: ['assets/kitchen-appliance.jpg'],
-      warrantyNMonths: 24,
-      shipping: 'Free',
-      subCategoryId: 'kitchen',
-      rating: 5,
-      supplierNames: ['KitchenPro']
-    },
-    {
-      id: '5',
-      name: 'Wireless Headphones',
-      description: 'Noise-cancelling over-ear headphones with long battery life.',
-      pricePerPiece: 59.99,
-      pricePer50Piece: 2800,
-      pricePer100Piece: 5400,
-      noInStock: 120,
-      minNumToFactoryOrder: 5,
-      approvalStatus: 'Approved',
-      productPicsPathes: ['assets/headphones.jpg'],
-      warrantyNMonths: 12,
-      shipping: 'Paid',
-      subCategoryId: 'electronics',
-      rating: 4.8,
-      supplierNames: ['SoundMax']
-    }
-  ];
+  constructor(private http: HttpClient) {
+    this.loadWishlistFromLocalStorage();
+  }
 
-  // 2. Add a getter for all products
-  getProducts(): IProduct[] {
-    return this.products;
+  // Get API URLs for external use
+  getWishlistApiUrl(): string {
+    return this._baseUrl;
+  }
+
+  getProductWishlistApiUrl(): string {
+    return this._productWishlistUrl;
+  }
+
+  private loadWishlistFromLocalStorage(): void {
+    const storedWishlist = localStorage.getItem(this.wishlistKey);
+    if (storedWishlist) {
+      try {
+        const products = JSON.parse(storedWishlist);
+        this.wishlistSubject.next(products);
+        this.updateWishlistCount();
+      } catch (error) {
+        console.error('Error parsing wishlist from localStorage:', error);
+        this.wishlistSubject.next([]);
+        this.updateWishlistCount();
+      }
+    }
+  }
+
+  private saveWishlistToLocalStorage(products: IProduct[]): void {
+    localStorage.setItem(this.wishlistKey, JSON.stringify(products));
+    this.wishlistSubject.next(products);
+    this.updateWishlistCount();
+  }
+
+  private updateWishlistCount(): void {
+    this.wishlistCountSubject.next(this.wishlistSubject.getValue().length);
   }
 
   getWishlist(): IProduct[] {
-    return [...this.wishlist];
+    return this.wishlistSubject.getValue();
   }
 
-  addToWishlist(product: IProduct): void {
-    if (!this.wishlist.find(item => item.id === product.id)) {
-      this.wishlist.push(product);
+  getWishlistObservable(): Observable<IProduct[]> {
+    return this.wishlistSubject.asObservable();
+  }
+
+  getWishlistCount(): Observable<number> {
+    return this.wishlistCountSubject.asObservable();
+  }
+
+  getWishlistFromApi(customerId: string): Observable<IWishlist> {
+    return this.http.get<IWishlist>(`${this._baseUrl}/${customerId}`).pipe(
+      tap(wishlist => {
+        if (wishlist && wishlist.products) {
+          this.saveWishlistToLocalStorage(wishlist.products);
+        }
+      }),
+      catchError(error => {
+        console.error('Error fetching wishlist from API:', error);
+        // Return local wishlist as fallback
+        return of({
+          id: customerId,
+          customerId: customerId,
+          products: this.getWishlist(),
+          customerName: ''
+        });
+      })
+    );
+  }
+
+  addToWishlist(product: IProduct, customerId?: string): void {
+    const currentWishlist = this.getWishlist();
+
+    // Check if product already exists in wishlist
+    if (!this.isInWishlist(product.id)) {
+      const updatedWishlist = [...currentWishlist, product];
+      this.saveWishlistToLocalStorage(updatedWishlist);
+
+      // Sync with API if user is authenticated
+      if (customerId) {
+        this.syncWithApi(customerId, product.id);
+      }
     }
   }
 
-  removeFromWishlist(productId: string): void {
-    this.wishlist = this.wishlist.filter(item => item.id !== productId);
+  removeFromWishlist(productId: string, customerId?: string): void {
+    const currentWishlist = this.getWishlist();
+    const updatedWishlist = currentWishlist.filter(p => p.id !== productId);
+    this.saveWishlistToLocalStorage(updatedWishlist);
+
+    // Sync with API if user is authenticated
+    if (customerId) {
+      this.removeFromApi(customerId, productId);
+    }
   }
 
   clearWishlist(): void {
-    this.wishlist = [];
+    this.saveWishlistToLocalStorage([]);
   }
 
   isInWishlist(productId: string): boolean {
-    return !!this.wishlist.find(item => item.id === productId);
+    return this.getWishlist().some(p => p.id === productId);
+  }
+
+  refreshWishlist(customerId?: string): void {
+    if (!customerId) {
+      return;
+    }
+
+    this.getWishlistFromApi(customerId).subscribe({
+      next: (wishlist) => {
+        if (wishlist && wishlist.products) {
+          this.saveWishlistToLocalStorage(wishlist.products);
+        }
+      },
+      error: (error) => {
+        console.error('Error refreshing wishlist:', error);
+      }
+    });
+  }
+
+  private syncWithApi(customerId: string, productId: string): void {
+    // Check if wishlist exists for this customer
+    this.http.get<IWishlist>(`${this._baseUrl}/${customerId}`).pipe(
+      catchError(error => {
+        if (error.status === 404) {
+          // Wishlist doesn't exist, create it
+          const wishlistDto: WishListCreateDto = { customerId };
+          return this.http.post<IWishlist>(`${this._baseUrl}`, wishlistDto);
+        }
+        return throwError(() => error);
+      }),
+      switchMap((wishlist) => {
+        // Add product to wishlist
+        const productWishlistDto: ProductWishlistCreateDto = {
+          productId: productId,
+          wishListId: wishlist.id
+        };
+
+        return this.http.post(`${this._productWishlistUrl}`, productWishlistDto);
+      })
+    ).subscribe({
+      next: () => console.log('Product added to wishlist in API'),
+      error: (err) => console.error('Error adding product to wishlist in API:', err)
+    });
+  }
+
+  private removeFromApi(customerId: string, productId: string): void {
+    // Check if wishlist exists for this customer
+    this.http.get<IWishlist>(`${this._baseUrl}/${customerId}`).pipe(
+      catchError(error => {
+        if (error.status === 404) {
+          // Wishlist doesn't exist, nothing to remove
+          return throwError(() => error);
+        }
+        return throwError(() => error);
+      }),
+      switchMap((wishlist) => {
+        // Remove product from wishlist
+        return this.http.delete(`${this._productWishlistUrl}/${wishlist.id}/${productId}`);
+      })
+    ).subscribe({
+      next: () => console.log('Product removed from wishlist in API'),
+      error: (err) => console.error('Error removing product from wishlist in API:', err)
+    });
   }
 }

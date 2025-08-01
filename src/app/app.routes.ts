@@ -11,7 +11,6 @@ import { Register } from './components/register/register';
 import { Login } from './components/login/login';
 
 export const routes: Routes = [
-    { path: '', redirectTo: 'products', pathMatch: 'full' },
     { path: 'wishlist', component: WishlistComponent },
     { path: 'orders', component: OrdersComponent },
     { path: 'account-management', component: AccountManagement },
@@ -38,4 +37,16 @@ export const routes: Routes = [
   { path: 'login', component: Login },
 
     { path: '**', redirectTo: 'not-found' },
+import { ProductList } from './components/product/product-list/product-list';
+import { ProductDetails } from './components/product/product-details/product-details';
+import { Cart } from './components/cart/cart';
+import { SupplierList } from './components/supplier/supplier-list/supplier-list';
+
+export const routes: Routes = [
+  { path: 'products', component: ProductList },
+  { path: 'products/:id', component: ProductDetails },
+  { path: 'cart', component: Cart },
+  { path: 'suppliers', component: SupplierList },
+
+  { path: '', redirectTo: 'products', pathMatch: 'full' },
 ];

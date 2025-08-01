@@ -1,18 +1,31 @@
+export enum ProductApprovalStatus {
+  Pending = 'Pending',
+  Approved = 'Approved',
+  Rejected = 'Rejected'
+}
+
+export enum ShippingTypes {
+  Free = 'Free',
+  FreeINSameGovernate = 'FreeINSameGovernate',
+  Paid = 'Paid',
+  None = 'None'
+}
+
 export interface IProduct {
   id: string;
+  rating?: number | null;
+  supplierNames?: string[] | null;
+  productPicsPathes: string[];
   name: string;
   description: string;
   pricePerPiece: number;
   pricePer50Piece?: number | null;
   pricePer100Piece?: number | null;
-  noInStock: number;
+  noINStock: number;
   minNumToFactoryOrder: number;
-  approvalStatus: 'Pending' | 'Approved' | 'Rejected';
-  productPicsPathes: string[];
+  approvalStatus: ProductApprovalStatus;
   warrantyNMonths?: number | null;
-  shipping: 'Free' | 'FreeINSameGovernate' | 'Paid' | 'None';
+  shipping: ShippingTypes;
   subCategoryId: string;
-  rating?: number | null;
-  supplierNames?: string[] | null;
+  suppliers: string[];
 }
-

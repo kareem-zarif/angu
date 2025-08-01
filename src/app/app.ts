@@ -10,9 +10,10 @@ import { RegisterSelection } from "./components/register-selection/register-sele
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, Header, Footer, AboutUs, RegisterSelection],
-  templateUrl: './app.html',
+ templateUrl: './app.html',
   styleUrls: ['./app.css']
-})
+}) 
+
 export class App {
   title = 'angu';
 }
