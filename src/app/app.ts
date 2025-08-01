@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
 
 import { Header } from './layout/header/header';
 import { Footer } from './layout/footer/footer';
@@ -9,11 +10,19 @@ import { RegisterSelection } from "./components/register-selection/register-sele
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, Header, Footer, AboutUs, RegisterSelection],
+
+  imports: [CommonModule,RouterOutlet, Header, Footer, AboutUs, RegisterSelection],
  templateUrl: './app.html',
   styleUrls: ['./app.css']
 }) 
 
 export class App {
   title = 'angu';
+
+  constructor(private router: Router) {}
+
+  isAdminRoute(): boolean {
+    return this.router.url.startsWith('/admin');
+  }
 }
+

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { ProductApprovalStatus, ShippingTypes } from '../models/i-product';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
 import { catchError, map, tap, switchMap, take } from 'rxjs/operators';
@@ -18,6 +19,7 @@ export interface ProductWishlistCreateDto {
   providedIn: 'root'
 })
 export class WishlistService {
+
   private _baseUrl = 'https://localhost:7777/api/WishList';
   private _productWishlistUrl = 'https://localhost:7777/api/ProductWishlist';
   private wishlistKey = 'user_wishlist';
@@ -119,6 +121,7 @@ export class WishlistService {
       this.removeFromApi(customerId, productId);
     }
   }
+
 
   clearWishlist(): void {
     this.saveWishlistToLocalStorage([]);
