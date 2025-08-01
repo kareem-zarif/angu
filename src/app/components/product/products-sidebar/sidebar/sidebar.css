@@ -34,3 +34,9 @@
   background-color: #483c21;
   border-color: #483c21;
 }
+.opacity-50 {
+  opacity: 0.6;
+}
+.hidden {
+  display: none;
+}

@@ -1,22 +1,23 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { IProduct } from '../../../models/i-product';
 import { ProductService } from '../../../services/product-service';
-import { Rating } from '../../rating/rating/rating';
 import { WishlistService } from '../../../services/wishlist';
 import { CartService } from '../../../services/cart.service';
-import { FormsModule } from '@angular/forms';
 import { SupplierService } from '../../../services/supplier.service';
+import { IProduct, ShippingTypes } from '../../../models/i-product';
+import { Rating } from '../../rating/rating/rating';
+import { TranslateModule } from '@ngx-translate/core';
+import { SubCategoryService } from '../../../services/sub-category.service';
 
 @Component({
   selector: 'app-product-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, Rating, FormsModule],
+  imports: [CommonModule, RouterModule, Rating, FormsModule, TranslateModule],
   templateUrl: './product-details.html',
-  styleUrl: './product-details.css',
-  providers: [ProductService] // for lazy loading
+  styleUrl: './product-details.css'
 })
 export class ProductDetails implements OnInit, OnDestroy {
   product: IProduct | null = null;
@@ -26,6 +27,8 @@ export class ProductDetails implements OnInit, OnDestroy {
   quantity: number = 1;
   private subscription: Subscription | null = null;
   supplierName: string = '';
+  categoryName: string = '';
+  subCategoryName: string = '';
 
   // Dynamic breadcrumbs
   breadcrumbs: { label: string, link?: string }[] = [
@@ -38,7 +41,8 @@ export class ProductDetails implements OnInit, OnDestroy {
     private productService: ProductService,
     private wishlistService: WishlistService,
     private cartService: CartService,
-    private supplierService: SupplierService
+    private supplierService: SupplierService,
+    private subCategoryService: SubCategoryService
   ) { }
 
   ngOnInit(): void {
@@ -63,79 +67,73 @@ export class ProductDetails implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    try {
-      const product = this.productService.getByIdDummy(id);
-      if (product) {
+    this.productService.getById(id).subscribe({
+      next: (product) => {
         this.product = product;
         this.selectedImageIndex = 0;
-        this.generateBreadcrumbs(product);
+
+        // Get subcategory info
+        if (product.subCategoryId) {
+          this.loadSubCategoryInfo(product.subCategoryId);
+        }
 
         // Get supplier name
         if (product.supplierNames && product.supplierNames.length > 0) {
           this.supplierName = product.supplierNames[0];
+        } else if (product.suppliers && product.suppliers.length > 0) {
+          this.supplierName = product.suppliers[0];
         } else {
-          // Try to find a supplier that might have this product
-          const suppliers = this.supplierService.getAllSuppliers();
-          for (const supplier of suppliers) {
-            const products = this.supplierService.getSupplierProducts(supplier.id);
-            if (products.some(p => p.id === product.id)) {
-              this.supplierName = supplier.UserName;
-              break;
-            }
-          }
-
-          // If still no supplier found, use a default
-          if (!this.supplierName) {
-            this.supplierName = 'مصنع الأمل';
-          }
+          this.supplierName = 'Unknown Supplier';
         }
-      } else {
-        this.error = 'Product not found';
+
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading product:', error);
+        this.error = 'Product not found or failed to load';
+        this.loading = false;
       }
-    } catch (err) {
-      this.error = 'Error loading product';
-      console.error(err);
-    } finally {
-      this.loading = false;
-    }
+    });
   }
 
-  generateBreadcrumbs(product: IProduct): void {
-    // Reset breadcrumbs
+  loadSubCategoryInfo(subCategoryId: string): void {
+    this.subCategoryService.getById(subCategoryId).subscribe({
+      next: (subCategory) => {
+        this.subCategoryName = subCategory.name;
+        this.categoryName = subCategory.categoryName;
+        this.generateBreadcrumbs();
+      },
+      error: (error) => {
+        console.error('Error loading subcategory info:', error);
+        // Generate breadcrumbs with limited info
+        this.generateBreadcrumbs();
+      }
+    });
+  }
+
+  generateBreadcrumbs(): void {
     this.breadcrumbs = [
       { label: 'Home', link: '/' },
       { label: 'Products', link: '/products' }
     ];
 
-    // Add category based on subCategoryId
-    const categoryMap: { [key: string]: { category: string, subcategory: string } } = {
-      'sub-elastic-01': { category: 'Textiles', subcategory: 'Elastics' },
-      'sub-linning-02': { category: 'Materials', subcategory: 'Linnings' },
-      'sub-steel-03': { category: 'Metals', subcategory: 'Steels' },
-      'plastics': { category: 'Materials', subcategory: 'Plastics' },
-      'steels': { category: 'Metals', subcategory: 'Steels' },
-      'aluminum': { category: 'Metals', subcategory: 'Aluminum' }
-    };
+    if (this.categoryName) {
+      this.breadcrumbs.push({
+        label: this.categoryName,
+        link: `/products?category=${this.product?.subCategoryId}`
+      });
+    }
 
-    const categoryInfo = categoryMap[product.subCategoryId] || {
-      category: 'Category',
-      subcategory: product.subCategoryId
-    };
+    if (this.subCategoryName) {
+      this.breadcrumbs.push({
+        label: this.subCategoryName,
+        link: `/products?subcategory=${this.product?.subCategoryId}`
+      });
+    }
 
-    // Add category
-    this.breadcrumbs.push({
-      label: categoryInfo.category,
-      link: `/products?category=${categoryInfo.category.toLowerCase()}`
-    });
-
-    // Add subcategory
-    this.breadcrumbs.push({
-      label: categoryInfo.subcategory,
-      link: `/products?subcategory=${product.subCategoryId}`
-    });
-
-    // Add product name
-    this.breadcrumbs.push({ label: product.name });
+    if (this.product) {
+      this.breadcrumbs.push({ label: this.product.name });
+    }
   }
 
   selectImage(index: number): void {
@@ -149,10 +147,7 @@ export class ProductDetails implements OnInit, OnDestroy {
 
   addToCart(): void {
     if (!this.product) return;
-
     this.cartService.addToCart(this.product, this.quantity);
-
-    // Navigate to cart page
     this.router.navigate(['/cart']);
   }
 
@@ -193,32 +188,35 @@ export class ProductDetails implements OnInit, OnDestroy {
     return this.wishlistService.isInWishlist(this.product.id);
   }
 
-  getShippingText(shipping: string): string {
-    switch (shipping) {
-      case 'Free':
-        return 'free for all';
-      case 'FreeINSameGovernate':
-        return 'free for same governate';
-      case 'Paid':
-        return 'paid shipping';
+  getShippingText(shipping: ShippingTypes): string {
+    if (!this.product) return '';
+
+    switch (this.product.shipping) {
+      case ShippingTypes.Free:
+        return 'Free Shipping';
+      case ShippingTypes.FreeINSameGovernate:
+        return 'Free in Same State';
+      case ShippingTypes.Paid:
+        return 'Paid Shipping';
       default:
-        return shipping;
+        return 'No Shipping Info';
     }
   }
 
-  // Format warranty display
-  formatWarranty(months: number | null | undefined): string {
-    if (!months) return '0 months';
+  formatWarranty(warrantyNMonths: number | undefined | null): string {
+    if (!this.product?.warrantyNMonths) return 'No Warranty';
 
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-
-    if (years > 0 && remainingMonths > 0) {
-      return `${years} year${years > 1 ? 's' : ''} and ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
-    } else if (years > 0) {
-      return `${years} year${years > 1 ? 's' : ''}`;
+    const months = this.product.warrantyNMonths;
+    if (months >= 12) {
+      const years = Math.floor(months / 12);
+      const remainingMonths = months % 12;
+      if (remainingMonths === 0) {
+        return `${years} Year${years > 1 ? 's' : ''} Warranty`;
+      } else {
+        return `${years} Year${years > 1 ? 's' : ''} ${remainingMonths} Month${remainingMonths > 1 ? 's' : ''} Warranty`;
+      }
     } else {
-      return `${months} month${months > 1 ? 's' : ''}`;
+      return `${months} Month${months > 1 ? 's' : ''} Warranty`;
     }
   }
 }

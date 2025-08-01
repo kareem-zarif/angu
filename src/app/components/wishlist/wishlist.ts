@@ -1,38 +1,55 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { WishlistService } from '../../services/wishlist';
-import { IProduct } from '../../models/i-product';
-import { RouterOutlet, RouterModule } from '@angular/router';
+import { IProduct, ShippingTypes } from '../../models/i-product';
+import {RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Rating } from '../rating/rating/rating';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-wishlist',
   standalone: true,
-  imports: [RouterOutlet, RouterModule, CommonModule, Rating],
+  imports: [ RouterModule, CommonModule, Rating],
   templateUrl: './wishlist.html'
 })
-export class WishlistComponent implements OnInit {
-  products: IProduct[] = [];
+export class WishlistComponent implements OnInit, OnDestroy {
   wishlist: IProduct[] = [];
+  shippingTypes = ShippingTypes;
 
   // Filter state
   selectedRating: number | null = null;
   selectedWarranty: number | null = null;
-  selectedShipping: string | null = null;
+  selectedShipping: ShippingTypes = ShippingTypes.None;
   selectedAddress: string | null = null;
 
-  // Placeholder for address
+  // Toast notification
   toastMessage: string | null = null;
+
+  // Subscription
+  private subscription: Subscription | null = null;
 
   constructor(private wishlistService: WishlistService) { }
 
   ngOnInit(): void {
-    this.products = this.wishlistService.getProducts();
+    // Initial load
     this.refreshWishlist();
+
+    // Subscribe to wishlist changes
+    this.subscription = this.wishlistService.getWishlistObservable().subscribe(products => {
+      this.wishlist = products;
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
   }
 
   refreshWishlist(): void {
     this.wishlist = this.wishlistService.getWishlist();
+    // Refresh from API
+    this.wishlistService.refreshWishlist();
   }
 
   showToast(message: string): void {
@@ -44,13 +61,11 @@ export class WishlistComponent implements OnInit {
 
   addToWishlist(product: IProduct): void {
     this.wishlistService.addToWishlist(product);
-    this.refreshWishlist();
     this.showToast(`${product.name} added to wishlist`);
   }
 
   removeFromWishlist(product: IProduct): void {
     this.wishlistService.removeFromWishlist(product.id);
-    this.refreshWishlist();
     this.showToast(`${product.name} removed from wishlist`);
   }
 
@@ -66,7 +81,7 @@ export class WishlistComponent implements OnInit {
     this.selectedWarranty = months;
   }
 
-  setShippingFilter(shipping: string | null): void {
+  setShippingFilter(shipping: ShippingTypes = ShippingTypes.None): void {
     this.selectedShipping = shipping;
   }
 
@@ -82,7 +97,7 @@ export class WishlistComponent implements OnInit {
         matches = matches && (product.warrantyNMonths ?? 0) >= this.selectedWarranty;
       }
 
-      if (this.selectedShipping !== null) {
+      if (this.selectedShipping !== ShippingTypes.None) {
         matches = matches && product.shipping === this.selectedShipping;
       }
 
@@ -91,7 +106,10 @@ export class WishlistComponent implements OnInit {
     });
   }
 
-  clearWishlist(){
-    this.wishlistService.clearWishlist()
+  clearWishlist(): void {
+    if (confirm('Are you sure you want to clear your wishlist?')) {
+      this.wishlistService.clearWishlist();
+      this.showToast('Wishlist cleared');
+    }
   }
 }

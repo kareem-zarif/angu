@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ISupplier } from '../../../models/i-supplier';
-import { IProduct } from '../../../models/i-product';
+import { IProduct, ShippingTypes } from '../../../models/i-product';
 import { SupplierService } from '../../../services/supplier.service';
 import { CartService } from '../../../services/cart.service';
 import { Rating } from '../../rating/rating/rating';
 import { SupplierSidebar } from '../supplier-sidebar/supplier-sidebar';
-import { Categories } from '../../product/category-list/categories/categories';
 import { Pagination } from '../../pagination/pagination';
+import { SubCategoryService } from '../../../services/sub-category.service';
 
 @Component({
   selector: 'app-supplier-list',
@@ -19,7 +19,6 @@ import { Pagination } from '../../pagination/pagination';
     RouterModule,
     Rating,
     SupplierSidebar,
-    Categories,
     Pagination
   ],
   templateUrl: './supplier-list.html',
@@ -30,48 +29,55 @@ export class SupplierList implements OnInit, OnDestroy {
   allSuppliers: ISupplier[] = [];
   filteredSuppliers: ISupplier[] = [];
   displayedSuppliers: ISupplier[] = [];
-  supplierProducts: { [key: string]: IProduct[] } = {};
 
   // Filter states
   selectedCategory: string | null = null;
+  selectedSubCategory: string | null = null;
   selectedRating: number | null = null;
   selectedWarranty: string | null = null;
   selectedCity: string | null = null;
-  selectedGovernorate: string | null = null;
+  selectedState: string | null = null;
   selectedShipping: string | null = null;
 
   // Location data
   cities: string[] = [];
-  governorates: string[] = [];
+  states: string[] = [];
 
   // Pagination
   currentPage: number = 1;
   itemsPerPage: number = 8;
 
+  // UI states
+  loading: boolean = false;
+  error: string | null = null;
+
+  // Subcategory mapping
+  private subCategoryToCategory: Map<string, string> = new Map();
+
   private subscription: Subscription | null = null;
 
   constructor(
     private supplierService: SupplierService,
+    private subCategoryService: SubCategoryService,
     private cartService: CartService,
     private router: Router
   ) { }
 
   ngOnInit(): void {
+    // Load subcategory mapping
+    this.loadSubCategoryMapping();
+
     // Load suppliers
-    this.allSuppliers = this.supplierService.getAllSuppliers();
+    this.loadSuppliers();
 
     // Load location data
-    this.cities = this.supplierService.getAllCities();
-    this.governorates = this.supplierService.getAllGovernorates();
-
-    // Load products for each supplier
-    this.allSuppliers.forEach(supplier => {
-      this.supplierProducts[supplier.id] = this.supplierService.getSupplierProducts(supplier.id);
+    this.supplierService.getAllCities().subscribe(cities => {
+      this.cities = cities;
     });
 
-    // Initialize filtered and displayed suppliers
-    this.filteredSuppliers = [...this.allSuppliers];
-    this.updateDisplayedSuppliers();
+    this.supplierService.getAllStates().subscribe(states => {
+      this.states = states;
+    });
   }
 
   ngOnDestroy(): void {
@@ -80,9 +86,52 @@ export class SupplierList implements OnInit, OnDestroy {
     }
   }
 
+  loadSubCategoryMapping(): void {
+    this.subCategoryService.getAll().subscribe({
+      next: (subCategories) => {
+        subCategories.forEach(sc => {
+          this.subCategoryToCategory.set(sc.id, sc.categoryId);
+        });
+      },
+      error: (error) => {
+        console.error('Error loading subcategory mapping:', error);
+      }
+    });
+  }
+
+  loadSuppliers(): void {
+    this.loading = true;
+    this.error = null;
+
+    this.subscription = this.supplierService.getAllSuppliers().subscribe({
+      next: (suppliers) => {
+        this.allSuppliers = suppliers;
+        this.filteredSuppliers = [...this.allSuppliers];
+        this.updateDisplayedSuppliers();
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading suppliers:', error);
+        this.error = 'Failed to load suppliers. Please try again later.';
+        this.loading = false;
+      }
+    });
+  }
+
   // Handle category selection
-  onCategorySelected(categoryId: string): void {
+  onCategorySelected(categoryId: string | null): void {
     this.selectedCategory = categoryId;
+    this.selectedSubCategory = null; // Reset subcategory when category changes
+    this.applyFilters();
+  }
+
+  // Handle subcategory selection
+  onSubCategorySelected(subCategoryId: string | null): void {
+    this.selectedSubCategory = subCategoryId;
+    // If a subcategory is selected, we can determine its parent category
+    if (subCategoryId && this.subCategoryToCategory.has(subCategoryId)) {
+      this.selectedCategory = this.subCategoryToCategory.get(subCategoryId) || null;
+    }
     this.applyFilters();
   }
 
@@ -91,71 +140,46 @@ export class SupplierList implements OnInit, OnDestroy {
     this.selectedRating = filters.rating;
     this.selectedWarranty = filters.warranty;
     this.selectedCity = filters.city;
-    this.selectedGovernorate = filters.governorate;
+    this.selectedState = filters.state;
     this.selectedShipping = filters.shipping;
     this.applyFilters();
   }
 
   // Apply all filters
   applyFilters(): void {
-    this.filteredSuppliers = this.allSuppliers.filter(supplier => {
-      // Filter by city
-      if (this.selectedCity && supplier.City !== this.selectedCity) {
-        return false;
-      }
+    // Use the service's searchSuppliers method with all filters
+    this.supplierService.searchSuppliers(null, {
+      city: this.selectedCity || undefined,
+      state: this.selectedState || undefined,
+      rating: this.selectedRating || undefined,
+      warranty: this.selectedWarranty || undefined,
+      shipping: this.selectedShipping || undefined
+    }).subscribe(suppliers => {
+      // Further filter by category/subcategory (these are not handled by the service)
+      this.filteredSuppliers = suppliers.filter(supplier => {
+        const products = supplier.products || [];
 
-      // Filter by governorate
-      if (this.selectedGovernorate && supplier.Governmate !== this.selectedGovernorate) {
-        return false;
-      }
-
-      // Get supplier products for further filtering
-      const products = this.supplierProducts[supplier.id] || [];
-
-      // Filter by category
-      if (this.selectedCategory && !products.some(p => p.subCategoryId === this.selectedCategory)) {
-        return false;
-      }
-
-      // Filter by rating (assuming average rating of products)
-      if (this.selectedRating !== null) {
-        const avgRating = this.getAverageRating(products);
-        if (avgRating < this.selectedRating) {
+        // Filter by subcategory
+        if (this.selectedSubCategory && !products.some(p => p.subCategoryId === this.selectedSubCategory)) {
           return false;
         }
-      }
 
-      // Filter by warranty
-      if (this.selectedWarranty) {
-        if (this.selectedWarranty === 'none') {
-          // Check if all products have no warranty
-          if (!products.every(p => !p.warrantyNMonths)) {
-            return false;
-          }
-        } else {
-          // Convert warranty value to number
-          const warrantyMonths = parseInt(this.selectedWarranty);
-          // Check if any product has the specified warranty
-          if (!products.some(p => p.warrantyNMonths === warrantyMonths)) {
-            return false;
-          }
+        // Filter by category (only apply if subcategory is not selected)
+        if (!this.selectedSubCategory && this.selectedCategory &&
+          !products.some(p => this.isCategoryMatch(p.subCategoryId, this.selectedCategory!))) {
+          return false;
         }
-      }
 
-      // Filter by shipping
-      if (this.selectedShipping && !products.some(p => p.shipping === this.selectedShipping)) {
-        return false;
-      }
+        return true;
+      });
 
-      return true;
+      // Reset to first page when filters change
+      this.currentPage = 1;
+      this.updateDisplayedSuppliers();
     });
-
-    // Reset to first page when filters change
-    this.currentPage = 1;
-    this.updateDisplayedSuppliers();
   }
 
-  // Update displayed suppliers based on current page
+  // Update displayed suppliers based on pagination
   updateDisplayedSuppliers(): void {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
@@ -175,42 +199,67 @@ export class SupplierList implements OnInit, OnDestroy {
   }
 
   // Navigate to product details
-  navigateToProductDetails(product: IProduct, event: Event): void {
-    // Prevent navigation if the click was on a button
-    if ((event.target as HTMLElement).closest('button')) {
-      return;
-    }
-
-    this.router.navigate(['/products', product.id]);
+  navigateToProductDetails(productId: string): void {
+    this.router.navigate(['/products', productId]);
   }
 
   // Add product to cart
   addToCart(product: IProduct): void {
-    this.cartService.addToCart(product, 1);
-    this.router.navigate(['/cart']);
+    this.cartService.addToCart(product);
+    // Show toast or notification here
   }
 
-  // Get average rating for a supplier's products
-  getAverageRating(products: IProduct[]): number {
-    if (!products.length) return 0;
+  // Get top 3 products for a supplier
+  getTopProducts(supplier: ISupplier): IProduct[] {
+    if (!supplier.products || supplier.products.length === 0) return [];
 
-    const totalRating = products.reduce((sum, product) => {
-      return sum + (product.rating || 0);
-    }, 0);
-
-    return totalRating / products.length;
+    // Sort by rating (highest first) and take top 3
+    return [...supplier.products]
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 3);
   }
 
-  // Get top products for a supplier (limited to 3)
-  getTopProducts(supplierId: string): IProduct[] {
-    const products = this.supplierProducts[supplierId] || [];
-    return products.slice(0, 3);
-  }
-
-  // Add method to navigate to products filtered by supplier
+  // View all products from a supplier
   viewSupplierProducts(supplierName: string): void {
     this.router.navigate(['/products'], {
       queryParams: { supplier: supplierName }
     });
+  }
+
+  // Helper method to check if a product's subcategory belongs to a category
+  private isCategoryMatch(subCategoryId: string, categoryId: string): boolean {
+    return this.subCategoryToCategory.get(subCategoryId) === categoryId;
+  }
+
+  // Format warranty text
+  formatWarranty(months: number | null | undefined): string {
+    if (!months) return 'No Warranty';
+
+    if (months >= 12) {
+      const years = Math.floor(months / 12);
+      const remainingMonths = months % 12;
+
+      if (remainingMonths === 0) {
+        return `${years} Year${years > 1 ? 's' : ''} Warranty`;
+      } else {
+        return `${years} Year${years > 1 ? 's' : ''} ${remainingMonths} Month${remainingMonths > 1 ? 's' : ''} Warranty`;
+      }
+    } else {
+      return `${months} Month${months > 1 ? 's' : ''} Warranty`;
+    }
+  }
+
+  // Get shipping text
+  getShippingText(shipping: ShippingTypes): string {
+    switch (shipping) {
+      case ShippingTypes.Free:
+        return 'Free Shipping';
+      case ShippingTypes.FreeINSameGovernate:
+        return 'Free in Same State';
+      case ShippingTypes.Paid:
+        return 'Paid Shipping';
+      default:
+        return 'No Shipping Info';
+    }
   }
 }

@@ -2,28 +2,40 @@
   <!-- Fixed width Sidebar -->
   <aside class="sidebar-fixed w-72 flex-shrink-0">
     <div class="bg-white border border-gray-200 rounded-lg shadow p-4 h-full sticky top-4">
-      <app-sidebar [minPrice]="minPrice" [maxPrice]="maxPrice" (filterChange)="onFilterChange($event)">
+      <app-sidebar [minPrice]="minPrice" [maxPrice]="maxPrice" [products]="filteredProducts"
+        (filterChange)="onFilterChange($event)" (categorySelected)="onCategorySelected($event)"
+        (subCategorySelected)="onSubCategorySelected($event)">
       </app-sidebar>
     </div>
   </aside>
 
   <!-- Main Content with fixed width -->
   <main class="main-content flex-grow" dir="rtl">
-    <!-- Categories with horizontal scroll -->
-    <app-categories (categorySelected)="onCategorySelected($event)"></app-categories>
-
     <!-- Products Container -->
     <div class="products-container">
       <div class="products-wrapper">
         <h2 class="text-2xl font-bold text-[#483C21] mb-6">منتجات مقترحة</h2>
 
-        <div class="products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+        <!-- Loading state -->
+        <div *ngIf="loading" class="flex justify-center items-center py-10">
+          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#483C21]"></div>
+        </div>
+
+        <!-- Error state -->
+        <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p>{{ error }}</p>
+          <button (click)="loadProducts()" class="text-red-700 underline mt-2">إعادة المحاولة</button>
+        </div>
+
+        <!-- Products grid -->
+        <div *ngIf="!loading && !error"
+          class="products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
           <div *ngFor="let product of displayedProducts"
             class="product-card bg-white rounded-lg shadow-md overflow-hidden relative cursor-pointer"
             (click)="navigateToProductDetails(product, $event)">
             <!-- Wishlist heart icon -->
             <button class="absolute top-3 right-3 z-10 text-gray-400 hover:text-red-500 transition-colors"
-              [ngClass]="{'text-red-500': isInWishlist(product)}" (click)="toggleWishlist(product)">
+              [ngClass]="{'text-red-500': isInWishlist(product.id)}" (click)="toggleWishlist(product,$event)">
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-6 h-6">
                 <path
                   d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -32,8 +44,9 @@
 
             <!-- Product image -->
             <div class="product-image-container h-48 overflow-hidden">
-              <img [src]="product.productPicsPathes[0]" [alt]="product.name"
-                class="w-full object-contain transition-transform hover:scale-105" />
+              <img
+                [src]="product.productPicsPathes && product.productPicsPathes.length > 0 ? product.productPicsPathes[0] : 'assets/placeholder-image.png'"
+                [alt]="product.name" class="w-full object-contain transition-transform hover:scale-105" />
             </div>
 
             <!-- Product details -->
@@ -62,13 +75,13 @@
 
                 <!-- Current price -->
                 <div class="text-[#483C21] font-bold">
-                  {{ product.pricePerPiece || product.pricePer50Piece }} جنيه
+                  {{ product.pricePerPiece}} جنيه
                 </div>
 
                 <!-- Tier prices -->
                 <div class="flex flex-col text-xs text-gray-600 mt-1">
                   <!-- 50+ price with discount -->
-                  <div *ngIf="product.pricePer50Piece && product.pricePerPiece" class="flex justify-between">
+                  <div *ngIf="product.pricePer50Piece" class="flex justify-between">
                     <span class="bg-yellow-100 text-yellow-800 px-1 rounded">
                       -{{ ((product.pricePerPiece - product.pricePer50Piece) / product.pricePerPiece * 100) |
                       number:'1.0-0' }}%
@@ -77,7 +90,7 @@
                   </div>
 
                   <!-- 100+ price with discount -->
-                  <div *ngIf="product.pricePer100Piece && product.pricePerPiece" class="flex justify-between mt-1">
+                  <div *ngIf="product.pricePer100Piece" class="flex justify-between mt-1">
                     <span class="bg-orange-100 text-orange-800 px-1 rounded">
                       -{{ ((product.pricePerPiece - product.pricePer100Piece) / product.pricePerPiece * 100) |
                       number:'1.0-0' }}%
@@ -91,7 +104,7 @@
         </div>
 
         <!-- No products message -->
-        <div *ngIf="filteredProducts.length === 0" class="text-center py-10 text-gray-500">
+        <div *ngIf="filteredProducts.length === 0 && !loading" class="text-center py-10 text-gray-500">
           لا توجد منتجات متطابقة مع معايير البحث
         </div>
 

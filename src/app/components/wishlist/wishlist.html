@@ -57,11 +57,11 @@
       <div class="mb-6">
         <h3 class="font-bold text-lg mb-2">Shipping</h3>
         <div class="flex flex-col gap-1">
-          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('Free')">Free</button>
-          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('FreeINSameGovernate')">Free in Same Governate</button>
-          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('Paid')">Paid</button>
-          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter('None')">No Delivery</button>
-          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter(null)">Any</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter(shippingTypes.Free)">Free</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter(shippingTypes.FreeINSameGovernate)">Free in Same Governate</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter(shippingTypes.Free)">Paid</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter(shippingTypes.None)">No Delivery</button>
+          <button class="text-gray-700 hover:text-blue-600 text-left cursor-pointer" (click)="setShippingFilter()">Any</button>
         </div>
       </div>
     </aside>
@@ -127,15 +127,15 @@
 
           <!-- Shipping -->
           <div class="mb-1">
-            <span *ngIf="product.shipping === 'Free'" class="text-green-500 text-xs font-bold bg-green-50 px-2 py-1 rounded">Free Shipping</span>
-            <span *ngIf="product.shipping === 'FreeINSameGovernate'" class="text-blue-500 text-xs font-bold bg-blue-50 px-2 py-1 rounded">Free in Same Governate</span>
-            <span *ngIf="product.shipping === 'Paid'" class="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">Paid Shipping</span>
-            <span *ngIf="product.shipping === 'None'" class="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded">No Delivery</span>
+            <span *ngIf="product.shipping === shippingTypes.Free" class="text-green-500 text-xs font-bold bg-green-50 px-2 py-1 rounded">Free Shipping</span>
+            <span *ngIf="product.shipping === shippingTypes.FreeINSameGovernate" class="text-blue-500 text-xs font-bold bg-blue-50 px-2 py-1 rounded">Free in Same Governate</span>
+            <span *ngIf="product.shipping === shippingTypes.Paid" class="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">Paid Shipping</span>
+            <span *ngIf="product.shipping === shippingTypes.None" class="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded">No Delivery</span>
           </div>
 
           <!-- Additional info -->
           <div class="flex items-center gap-2 mb-2 text-xs text-gray-500 justify-center">
-            <span>Stock: <span class="font-semibold">{{ product.noInStock }}</span></span>
+            <span>Stock: <span class="font-semibold">{{ product.noINStock }}</span></span>
             <span>Warranty: <span class="font-semibold">{{ product.warrantyNMonths ? product.warrantyNMonths + ' months' : 'None' }}</span></span>
           </div>
 

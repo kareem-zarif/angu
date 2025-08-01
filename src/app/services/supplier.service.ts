@@ -1,268 +1,327 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { ISupplier } from '../models/i-supplier';
 import { IProduct } from '../models/i-product';
-import { ProductService } from './product-service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SupplierService {
-  // Static data for suppliers
-  private suppliers: ISupplier[] = [
-    {
-      id: 'sup-001',
-      UserName: 'مصنع أبو النمر',
-      Phone: '+201234567890',
-      FactoryName: 'مصنع أبو النمر للمنتجات البلاستيكية',
-      Description: 'متخصصون في صناعة المنتجات البلاستيكية والشفافة للصناعات الحديثة',
-      Governmate: 'القاهرة',
-      City: 'مدينة نصر'
-    },
-    {
-      id: 'sup-002',
-      UserName: 'حديدكو',
-      Phone: '+201098765432',
-      FactoryName: 'شركة حديدكو للصناعات المعدنية',
-      Description: 'رائدون في مجال الصناعات المعدنية والستانلس ستيل',
-      Governmate: 'الإسكندرية',
-      City: 'برج العرب'
-    },
-    {
-      id: 'sup-003',
-      UserName: 'ألومكو',
-      Phone: '+201112223344',
-      FactoryName: 'شركة ألومكو للألومنيوم',
-      Description: 'متخصصون في صناعة وتشكيل الألومنيوم للاستخدامات الصناعية والمنزلية',
-      Governmate: 'القليوبية',
-      City: 'شبرا الخيمة'
-    },
-    {
-      id: 'sup-004',
-      UserName: 'Max Factory',
-      Phone: '+201555666777',
-      FactoryName: 'Max Factory for Industrial Materials',
-      Description: 'Specialized in high-quality industrial materials and components',
-      Governmate: 'الجيزة',
-      City: '6 أكتوبر'
-    },
-    {
-      id: 'sup-005',
-      UserName: 'لوازم مصنع البلاستيك',
-      Phone: '+201222333444',
-      FactoryName: 'شركة لوازم مصنع البلاستيك',
-      Description: 'موردون لجميع مستلزمات مصانع البلاستيك والمواد الخام',
-      Governmate: 'القاهرة',
-      City: 'العبور'
-    },
-    {
-      id: 'sup-006',
-      UserName: 'الشركة المصرية للورق',
-      Phone: '+201333444555',
-      FactoryName: 'الشركة المصرية لصناعة الورق',
-      Description: 'متخصصون في صناعة وتوريد جميع أنواع الورق والكرتون',
-      Governmate: 'الشرقية',
-      City: 'العاشر من رمضان'
-    },
-    {
-      id: 'sup-007',
-      UserName: 'النسيج المصري',
-      Phone: '+201444555666',
-      FactoryName: 'شركة النسيج المصري',
-      Description: 'رواد صناعة النسيج والمنسوجات في مصر',
-      Governmate: 'المنوفية',
-      City: 'شبين الكوم'
-    },
-    {
-      id: 'sup-008',
-      UserName: 'الخشب الطبيعي',
-      Phone: '+201666777888',
-      FactoryName: 'شركة الخشب الطبيعي للأثاث',
-      Description: 'متخصصون في توريد وتصنيع الأخشاب الطبيعية لصناعة الأثاث',
-      Governmate: 'دمياط',
-      City: 'دمياط الجديدة'
-    }
-  ];
+  private _baseUrl = 'https://localhost:7777/api/Supplier';
+  private suppliersCache: ISupplier[] = [];
+  private lastFetchTime: number = 0;
+  private cacheDuration: number = 5 * 60 * 1000; // 5 minutes cache
 
-  // Map of supplier products
-  private supplierProducts: { [key: string]: IProduct[] } = {};
-
-  constructor(
-    private http: HttpClient,
-    private productService: ProductService
-  ) {
-    // Initialize with product associations
-    this.initializeSupplierProducts();
-  }
-
-  // Initialize supplier products with real products from ProductService
-  private initializeSupplierProducts(): void {
-    // Get all products from product service
-    const allProducts = this.productService.getAllDummy();
-
-    // First, assign products that already have supplier names
-    allProducts.forEach(product => {
-      if (product.supplierNames && product.supplierNames.length > 0) {
-        product.supplierNames.forEach(supplierName => {
-          const supplier = this.suppliers.find(s => s.UserName === supplierName);
-          if (supplier) {
-            if (!this.supplierProducts[supplier.id]) {
-              this.supplierProducts[supplier.id] = [];
-            }
-
-            // Check if product is already in the array
-            if (!this.supplierProducts[supplier.id].some(p => p.id === product.id)) {
-              this.supplierProducts[supplier.id].push(product);
-            }
-          }
-        });
-      }
-    });
-
-    // For suppliers without products, assign some random products
-    this.suppliers.forEach(supplier => {
-      if (!this.supplierProducts[supplier.id] || this.supplierProducts[supplier.id].length === 0) {
-        // Randomly assign 2-3 products to each supplier
-        const numProducts = Math.floor(Math.random() * 2) + 2; // 2-3 products
-        const supplierProducts = [];
-
-        for (let i = 0; i < numProducts && i < allProducts.length; i++) {
-          const randomIndex = Math.floor(Math.random() * allProducts.length);
-          const product = { ...allProducts[randomIndex] };
-
-          // Add supplier name to product
-          if (!product.supplierNames) {
-            product.supplierNames = [];
-          }
-          if (!product.supplierNames.includes(supplier.UserName)) {
-            product.supplierNames.push(supplier.UserName);
-          }
-
-          supplierProducts.push(product);
-        }
-
-        this.supplierProducts[supplier.id] = supplierProducts;
-      }
-    });
-
-    // Update the original products in ProductService with the updated supplier names
-    this.updateProductsWithSupplierNames();
-  }
-
-  // Update products in ProductService with supplier names
-  private updateProductsWithSupplierNames(): void {
-    const allProducts = this.productService.getAllDummy();
-
-    // Collect all supplier associations
-    const productSuppliers: { [productId: string]: string[] } = {};
-
-    Object.entries(this.supplierProducts).forEach(([supplierId, products]) => {
-      const supplier = this.suppliers.find(s => s.id === supplierId);
-      if (supplier) {
-        products.forEach(product => {
-          if (!productSuppliers[product.id]) {
-            productSuppliers[product.id] = [];
-          }
-          if (!productSuppliers[product.id].includes(supplier.UserName)) {
-            productSuppliers[product.id].push(supplier.UserName);
-          }
-        });
-      }
-    });
-
-    // Update products in ProductService
-    allProducts.forEach(product => {
-      if (productSuppliers[product.id]) {
-        product.supplierNames = productSuppliers[product.id];
-      }
-    });
-  }
+  constructor(private http: HttpClient) { }
 
   // Get all suppliers
-  getAllSuppliers(): ISupplier[] {
-    return [...this.suppliers];
+  getAllSuppliers(): Observable<ISupplier[]> {
+    // Check if we have a valid cache
+    if (this.isCacheValid()) {
+      return of(this.suppliersCache);
+    }
+
+    return this.http.get<ISupplier[]>(`${this._baseUrl}`).pipe(
+      map(suppliers => {
+        // Calculate average rating for each supplier based on their products
+        suppliers.forEach(supplier => {
+          if (supplier.products && supplier.products.length > 0) {
+            supplier.averageRating = this.calculateAverageRating(supplier.products);
+          } else {
+            supplier.averageRating = 0;
+          }
+        });
+        return suppliers;
+      }),
+      tap(suppliers => {
+        this.suppliersCache = suppliers;
+        this.lastFetchTime = Date.now();
+      }),
+      catchError(error => {
+        console.error('Error fetching suppliers:', error);
+        return throwError(() => new Error('Failed to fetch suppliers'));
+      })
+    );
   }
 
   // Get supplier by ID
-  getSupplierById(id: string): ISupplier | null {
-    return this.suppliers.find(supplier => supplier.id === id) || null;
-  }
-
-  // Get supplier by name
-  getSupplierByName(name: string): ISupplier | null {
-    return this.suppliers.find(supplier => supplier.UserName === name) || null;
-  }
-
-  // Get products for a specific supplier
-  getSupplierProducts(supplierId: string): IProduct[] {
-    return this.supplierProducts[supplierId] || [];
-  }
-
-  // Get products for a supplier by name
-  getProductsBySupplierName(supplierName: string): IProduct[] {
-    const supplier = this.getSupplierByName(supplierName);
-    if (supplier) {
-      return this.getSupplierProducts(supplier.id);
+  getSupplierById(id: string): Observable<ISupplier> {
+    // Check cache first
+    const cachedSupplier = this.suppliersCache.find(s => s.id === id);
+    if (cachedSupplier) {
+      return of(cachedSupplier);
     }
-    return [];
-  }
 
-  // Filter suppliers by city
-  filterSuppliersByCity(city: string): ISupplier[] {
-    if (!city) return [...this.suppliers];
-    return this.suppliers.filter(supplier =>
-      supplier.City.toLowerCase().includes(city.toLowerCase())
+    return this.http.get<ISupplier>(`${this._baseUrl}/${id}`).pipe(
+      map(supplier => {
+        // Calculate average rating for the supplier
+        if (supplier.products && supplier.products.length > 0) {
+          supplier.averageRating = this.calculateAverageRating(supplier.products);
+        } else {
+          supplier.averageRating = 0;
+        }
+        return supplier;
+      }),
+      tap(supplier => {
+        // Add to cache if not already there
+        if (!this.suppliersCache.some(s => s.id === supplier.id)) {
+          this.suppliersCache.push(supplier);
+        }
+      }),
+      catchError(error => {
+        console.error(`Error fetching supplier with ID ${id}:`, error);
+        return throwError(() => new Error(`Supplier with ID ${id} not found`));
+      })
     );
   }
 
-  // Filter suppliers by governorate
-  filterSuppliersByGovernorate(governorate: string): ISupplier[] {
-    if (!governorate) return [...this.suppliers];
-    return this.suppliers.filter(supplier =>
-      supplier.Governmate.toLowerCase().includes(governorate.toLowerCase())
+  // Search suppliers by any criteria (name, city, state, description)
+  searchSuppliers(query: string | null = null, filters: {
+    city?: string,
+    state?: string,
+    rating?: number,
+    warranty?: number | string,
+    shipping?: string
+  } = {}): Observable<ISupplier[]> {
+    return this.getAllSuppliers().pipe(
+      map(suppliers => {
+        let filteredSuppliers = [...suppliers];
+
+        // Apply text search if query provided
+        if (query) {
+          const lowerQuery = query.toLowerCase();
+          filteredSuppliers = filteredSuppliers.filter(supplier =>
+            `${supplier.firstName} ${supplier.lastName}`.toLowerCase().includes(lowerQuery) ||
+            supplier.factoryName.toLowerCase().includes(lowerQuery) ||
+            supplier.description.toLowerCase().includes(lowerQuery)
+          );
+        }
+
+        // Apply city filter if provided
+        if (filters.city) {
+          filteredSuppliers = filteredSuppliers.filter(supplier =>
+            supplier.city && supplier.city.toLowerCase().includes(filters.city!.toLowerCase())
+          );
+        }
+
+        // Apply state filter if provided
+        if (filters.state) {
+          filteredSuppliers = filteredSuppliers.filter(supplier =>
+            supplier.state && supplier.state.toLowerCase().includes(filters.state!.toLowerCase())
+          );
+        }
+
+        // Apply rating filter if provided
+        if (filters.rating !== undefined && filters.rating !== null) {
+          filteredSuppliers = filteredSuppliers.filter(supplier => {
+            // Use the calculated average rating (floor it to get whole number)
+            const flooredRating = Math.floor(supplier.averageRating || 0);
+            return flooredRating >= filters.rating!;
+          });
+        }
+
+        // Apply warranty filter if provided
+        if (filters.warranty !== undefined && filters.warranty !== null) {
+          filteredSuppliers = filteredSuppliers.filter(supplier => {
+            if (!supplier.products || supplier.products.length === 0) {
+              return false;
+            }
+
+            if (filters.warranty === 'none') {
+              // Check if all products have no warranty
+              return supplier.products.every(p => !p.warrantyNMonths);
+            } else {
+              // Convert warranty value to number
+              const warrantyMonths = typeof filters.warranty === 'string'
+                ? parseInt(filters.warranty)
+                : filters.warranty;
+
+              // Check if any product has the specified warranty
+              return supplier.products.some(p => p.warrantyNMonths === warrantyMonths);
+            }
+          });
+        }
+
+        // Apply shipping filter if provided
+        if (filters.shipping) {
+          filteredSuppliers = filteredSuppliers.filter(supplier => {
+            if (!supplier.products || supplier.products.length === 0) {
+              return false;
+            }
+
+            // Check if any product has the specified shipping type
+            return supplier.products.some(p => p.shipping.toString() === filters.shipping);
+          });
+        }
+
+        return filteredSuppliers;
+      })
     );
   }
 
-  // Search suppliers by name
-  searchSuppliers(query: string): ISupplier[] {
-    if (!query) return [...this.suppliers];
-    const lowerQuery = query.toLowerCase();
-    return this.suppliers.filter(supplier =>
-      supplier.UserName.toLowerCase().includes(lowerQuery) ||
-      supplier.FactoryName.toLowerCase().includes(lowerQuery) ||
-      supplier.Description.toLowerCase().includes(lowerQuery)
+  // Get all unique locations (cities and states)
+  getLocations(): Observable<{ cities: string[], states: string[] }> {
+    return this.getAllSuppliers().pipe(
+      map(suppliers => {
+        const cities = [...new Set(
+          suppliers
+            .map(supplier => supplier.city)
+            .filter((city): city is string => !!city)
+        )].sort();
+
+        const states = [...new Set(
+          suppliers
+            .map(supplier => supplier.state)
+            .filter((state): state is string => !!state)
+        )].sort();
+
+        return { cities, states };
+      })
     );
   }
 
-  // Get all cities
-  getAllCities(): string[] {
-    return [...new Set(this.suppliers.map(supplier => supplier.City))];
+  // Get all cities (for backward compatibility)
+  getAllCities(): Observable<string[]> {
+    return this.getLocations().pipe(map(locations => locations.cities));
   }
 
-  // Get all governorates
-  getAllGovernorates(): string[] {
-    return [...new Set(this.suppliers.map(supplier => supplier.Governmate))];
+  // Get all states (for backward compatibility)
+  getAllStates(): Observable<string[]> {
+    return this.getLocations().pipe(map(locations => locations.states));
   }
 
-  // API methods for future implementation
-  getAll(): Observable<ISupplier[]> {
-    return this.http.get<ISupplier[]>(`/api/suppliers`);
+  // Get all warranty options from products
+  getWarrantyOptions(): Observable<{ value: string, label: string }[]> {
+    return this.getAllSuppliers().pipe(
+      map(suppliers => {
+        // Collect all unique warranty values from all products
+        const warrantyMonths = new Set<number>();
+
+        suppliers.forEach(supplier => {
+          if (supplier.products && supplier.products.length > 0) {
+            supplier.products.forEach(product => {
+              if (product.warrantyNMonths !== undefined && product.warrantyNMonths !== null) {
+                warrantyMonths.add(product.warrantyNMonths);
+              }
+            });
+          }
+        });
+
+        // Convert to array and sort
+        const sortedWarrantyMonths = Array.from(warrantyMonths).sort((a, b) => a - b);
+
+        // Create options array with "None" option
+        const options = [
+          { value: 'none', label: 'No Warranty' }
+        ];
+
+        // Add options for each warranty period
+        sortedWarrantyMonths.forEach(months => {
+          let label: string;
+
+          if (months >= 12) {
+            const years = Math.floor(months / 12);
+            const remainingMonths = months % 12;
+
+            if (remainingMonths === 0) {
+              label = `${years} Year${years > 1 ? 's' : ''}`;
+            } else {
+              label = `${years} Year${years > 1 ? 's' : ''} ${remainingMonths} Month${remainingMonths > 1 ? 's' : ''}`;
+            }
+          } else {
+            label = `${months} Month${months > 1 ? 's' : ''}`;
+          }
+
+          options.push({ value: months.toString(), label });
+        });
+
+        return options;
+      })
+    );
   }
 
-  getById(id: string): Observable<ISupplier> {
-    return this.http.get<ISupplier>(`/api/suppliers/${id}`);
-  }
-
+  // Create a new supplier
   create(supplier: ISupplier): Observable<ISupplier> {
-    return this.http.post<ISupplier>(`/api/suppliers`, supplier);
+    return this.http.post<ISupplier>(`${this._baseUrl}`, supplier).pipe(
+      map(newSupplier => {
+        // Calculate average rating if products exist
+        if (newSupplier.products && newSupplier.products.length > 0) {
+          newSupplier.averageRating = this.calculateAverageRating(newSupplier.products);
+        } else {
+          newSupplier.averageRating = 0;
+        }
+        return newSupplier;
+      }),
+      tap(newSupplier => {
+        this.suppliersCache.push(newSupplier);
+      }),
+      catchError(error => {
+        console.error('Error creating supplier:', error);
+        return throwError(() => new Error('Failed to create supplier'));
+      })
+    );
   }
 
+  // Update an existing supplier
   update(supplier: ISupplier): Observable<ISupplier> {
-    return this.http.put<ISupplier>(`/api/suppliers/${supplier.id}`, supplier);
+    return this.http.put<ISupplier>(`${this._baseUrl}/${supplier.id}`, supplier).pipe(
+      map(updatedSupplier => {
+        // Calculate average rating if products exist
+        if (updatedSupplier.products && updatedSupplier.products.length > 0) {
+          updatedSupplier.averageRating = this.calculateAverageRating(updatedSupplier.products);
+        } else {
+          updatedSupplier.averageRating = 0;
+        }
+        return updatedSupplier;
+      }),
+      tap(updatedSupplier => {
+        const index = this.suppliersCache.findIndex(s => s.id === updatedSupplier.id);
+        if (index !== -1) {
+          this.suppliersCache[index] = updatedSupplier;
+        }
+      }),
+      catchError(error => {
+        console.error(`Error updating supplier with ID ${supplier.id}:`, error);
+        return throwError(() => new Error('Failed to update supplier'));
+      })
+    );
   }
 
+  // Delete a supplier
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/suppliers/${id}`);
+    return this.http.delete<void>(`${this._baseUrl}/${id}`).pipe(
+      tap(() => {
+        this.suppliersCache = this.suppliersCache.filter(s => s.id !== id);
+      }),
+      catchError(error => {
+        console.error(`Error deleting supplier with ID ${id}:`, error);
+        return throwError(() => new Error('Failed to delete supplier'));
+      })
+    );
+  }
+
+  // Clear cache
+  clearCache(): void {
+    this.suppliersCache = [];
+    this.lastFetchTime = 0;
+  }
+
+  // Check if cache is valid
+  private isCacheValid(): boolean {
+    return this.suppliersCache.length > 0 &&
+      (Date.now() - this.lastFetchTime) < this.cacheDuration;
+  }
+
+  // Calculate average rating for a supplier's products
+  private calculateAverageRating(products: IProduct[]): number {
+    if (!products || products.length === 0) return 0;
+
+    const totalRating = products.reduce((sum, product) => {
+      return sum + (product.rating || 0);
+    }, 0);
+
+    return totalRating / products.length;
   }
 }

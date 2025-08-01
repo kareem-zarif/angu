@@ -1,55 +1,137 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Rating } from '../../rating/rating/rating';
+import { NestedCategoryDropdown } from '../../category/nested-category-dropdown/nested-category-dropdown';
+import { SupplierService } from '../../../services/supplier.service';
+import { ShippingTypes } from '../../../models/i-product';
 
 @Component({
   selector: 'app-supplier-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, Rating],
+  imports: [CommonModule, FormsModule, NestedCategoryDropdown],
   templateUrl: './supplier-sidebar.html',
   styleUrl: './supplier-sidebar.css'
 })
-export class SupplierSidebar implements OnChanges {
+export class SupplierSidebar implements OnChanges, OnInit {
   @Input() cities: string[] = [];
-  @Input() governorates: string[] = [];
+  @Input() states: string[] = [];
   @Output() filterChange = new EventEmitter<any>();
+  @Output() categorySelected = new EventEmitter<string>();
+  @Output() subCategorySelected = new EventEmitter<string>();
 
-  // Filter states
+  // Filter state
   selectedRating: number | null = null;
   selectedWarranty: string | null = null;
   selectedCity: string | null = null;
-  selectedGovernorate: string | null = null;
+  selectedState: string | null = null;
   selectedShipping: string | null = null;
 
   // Dropdown states
   bestSellersOpen: boolean = false;
   newReleasesOpen: boolean = false;
   lastViewedActive: boolean = false;
+  categoriesOpen: boolean = true;
 
-  // Warranty options
-  warrantyOptions = [
-    { value: '14', label: '14 Days' },
-    { value: '30', label: '1 Month' },
-    { value: '90', label: '3 Months' },
-    { value: '365', label: '1 Year' },
-    { value: 'none', label: 'None' }
+  // Options
+  warrantyOptions: { value: string, label: string }[] = [
+    { value: 'none', label: 'No Warranty' }
   ];
 
-  // Shipping options
-  shippingOptions = [
-    { value: 'Free', label: 'Free Shipping' },
-    { value: 'FreeINSameGovernate', label: 'Free in Same Governate' },
-    { value: 'Paid', label: 'Paid Shipping' }
+  shippingOptions: { value: string, label: string }[] = [
+    { value: ShippingTypes.Free.toString(), label: 'Free Shipping' },
+    { value: ShippingTypes.FreeINSameGovernate.toString(), label: 'Free in Same State' },
+    { value: ShippingTypes.Paid.toString(), label: 'Paid Shipping' }
   ];
 
-  constructor() { }
+  // Loading state
+  loading: boolean = false;
+  error: string | null = null;
+
+  constructor(private supplierService: SupplierService) { }
+
+  ngOnInit(): void {
+    if (this.cities.length === 0) {
+      this.loadCities();
+    }
+
+    if (this.states.length === 0) {
+      this.loadStates();
+    }
+
+    // Load dynamic warranty options
+    this.loadWarrantyOptions();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     // Update filter options when inputs change
-    if (changes['cities'] || changes['governorates']) {
+    if (changes['cities'] || changes['states']) {
       // No need to emit here as this is just initializing
     }
+  }
+
+  // Load cities from API
+  loadCities(): void {
+    this.loading = true;
+    this.supplierService.getAllCities().subscribe({
+      next: (cities) => {
+        this.cities = cities;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading cities:', error);
+        this.error = 'Failed to load cities';
+        this.loading = false;
+      }
+    });
+  }
+
+  // Load states from API
+  loadStates(): void {
+    this.loading = true;
+    this.supplierService.getAllStates().subscribe({
+      next: (states) => {
+        this.states = states;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading states:', error);
+        this.error = 'Failed to load states';
+        this.loading = false;
+      }
+    });
+  }
+
+  // Load warranty options from API
+  loadWarrantyOptions(): void {
+    this.loading = true;
+    this.supplierService.getWarrantyOptions().subscribe({
+      next: (options) => {
+        this.warrantyOptions = options;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading warranty options:', error);
+        this.error = 'Failed to load warranty options';
+        this.loading = false;
+      }
+    });
+  }
+
+  // Handle category selection from nested dropdown
+  onCategorySelected(categoryId: string): void {
+    this.categorySelected.emit(categoryId);
+    this.emitFilterChange();
+  }
+
+  // Handle subcategory selection from nested dropdown
+  onSubCategorySelected(subCategoryId: string): void {
+    this.subCategorySelected.emit(subCategoryId);
+    this.emitFilterChange();
+  }
+
+  // Toggle dropdown states
+  toggleCategories(): void {
+    this.categoriesOpen = !this.categoriesOpen;
   }
 
   // Filter by rating
@@ -70,9 +152,9 @@ export class SupplierSidebar implements OnChanges {
     this.emitFilterChange();
   }
 
-  // Filter by governorate
-  setGovernorateFilter(governorate: string | null): void {
-    this.selectedGovernorate = governorate;
+  // Filter by state
+  setStateFilter(state: string | null): void {
+    this.selectedState = state;
     this.emitFilterChange();
   }
 
@@ -101,9 +183,14 @@ export class SupplierSidebar implements OnChanges {
     this.selectedRating = null;
     this.selectedWarranty = null;
     this.selectedCity = null;
-    this.selectedGovernorate = null;
+    this.selectedState = null;
     this.selectedShipping = null;
     this.lastViewedActive = false;
+
+    // Reset category selection by emitting null
+    this.categorySelected.emit();
+    this.subCategorySelected.emit();
+
     this.emitFilterChange();
   }
 
@@ -113,7 +200,7 @@ export class SupplierSidebar implements OnChanges {
       rating: this.selectedRating,
       warranty: this.selectedWarranty,
       city: this.selectedCity,
-      governorate: this.selectedGovernorate,
+      state: this.selectedState,
       shipping: this.selectedShipping,
       lastViewedActive: this.lastViewedActive
     });
