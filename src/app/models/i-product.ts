@@ -1,65 +1,31 @@
 export enum ProductApprovalStatus {
-  Pending = 1,
-  Approved = 2,
-  Rejected = 3
+  Pending = 'Pending',
+  Approved = 'Approved',
+  Rejected = 'Rejected'
 }
 
 export enum ShippingTypes {
-  Free = 1,
-  FreeINSameGovernate = 2,
-  Paid = 3,
-  None = 4
+  Free = 'Free',
+  FreeINSameGovernate = 'FreeINSameGovernate',
+  Paid = 'Paid',
+  None = 'None'
 }
 
-// Main product interface matching ProductResDto
 export interface IProduct {
   id: string;
-  rating?: number;
-  supplierNames?: string[];
+  rating?: number | null;
+  supplierNames?: string[] | null;
   productPicsPathes: string[];
   name: string;
   description: string;
   pricePerPiece: number;
-  pricePer50Piece?: number;
-  pricePer100Piece?: number;
-  noINStock: number;  // Changed to match C# property name
+  pricePer50Piece?: number | null;
+  pricePer100Piece?: number | null;
+  noINStock: number;
   minNumToFactoryOrder: number;
   approvalStatus: ProductApprovalStatus;
-  warrantyNMonths?: number;
+  warrantyNMonths?: number | null;
   shipping: ShippingTypes;
   subCategoryId: string;
+  suppliers: string[];
 }
-
-// Create DTO interface
-export interface ProductCreateDto {
-  name: string;
-  description: string;
-  pricePerPiece: number;
-  pricePer50Piece?: number;
-  pricePer100Piece?: number;
-  noINStock: number;  // Changed to match C# property name
-  minNumToFactoryOrder: number;
-  approvalStatus: ProductApprovalStatus;
-  images?: File[];
-  warrantyNMonths?: number;
-  shipping: ShippingTypes;
-  subCategoryId: string;
-}
-
-// Update DTO interface
-export interface ProductUpdateDto {
-  id: string;
-  name: string;
-  description: string;
-  pricePerPiece: number;
-  pricePer50Piece?: number;
-  pricePer100Piece?: number;
-  noINStock: number;  // Changed to match C# property name
-  minNumToFactoryOrder: number;
-  approvalStatus: ProductApprovalStatus;
-  images?: File[] | null;
-  warrantyNMonths?: number;
-  shipping: ShippingTypes;
-  subCategoryId: string;
-}
-
