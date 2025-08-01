@@ -1,0 +1,158 @@
+<div class="sidebar-filters">
+  <!-- Categories Dropdown -->
+  <div class="mb-6">
+    <div class="flex justify-between items-center cursor-pointer" (click)="toggleCategories()">
+      <h3 class="font-bold text-lg" style="color: #483C21;">الفئات</h3>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+        class="w-4 h-4 transition-transform" [ngClass]="{'rotate-180': categoriesOpen}">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      </svg>
+    </div>
+    <div *ngIf="categoriesOpen" class="mt-2">
+      <app-nested-category-dropdown (categorySelected)="onCategorySelected($event)"
+        (subCategorySelected)="onSubCategorySelected($event)">
+      </app-nested-category-dropdown>
+    </div>
+  </div>
+
+  <!-- Best Sellers Dropdown -->
+  <div class="mb-6">
+    <div class="flex justify-between items-center cursor-pointer" (click)="toggleBestSellers()">
+      <h3 class="font-bold text-lg" style="color: #483C21;">Best Sellers</h3>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+        class="w-4 h-4 transition-transform" [ngClass]="{'rotate-180': bestSellersOpen}">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      </svg>
+    </div>
+    <div *ngIf="bestSellersOpen" class="mt-2 pl-2 border-l-2 border-gray-200">
+      <div class="text-sm text-gray-600">Best selling products will appear here</div>
+    </div>
+  </div>
+
+  <!-- New Releases Dropdown -->
+  <div class="mb-6">
+    <div class="flex justify-between items-center cursor-pointer" (click)="toggleNewReleases()">
+      <h3 class="font-bold text-lg" style="color: #483C21;">New Release</h3>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+        class="w-4 h-4 transition-transform" [ngClass]="{'rotate-180': newReleasesOpen}">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+      </svg>
+    </div>
+    <div *ngIf="newReleasesOpen" class="mt-2 pl-2 border-l-2 border-gray-200">
+      <div class="text-sm text-gray-600">New products will appear here</div>
+    </div>
+  </div>
+
+  <!-- Last Viewed Link -->
+  <div class="mb-6">
+    <div class="flex items-center cursor-pointer" (click)="toggleLastViewed()">
+      <h3 class="font-bold text-lg"
+        [ngClass]="{'text-[#483C21] font-bold': lastViewedActive, 'text-gray-700': !lastViewedActive}">Last Viewed</h3>
+    </div>
+  </div>
+
+  <!-- Customer Review / Rating Filter -->
+  <div class="mb-6">
+    <h3 class="font-bold text-lg mb-2" style="color: #483C21;">Customer Review</h3>
+    <div class="flex flex-col gap-1">
+      <button class="flex items-center gap-1 text-gray-700 hover:text-[#483C21] cursor-pointer"
+        [ngClass]="{'text-[#483C21] font-semibold': selectedRating === 4}" (click)="setRatingFilter(4)">
+        <span class="flex text-yellow-400">
+          <ng-container *ngFor="let i of [1,2,3,4]">
+            <svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'>
+              <path
+                d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z' />
+            </svg>
+          </ng-container>
+        </span>
+        &amp; Up
+      </button>
+
+      <button class="flex items-center gap-1 text-gray-700 hover:text-[#483C21] cursor-pointer"
+        [ngClass]="{'text-[#483C21] font-semibold': selectedRating === 3}" (click)="setRatingFilter(3)">
+        <span class="flex text-yellow-400">
+          <ng-container *ngFor="let i of [1,2,3]">
+            <svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'>
+              <path
+                d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z' />
+            </svg>
+          </ng-container>
+        </span>
+        &amp; Up
+      </button>
+
+      <button class="flex items-center gap-1 text-gray-700 hover:text-[#483C21] cursor-pointer"
+        [ngClass]="{'text-[#483C21] font-semibold': selectedRating === 2}" (click)="setRatingFilter(2)">
+        <span class="flex text-yellow-400">
+          <ng-container *ngFor="let i of [1,2]">
+            <svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'>
+              <path
+                d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z' />
+            </svg>
+          </ng-container>
+        </span>
+        &amp; Up
+      </button>
+
+      <button class="flex items-center gap-1 text-gray-700 hover:text-[#483C21] cursor-pointer"
+        [ngClass]="{'text-[#483C21] font-semibold': selectedRating === 1}" (click)="setRatingFilter(1)">
+        <span class="flex text-yellow-400">
+          <ng-container *ngFor="let i of [1]">
+            <svg xmlns='http://www.w3.org/2000/svg' fill='currentColor' class='w-4 h-4' viewBox='0 0 16 16'>
+              <path
+                d='M8 12.146l-3.717 2.325.712-4.163-3.03-2.949 4.174-.606L8 2.223l1.861 3.78 4.174.606-3.03 2.949.712 4.163z' />
+            </svg>
+          </ng-container>
+        </span>
+        &amp; Up
+      </button>
+
+      <button class="flex items-center gap-1 text-gray-700 hover:text-[#483C21] cursor-pointer"
+        [ngClass]="{'text-[#483C21] font-semibold': selectedRating === null}" (click)="setRatingFilter(null)">
+        All Ratings
+      </button>
+    </div>
+  </div>
+
+  <!-- Price Range Slider -->
+  <div class="mb-6">
+    <h3 class="font-bold text-lg mb-2" style="color: #483C21;">Price</h3>
+    <div class="text-sm mb-2">{{ priceRange[0] }} EGP - {{ priceRange[1] }} EGP & Above</div>
+
+    <input type="range" [min]="minPrice" [max]="maxPrice" [value]="priceRange[1]" class="range range-xs"
+      (input)="updatePriceRange($event)" />
+
+    <div class="flex justify-between text-xs text-gray-500 mt-1">
+      <span>{{ minPrice }} EGP</span>
+      <span>{{ maxPrice }} EGP</span>
+    </div>
+  </div>
+
+  <!-- Supplier Checkboxes -->
+  <div class="mb-6">
+    <h3 class="font-bold text-lg mb-2" style="color: #483C21;">Supplier</h3>
+    <div class="flex flex-col gap-2">
+      <label *ngFor="let supplier of suppliers; let i = index" class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" class="checkbox checkbox-sm" [checked]="supplier.checked" (change)="toggleSupplier(i)" />
+        <span class="text-sm">{{ supplier.name }}</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Availability Checkbox -->
+  <div class="mb-6">
+    <h3 class="font-bold text-lg mb-2" style="color: #483C21;">Availability</h3>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" class="checkbox checkbox-sm" [checked]="includeOutOfStock" (change)="toggleOutOfStock()" />
+      <span class="text-sm">Include Out Of Stock</span>
+    </label>
+  </div>
+
+  <!-- Reset Filters Button -->
+  <div class="mb-6">
+    <button (click)="resetFilters()"
+      class="w-full py-2 px-4 border border-[#483C21] text-[#483C21] rounded-md hover:bg-[#483C21] hover:text-white transition-colors duration-200">
+      Reset Filters
+    </button>
+  </div>
+</div>

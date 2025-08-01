@@ -1,0 +1,114 @@
+/* Global CSS Reset and Responsive Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Container responsive styles */
+.container {
+  width: 100%;
+  max-width: 100%;
+  margin:0;
+  padding: 0 ;
+  box-sizing: border-box;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1200px) {
+  .container {
+    max-width: 100%;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 4px;
+  }
+}
+
+/* Ensure all images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Ensure all links and buttons are properly styled */
+a, button {
+  cursor: pointer;
+}
+
+/* Fix for Edge browser compatibility */
+.account-management-container {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure flexbox works properly in all browsers */
+.account-sections,
+.account-lists {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 600px) {
+  .account-management-container {
+    padding: 16px 8px;
+  }
+  
+  .account-management-container h2 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+  
+  .account-section {
+    min-width: 100%;
+    padding: 12px 16px;
+  }
+  
+  .account-list {
+    min-width: 100%;
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 400px) {
+  .account-management-container {
+    padding: 12px 4px;
+  }
+  
+  .account-section {
+    padding: 10px 12px;
+  }
+  
+  .account-list {
+    padding: 10px 12px;
+  }
+}
+
+td{
+  text-align: center;
+}
