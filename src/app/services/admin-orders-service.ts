@@ -42,6 +42,7 @@ export interface OrderCreateDto {
 
 export interface OrderUpdateDto extends OrderCreateDto {
   id: string;
+  currentStatus?: OrderStatus;
 }
 
 export interface OrderItemCreateDto {
