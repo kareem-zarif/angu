@@ -2,20 +2,32 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminCategoriesService, Category, CategoryCreateDto, CategoryUpdateDto } from '../../services/admin-categories-service';
+import { PaginationComponent } from '../shared/pagination/pagination';
 
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationComponent],
   templateUrl: './admin-categories.html',
 })
 export class AdminCategoriesComponent implements OnInit {
   categories: Category[] = [];
+  filteredCategories: Category[] = [];
   loading = false;
 
   showModal = false;
   editCategory: Category | null = null;
   form: Partial<Category> = {};
+  
+  // Pagination properties
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalItems = 0;
+  totalPages = 1;
+  
+  // Search properties
+  searchTerm = '';
+  searchField = 'all'; // 'all', 'name', 'description', 'status'
   
   // Validation properties
   formErrors: { [key: string]: string } = {};
@@ -31,8 +43,71 @@ export class AdminCategoriesComponent implements OnInit {
     this.loading = true;
     this.categoriesService.getCategories().subscribe(res => {
       this.categories = res;
+      this.applyFilters();
       this.loading = false;
     });
+  }
+
+  applyFilters() {
+    // Apply search filter
+    this.filteredCategories = this.categories.filter(category => {
+      if (!this.searchTerm) return true;
+      
+      const searchLower = this.searchTerm.toLowerCase();
+      
+      switch (this.searchField) {
+        case 'name':
+          return category.name.toLowerCase().includes(searchLower);
+        case 'description':
+          return category.description.toLowerCase().includes(searchLower);
+        case 'status':
+          return category.status.toLowerCase().includes(searchLower);
+        case 'all':
+        default:
+          return (
+            category.name.toLowerCase().includes(searchLower) ||
+            category.description.toLowerCase().includes(searchLower) ||
+            category.status.toLowerCase().includes(searchLower)
+          );
+      }
+    });
+    
+    // Update pagination
+    this.totalItems = this.filteredCategories.length;
+    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+    
+    // Reset to first page if current page is out of bounds
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = 1;
+    }
+  }
+
+  getPaginatedCategories(): Category[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.filteredCategories.slice(startIndex, endIndex);
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+  }
+
+  onItemsPerPageChange(itemsPerPage: number) {
+    this.itemsPerPage = itemsPerPage;
+    this.currentPage = 1; // Reset to first page
+    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+  }
+
+  onSearch() {
+    this.currentPage = 1; // Reset to first page when searching
+    this.applyFilters();
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    this.searchField = 'all';
+    this.currentPage = 1;
+    this.applyFilters();
   }
 
   openAdd() {

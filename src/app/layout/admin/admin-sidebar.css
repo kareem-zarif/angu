@@ -1,1 +1,6 @@
-/* Additional custom styles for admin sidebar if needed */ 
+/* Additional custom styles for admin sidebar if needed */
+
+/* Cursor pointer for all clickable elements */
+button, a, .clickable, li a {
+  cursor: pointer;
+} 

@@ -2,20 +2,32 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminCustomersService, Customer, CustomerCreateDto, CustomerUpdateDto } from '../../services/admin-customers-service';
+import { PaginationComponent } from '../shared/pagination/pagination';
 
 @Component({
   selector: 'app-admin-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationComponent],
   templateUrl: './admin-customers.html',
 })
 export class AdminCustomersComponent implements OnInit {
   customers: Customer[] = [];
+  filteredCustomers: Customer[] = [];
   loading = false;
 
   showModal = false;
   editCustomer: Customer | null = null;
   form: Partial<Customer> = {};
+  
+  // Pagination properties
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalItems = 0;
+  totalPages = 1;
+  
+  // Search properties
+  searchTerm = '';
+  searchField = 'all'; // 'all', 'name', 'phone'
   
   // Validation properties
   formErrors: { [key: string]: string } = {};
@@ -38,6 +50,7 @@ export class AdminCustomersComponent implements OnInit {
       next: (res) => {
         console.log('Customers loaded:', res);
         this.customers = res;
+        this.applyFilters();
         this.loading = false;
       },
       error: (error) => {
@@ -45,6 +58,65 @@ export class AdminCustomersComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  applyFilters() {
+    // Apply search filter
+    this.filteredCustomers = this.customers.filter(customer => {
+      if (!this.searchTerm) return true;
+      
+      const searchLower = this.searchTerm.toLowerCase();
+      
+      switch (this.searchField) {
+        case 'name':
+          return this.getFullName(customer).toLowerCase().includes(searchLower);
+        case 'phone':
+          return customer.phone.toLowerCase().includes(searchLower);
+        case 'all':
+        default:
+          return (
+            this.getFullName(customer).toLowerCase().includes(searchLower) ||
+            customer.phone.toLowerCase().includes(searchLower)
+          );
+      }
+    });
+    
+    // Update pagination
+    this.totalItems = this.filteredCustomers.length;
+    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+    
+    // Reset to first page if current page is out of bounds
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = 1;
+    }
+  }
+
+  getPaginatedCustomers(): Customer[] {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    return this.filteredCustomers.slice(startIndex, endIndex);
+  }
+
+  onPageChange(page: number) {
+    this.currentPage = page;
+  }
+
+  onItemsPerPageChange(itemsPerPage: number) {
+    this.itemsPerPage = itemsPerPage;
+    this.currentPage = 1; // Reset to first page
+    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+  }
+
+  onSearch() {
+    this.currentPage = 1; // Reset to first page when searching
+    this.applyFilters();
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    this.searchField = 'all';
+    this.currentPage = 1;
+    this.applyFilters();
   }
 
   openAdd() {

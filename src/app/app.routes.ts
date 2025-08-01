@@ -20,12 +20,14 @@ export const routes: Routes = [
       path: 'admin',
       component: AdminLayoutComponent,
       children: [
+        { path: 'dashboard', loadComponent: () => import('./components/admin-dashboard/admin-dashboard').then(m => m.AdminDashboardComponent) },
         { path: 'orders', component: AdminOrdersComponent },
         { path: 'products', loadComponent: () => import('./components/admin-products/admin-products').then(m => m.AdminProductsComponent) },
         { path: 'suppliers', loadComponent: () => import('./components/admin-suppliers/admin-suppliers').then(m => m.AdminSuppliersComponent) },
+        { path: 'suppliers/details/:id', loadComponent: () => import('./components/admin-suppliers/supplier-details/supplier-details').then(m => m.SupplierDetailsComponent) },
         { path: 'customers', loadComponent: () => import('./components/admin-customers/admin-customers').then(m => m.AdminCustomersComponent) },
         { path: 'categories', loadComponent: () => import('./components/admin-categories/admin-categories').then(m => m.AdminCategoriesComponent) },
-        { path: '', redirectTo: 'orders', pathMatch: 'full' },
+        { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       ]
     },
 
