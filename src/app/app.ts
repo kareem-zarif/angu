@@ -4,21 +4,16 @@ import { CommonModule } from '@angular/common';
 
 import { Header } from './layout/header/header';
 import { Footer } from './layout/footer/footer';
-import { AdminHeaderComponent } from "./layout/admin/admin-header";
+import { AboutUs } from "./components/about-us/about-us";
+import { RegisterSelection } from "./components/register-selection/register-selection";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, Header, Footer, AdminHeaderComponent],
+  imports: [RouterOutlet, Header, Footer, AboutUs, RegisterSelection],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
 export class App {
   title = 'angu';
-
-  constructor(private router: Router) {}
-
-  isAdminRoute(): boolean {
-    return this.router.url.startsWith('/admin');
-  }
 }

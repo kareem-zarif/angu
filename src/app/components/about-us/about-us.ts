@@ -7,4 +7,4 @@ import { Component } from '@angular/core';
 })
 export class AboutUs {
   // Placeholder for any logic needed for the about us page
-} 
+}
