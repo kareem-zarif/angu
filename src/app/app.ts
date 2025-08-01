@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+
 import { Header } from './layout/header/header';
 import { Footer } from './layout/footer/footer';
 
