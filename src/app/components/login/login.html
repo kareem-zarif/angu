@@ -102,7 +102,7 @@
             [attr.aria-label]="showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"
             tabindex="-1"
           >
-            <span>{{ showPassword ? '🙈' : '👁️' }}</span>
+            <!-- <span>{{ showPassword ? '🙈' : '👁️' }}</span> -->
           </button>
           <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
                class="text-red-500 text-sm mt-1 flex items-center gap-1">
