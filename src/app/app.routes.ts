@@ -1,14 +1,14 @@
 import { Routes } from '@angular/router';
 import { WishlistComponent } from './components/wishlist/wishlist';
-import { OrdersComponent } from './components/orders/orders';
 import { ProductList } from './components/product/product-list/product-list';
 import { ProductDetails } from './components/product/product-details/product-details';
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
+import { Orders } from './components/orders/orders';
 
 export const routes: Routes = [
   { path: 'wishlist', component: WishlistComponent },
-  { path: 'orders', component: OrdersComponent },
+  { path: 'orders', component: Orders },
   { path: 'products', component: ProductList },
   { path: 'products/:id', component: ProductDetails },
   { path: 'cart', component: Cart },

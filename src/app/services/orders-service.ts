@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { catchError, map, tap, switchMap } from 'rxjs/operators';
 import { IOrder } from '../models/i-order';
-import { OrderStatus, IOrderStatusHistory } from '../models/i-order-status-history';
+import { OrderStatus } from '../models/i-order-status-history';
 import { OrderStatusHistoryService } from './order-status-history.service';
 
 @Injectable({ providedIn: 'root' })
@@ -85,23 +85,14 @@ export class OrdersService {
       switchMap(orders => {
         // For each order, get the latest status history
         const orderWithStatusObservables = orders.map(order => {
-          if (!order.orderStatusHistory || order.orderStatusHistory.length === 0) {
-            // If no status history is available in the order, fetch it
-            return this.orderStatusHistoryService.getLatestStatusForOrder(order.id).pipe(
-              map(latestStatus => {
-                return {
-                  order,
-                  latestStatus
-                };
-              })
-            );
-          } else {
-            // If status history is available, find the latest one
-            const latestStatus = order.orderStatusHistory.sort((a, b) =>
-              new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-            )[0];
-            return of({ order, latestStatus });
-          }
+          return this.orderStatusHistoryService.getLatestStatusForOrder(order.id).pipe(
+            map(latestStatus => {
+              return {
+                order,
+                latestStatus
+              };
+            })
+          );
         });
 
         // Combine all observables
@@ -110,7 +101,7 @@ export class OrdersService {
       map(orderStatusPairs => {
         // Filter orders by the requested status
         return orderStatusPairs
-          .filter(pair => pair.latestStatus && pair.latestStatus.orderStatus === status)
+          .filter(pair => pair.latestStatus === status)
           .map(pair => pair.order);
       })
     );
@@ -118,9 +109,7 @@ export class OrdersService {
 
   // Get latest status for an order
   getLatestStatusForOrder(orderId: string): Observable<OrderStatus | null> {
-    return this.orderStatusHistoryService.getLatestStatusForOrder(orderId).pipe(
-      map(statusHistory => statusHistory ? statusHistory.orderStatus : null)
-    );
+    return this.orderStatusHistoryService.getLatestStatusForOrder(orderId);
   }
 
   // Search orders

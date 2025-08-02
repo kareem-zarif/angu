@@ -1,31 +1,36 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { OrdersService } from '../../services/orders-service';
+import { AdminOrdersService } from '../../services/admin-orders-service';
+import { OrderStatusHistoryService } from '../../services/order-status-history.service';
 import { IOrder } from '../../models/i-order';
 import { OrderStatus, IOrderStatusHistory } from '../../models/i-order-status-history';
-import { OrderStatusHistoryService } from '../../services/order-status-history.service';
 import { forkJoin, of } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-orders',
+  selector: 'app-admin-orders',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './orders.html'
+  imports: [CommonModule, FormsModule],
+  templateUrl: './admin-orders.html'
 })
-export class Orders implements OnInit {
+export class AdminOrders implements OnInit {
   orders: IOrder[] = [];
   filteredOrders: IOrder[] = [];
   searchQuery: string = '';
-  selectedYear: string = new Date().getFullYear().toString();
-  activeTab: 'orders' | 'buyAgain' | 'cancelled' = 'orders';
+  selectedStatus: string = '';
   loading: boolean = false;
   error: string | null = null;
 
+  // For status update
+  selectedOrderId: string | null = null;
+  newStatus: OrderStatus | null = null;
+
+  // Enum for template
+  orderStatuses = OrderStatus;
+
   constructor(
-    private ordersService: OrdersService,
+    private adminOrdersService: AdminOrdersService,
     private orderStatusHistoryService: OrderStatusHistoryService
   ) { }
 
@@ -37,20 +42,16 @@ export class Orders implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.ordersService.getOrders().subscribe({
+    this.adminOrdersService.getAllOrders().subscribe({
       next: (orders) => {
         // Create an array of observables for fetching status history for each order
         const statusHistoryObservables = orders.map(order => {
-          if (!order.orderStatusHistory || order.orderStatusHistory.length === 0) {
-            // Fetch status history for this order
-            return this.orderStatusHistoryService.getOrderStatusHistoryByOrderId(order.id).pipe(
-              catchError(error => {
-                console.error(`Error fetching status history for order ${order.id}:`, error);
-                return of([] as IOrderStatusHistory[]);
-              })
-            );
-          }
-          return of(order.orderStatusHistory);
+          return this.orderStatusHistoryService.getOrderStatusHistoryByOrderId(order.id).pipe(
+            catchError(error => {
+              console.error(`Error fetching status history for order ${order.id}:`, error);
+              return of([] as IOrderStatusHistory[]);
+            })
+          );
         });
 
         // Wait for all status history requests to complete
@@ -84,17 +85,6 @@ export class Orders implements OnInit {
   applyFilters(): void {
     let result = [...this.orders];
 
-    // Filter by year
-    if (this.selectedYear) {
-      result = result.filter(order => {
-        if (order.createdOn) {
-          const orderDate = new Date(order.createdOn);
-          return orderDate.getFullYear().toString() === this.selectedYear;
-        }
-        return false;
-      });
-    }
-
     // Filter by search query
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
@@ -105,34 +95,22 @@ export class Orders implements OnInit {
       );
     }
 
-    // Filter by tab
-    if (this.activeTab === 'cancelled') {
+    // Filter by status
+    if (this.selectedStatus) {
       result = result.filter(order => {
         const latestStatus = this.getLatestStatus(order);
-        return latestStatus === OrderStatus.Cancelled;
-      });
-    } else if (this.activeTab === 'buyAgain') {
-      result = result.filter(order => {
-        const latestStatus = this.getLatestStatus(order);
-        return latestStatus === OrderStatus.Delivered;
+        return latestStatus === this.selectedStatus;
       });
     }
 
     this.filteredOrders = result;
   }
 
-  onSearch(query: string) {
-    this.searchQuery = query;
+  onSearch(): void {
     this.applyFilters();
   }
 
-  onYearChange(year: string) {
-    this.selectedYear = year;
-    this.applyFilters();
-  }
-
-  setTab(tab: 'orders' | 'buyAgain' | 'cancelled') {
-    this.activeTab = tab;
+  onStatusChange(): void {
     this.applyFilters();
   }
 
@@ -150,12 +128,45 @@ export class Orders implements OnInit {
     return latestStatusHistory.orderStatus;
   }
 
-  // Helper method to get a display-friendly status name
-  getStatusDisplayName(status: OrderStatus | null): string {
-    if (!status) return 'Unknown';
-    return status.toString();
+  // Update order status
+  updateOrderStatus(orderId: string, status: OrderStatus): void {
+    this.loading = true;
+
+    this.adminOrdersService.updateOrderStatus(orderId, status).subscribe({
+      next: () => {
+        // Refresh the orders to get the updated status
+        this.loadOrders();
+      },
+      error: (error) => {
+        console.error(`Error updating status for order ${orderId}:`, error);
+        this.error = 'Failed to update order status. Please try again.';
+        this.loading = false;
+      }
+    });
   }
 
+  // Delete order
+  deleteOrder(orderId: string): void {
+    if (confirm('Are you sure you want to delete this order?')) {
+      this.loading = true;
+
+      this.adminOrdersService.deleteOrder(orderId).subscribe({
+        next: () => {
+          // Remove the order from the local arrays
+          this.orders = this.orders.filter(o => o.id !== orderId);
+          this.filteredOrders = this.filteredOrders.filter(o => o.id !== orderId);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error(`Error deleting order ${orderId}:`, error);
+          this.error = 'Failed to delete order. Please try again.';
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  // Get sorted order status history
   getSortedOrderStatusHistory(order: IOrder): IOrderStatusHistory[] {
     if (!order.orderStatusHistory) return [];
     return [...order.orderStatusHistory].sort(
