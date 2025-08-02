@@ -1,0 +1,191 @@
+<!-- login.component.html -->
+<div class="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 relative">
+  <!-- Floating Shapes Background -->
+  <div class="floating-shapes">
+    <div class="shape w-32 h-32 bg-purple-300 rounded-full"></div>
+    <div class="shape w-24 h-24 bg-pink-300 rounded-full"></div>
+    <div class="shape w-28 h-28 bg-blue-300 rounded-full"></div>
+    <div class="shape w-20 h-20 bg-indigo-300 rounded-full"></div>
+  </div>
+
+  <div class="min-h-screen flex items-center justify-center px-4 py-8">
+    <div class="form-container rounded-2xl p-8 w-full max-w-md">
+      <!-- Welcome Header -->
+      <div class="text-center mb-8">
+        <div class="welcome-icon mb-4">
+          <span class="text-5xl">🔐</span>
+        </div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          مرحباً بعودتك!
+        </h1>
+        <p class="text-gray-600 mt-2">سجل دخولك للوصول إلى حسابك</p>
+      </div>
+
+      <!-- Success Message from Registration -->
+      <div *ngIf="registrationSuccess" class="success-message mb-6">
+        <div class="flex items-center gap-2">
+          <span>✅</span>
+          <span>تم إنشاء حسابك بنجاح! يمكنك الآن تسجيل الدخول</span>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message show mb-6">
+        <div class="flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{{ errorMessage }}</span>
+        </div>
+      </div>
+
+      <!-- Loading Message -->
+      <div *ngIf="isSubmitting" class="loading-message mb-6">
+        <div class="flex items-center gap-2">
+          <div class="loading-spinner"></div>
+          <span>جاري تسجيل الدخول...</span>
+        </div>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <!-- Email Field -->
+        <div class="input-group">
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="input-field"
+            [class.border-red-500]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+            [class.border-green-500]="loginForm.get('email')?.valid && loginForm.get('email')?.touched"
+            placeholder=" "
+            required
+            autocomplete="email"
+            (blur)="onEmailBlur()"
+            (keypress)="onKeyPress($event)"
+          >
+          <label for="email" class="input-label">البريد الإلكتروني</label>
+          <div class="input-icon">
+            <span class="text-gray-400">📧</span>
+          </div>
+          <div *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+               class="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <span>❌</span>
+            <span>{{ getFieldError('email') }}</span>
+          </div>
+          <div *ngIf="loginForm.get('email')?.valid && loginForm.get('email')?.touched"
+               class="text-green-500 text-sm mt-1 flex items-center gap-1">
+            <span class="success-checkmark">✅</span>
+            <span>البريد الإلكتروني صحيح</span>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="input-group">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            formControlName="password"
+            class="input-field"
+            [class.border-red-500]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+            [class.border-green-500]="loginForm.get('password')?.valid && loginForm.get('password')?.touched"
+            placeholder=" "
+            required
+            autocomplete="current-password"
+            (keypress)="onKeyPress($event)"
+          >
+          <label for="password" class="input-label">كلمة المرور</label>
+          <div class="input-icon">
+            <span class="text-gray-400">🔒</span>
+          </div>
+          <button
+            type="button"
+            class="password-toggle"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"
+            tabindex="-1"
+          >
+            <span>{{ showPassword ? '🙈' : '👁️' }}</span>
+          </button>
+          <div *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+               class="text-red-500 text-sm mt-1 flex items-center gap-1">
+            <span>❌</span>
+            <span>{{ getFieldError('password') }}</span>
+          </div>
+        </div>
+
+        <!-- Remember Me & Forgot Password -->
+        <div class="flex justify-between items-center text-sm">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              formControlName="rememberMe"
+              class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+            >
+            <span class="text-gray-600">تذكرني</span>
+          </label>
+          <a href="#" class="text-purple-600 hover:text-purple-800 font-medium underline">
+            نسيت كلمة المرور؟
+          </a>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="submit-btn w-full"
+          [disabled]="loginForm.invalid || isSubmitting">
+          <span *ngIf="!isSubmitting" class="flex items-center justify-center gap-2">
+            <span>🚀</span>
+            <span>تسجيل الدخول</span>
+          </span>
+          <span *ngIf="isSubmitting" class="flex items-center justify-center gap-2">
+            <div class="loading-spinner-small"></div>
+            <span>جاري تسجيل الدخول...</span>
+          </span>
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="divider my-8">
+        <span class="divider-text">أو</span>
+      </div>
+
+      <!-- Social Login Buttons (Optional for future) -->
+      <div class="space-y-3">
+        <button class="social-btn google-btn w-full" disabled>
+          <span>🔍</span>
+          <span>تسجيل الدخول بـ Google</span>
+          <span class="coming-soon">(قريباً)</span>
+        </button>
+        <button class="social-btn facebook-btn w-full" disabled>
+          <span>📘</span>
+          <span>تسجيل الدخول بـ Facebook</span>
+          <span class="coming-soon">(قريباً)</span>
+        </button>
+      </div>
+
+      <!-- Register Link -->
+      <div class="text-center mt-8">
+        <p class="text-gray-600">
+          ليس لديك حساب؟
+          <a routerLink="/register-selection" class="text-purple-600 hover:text-purple-800 font-semibold underline">
+            إنشاء حساب جديد
+          </a>
+        </p>
+      </div>
+
+      <!-- Quick Stats/Info -->
+      <div class="stats-container mt-8">
+        <div class="stat-item">
+          <span class="stat-icon">👥</span>
+          <span class="stat-text">+1000 مستخدم</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🛡️</span>
+          <span class="stat-text">آمن 100%</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">⚡</span>
+          <span class="stat-text">سريع</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
