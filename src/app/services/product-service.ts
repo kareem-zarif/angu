@@ -3,12 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { IProduct, ProductApprovalStatus, ShippingTypes } from '../models/i-product';
+import { environment } from '../../environment/environment';
+import { ISupplier } from '../models/i-supplier';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
-  private _baseUrl = 'https://localhost:7253/api/Product';
+  private _baseUrl = `${environment.apiUrl}/Product`;
   private _imageBaseUrl = 'https://localhost:7253';
 
   // Cache management
@@ -91,23 +93,48 @@ export class ProductService {
     );
   }
 
-  // Filter products by supplier
-  filterBySupplier(supplierName: string): Observable<IProduct[]> {
-    return this.http.get<IProduct[]>(`${this._baseUrl}/supplier/${encodeURIComponent(supplierName)}`).pipe(
-      map(products => this.processProductImages(products)),
-      catchError(error => {
-        console.error(`Error filtering products by supplier ${supplierName}:`, error);
-        // Fallback to getting all products and filtering locally
-        return this.getProducts().pipe(
-          map(products => products.filter(product =>
-            product.supplierNames &&
+  // Filter products by supplier - can accept either a supplier object or a supplier name
+  filterBySupplier(supplier: ISupplier | string): Observable<IProduct[]> {
+    // If supplier is a string (name), we need to filter locally
+    if (typeof supplier === 'string') {
+      console.log(`Filtering products by supplier name: ${supplier}`);
+      return this.getProducts().pipe(
+        map(products => products.filter(product =>
+          (product.supplierNames &&
             product.supplierNames.some(name =>
-              name.toLowerCase().includes(supplierName.toLowerCase())
-            )
-          ))
-        );
-      })
-    );
+              name.toLowerCase().includes(supplier.toLowerCase())
+            )) ||
+          (product.suppliers &&
+            product.suppliers.some(name =>
+              name.toLowerCase().includes(supplier.toLowerCase())
+            ))
+        ))
+      );
+    }
+
+    // If supplier is an object with ID, use the API endpoint
+    if (supplier && typeof supplier === 'object' && supplier.id) {
+      console.log(`Filtering products by supplier ID: ${supplier.id}`);
+      return this.http.get<IProduct[]>(`${environment.apiUrl}/Supplier/${supplier.id}`).pipe(
+        map(products => this.processProductImages(products)),
+        catchError(error => {
+          console.error(`Error filtering products by supplier ${supplier.factoryName}:`, error);
+          // Fallback to getting all products and filtering locally
+          return this.getProducts().pipe(
+            map(products => products.filter(product =>
+              product.supplierNames &&
+              product.supplierNames.some(name =>
+                name.toLowerCase().includes(supplier.factoryName.toLowerCase())
+              )
+            ))
+          );
+        })
+      );
+    }
+
+    // If neither condition is met, return an empty array
+    console.error('Invalid supplier parameter:', supplier);
+    return of([]);
   }
 
   // Filter products by stock availability
@@ -195,37 +222,24 @@ export class ProductService {
   private processProductImage(product: IProduct): IProduct {
     if (!product.productPicsPathes || product.productPicsPathes.length === 0) {
       product.productPicsPathes = ['assets/placeholder.png'];
-    } else {
-      product.productPicsPathes = product.productPicsPathes.map(path => {
-        // If path is already a full URL, return as is
-        if (path.startsWith('http://') || path.startsWith('https://')) {
-          return path;
-        }
-        // If path starts with assets/, return as is (local asset)
-        if (path.startsWith('assets/')) {
-          return path;
-        }
-        // Otherwise, prepend the base URL
-        return `${this._imageBaseUrl}/${path}`;
-      });
+      return product;
     }
+
+    product.productPicsPathes = product.productPicsPathes.map(path => {
+      // Skip paths that are already complete URLs or local assets
+      if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('assets/')) {
+        return path;
+      }
+      // Otherwise, prepend the base URL
+      return `${this._imageBaseUrl}/${path}`;
+    });
+
     return product;
   }
 
-  // Clear cache (useful for refreshing data)
+  // Clear cache
   clearCache(): void {
     this.productsCache = [];
     this.lastFetchTime = 0;
-  }
-
-  // Get cached products (for offline scenarios)
-  getCachedProducts(): IProduct[] {
-    return [...this.productsCache];
-  }
-
-  // Check if cache is valid
-  isCacheValid(): boolean {
-    const now = Date.now();
-    return this.productsCache.length > 0 && (now - this.lastFetchTime) < this.cacheDuration;
   }
 }

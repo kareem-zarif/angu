@@ -70,6 +70,8 @@ export class Sidebar implements OnChanges, OnInit {
 
   // Handle category selection from nested dropdown
   onCategorySelected(categoryId: string): void {
+    // Reset subcategory selection when category changes
+    this.subCategorySelected.emit();
     this.categorySelected.emit(categoryId);
     this.emitFilterChange();
   }
@@ -77,13 +79,28 @@ export class Sidebar implements OnChanges, OnInit {
   // Handle subcategory selection from nested dropdown
   onSubCategorySelected(subCategoryId: string): void {
     this.subCategorySelected.emit(subCategoryId);
+    // Don't emit category selected here as it's handled by the product-list component
     this.emitFilterChange();
   }
 
   // Filter by rating
-  setRatingFilter(rating: number | null) {
-    this.selectedRating = rating;
-    this.emitFilterChange();
+  setRatingFilter(rating: number | null): void {
+    // Toggle rating if clicking the same one
+    if (this.selectedRating === rating) {
+      this.selectedRating = null;
+    } else {
+      this.selectedRating = rating;
+    }
+
+    // Emit filter change with forceRefresh
+    this.filterChange.emit({
+      rating: this.selectedRating,
+      suppliers: this.suppliers.filter(s => s.checked).map(s => s.name),
+      includeOutOfStock: this.includeOutOfStock,
+      lastViewedActive: this.lastViewedActive,
+      priceRange: this.priceRange,
+      forceRefresh: true // Add this to force refresh
+    });
   }
 
   // Update price range
@@ -140,17 +157,29 @@ export class Sidebar implements OnChanges, OnInit {
 
   // Reset all filters
   resetFilters(): void {
+    // Reset all filter states
     this.selectedRating = null;
     this.priceRange = [this.minPrice, this.maxPrice];
     this.suppliers.forEach(s => s.checked = false);
     this.includeOutOfStock = false;
     this.lastViewedActive = false;
+    this.categoriesOpen = true;
+    this.bestSellersOpen = false;
+    this.newReleasesOpen = false;
 
-    // Reset category selection by emitting null
+    // Reset category selection
     this.categorySelected.emit();
     this.subCategorySelected.emit();
 
-    this.emitFilterChange();
+    // Emit reset filter state with forceRefresh
+    this.filterChange.emit({
+      rating: null,
+      suppliers: [],
+      includeOutOfStock: false,
+      lastViewedActive: false,
+      priceRange: [this.minPrice, this.maxPrice],
+      forceRefresh: true
+    });
   }
 
   // Emit all filter changes to parent component
@@ -161,7 +190,6 @@ export class Sidebar implements OnChanges, OnInit {
       includeOutOfStock: this.includeOutOfStock,
       lastViewedActive: this.lastViewedActive,
       priceRange: this.priceRange,
-      // products: this.filteredProducts //to show only in price range
     });
   }
 

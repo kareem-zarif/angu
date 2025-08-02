@@ -1,14 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { ICategory } from '../models/i-category';
+import { environment } from '../../environment/environment';
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class CategoryService {
-  private _baseUrl = 'https://localhost:7253/api/Category';
+  private apiUrl = `${environment.apiUrl}/Category`;
 
   // Cache for categories
   private categoriesCache: ICategory[] = [];
@@ -22,14 +24,15 @@ export class CategoryService {
       return of(this.categoriesCache);
     }
 
-    return this.http.get<ICategory[]>(`${this._baseUrl}`).pipe(
+    return this.http.get<ICategory[]>(this.apiUrl).pipe(
+      tap(categories => console.log('Categories fetched:', categories)),
       map(categories => {
         this.categoriesCache = categories;
         return categories;
       }),
       catchError(error => {
         console.error('Error fetching categories:', error);
-        return throwError(() => new Error('Failed to fetch categories'));
+        return throwError(() => new Error('Failed to load categories'));
       })
     );
   }
@@ -42,7 +45,7 @@ export class CategoryService {
       return of(cachedCategory);
     }
 
-    return this.http.get<ICategory>(`${this._baseUrl}/${id}`).pipe(
+    return this.http.get<ICategory>(`${this.apiUrl}/${id}`).pipe(
       catchError(error => {
         console.error(`Error fetching category with ID ${id}:`, error);
         return throwError(() => new Error(`Category with ID ${id} not found`));
@@ -52,7 +55,7 @@ export class CategoryService {
 
   // Create a new category
   create(category: ICategory): Observable<ICategory> {
-    return this.http.post<ICategory>(`${this._baseUrl}`, category).pipe(
+    return this.http.post<ICategory>(`${this.apiUrl}`, category).pipe(
       map(newCategory => {
         // Update cache
         this.categoriesCache.push(newCategory);
@@ -67,7 +70,7 @@ export class CategoryService {
 
   // Update an existing category
   update(category: ICategory): Observable<ICategory> {
-    return this.http.put<ICategory>(`${this._baseUrl}/${category.id}`, category).pipe(
+    return this.http.put<ICategory>(`${this.apiUrl}/${category.id}`, category).pipe(
       map(updatedCategory => {
         // Update cache
         const index = this.categoriesCache.findIndex(c => c.id === updatedCategory.id);
@@ -85,7 +88,7 @@ export class CategoryService {
 
   // Delete a category
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this._baseUrl}/${id}`).pipe(
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       map(() => {
         // Update cache
         this.categoriesCache = this.categoriesCache.filter(c => c.id !== id);
