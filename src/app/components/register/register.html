@@ -1,0 +1,139 @@
+<!-- register.component.html -->
+<div class="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 relative">
+  <!-- Floating Shapes Background -->
+  <div class="floating-shapes">
+    <div class="shape w-32 h-32 bg-purple-300 rounded-full"></div>
+    <div class="shape w-24 h-24 bg-pink-300 rounded-full"></div>
+    <div class="shape w-28 h-28 bg-blue-300 rounded-full"></div>
+  </div>
+
+  <div class="min-h-screen flex items-center justify-center px-4 py-8">
+    <div class="form-container rounded-2xl p-8 w-full max-w-md">
+      <!-- Role Badge -->
+      <div class="text-center mb-6">
+        <div class="role-badge"
+             [ngClass]="selectedRole === 'Seller' ? 'seller-badge' : 'customer-badge'">
+          <span>{{ selectedRole === 'Seller' ? '🏪' : '🛒' }}</span>
+          <span>تسجيل كـ {{ selectedRole === 'Seller' ? 'بائع' : 'عميل' }}</span>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="error-message show">
+        {{ errorMessage }}
+        <button *ngIf="errorMessage.includes('مستخدم بالفعل')"
+                (click)="goToLogin()"
+                class="block mt-2 text-sm underline hover:no-underline">
+          الذهاب لتسجيل الدخول
+        </button>
+      </div>
+
+      <!-- Success Message -->
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <div class="input-group">
+          <input
+            type="text"
+            id="firstName"
+            formControlName="firstName"
+            class="input-field"
+            [class.border-red-500]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
+            placeholder=" "
+            required
+          >
+          <label for="firstName" class="input-label">الاسم الأول</label>
+          <div *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
+               class="text-red-500 text-sm mt-1">
+            {{ getFieldError('firstName') }}
+          </div>
+        </div>
+
+        <div class="input-group">
+          <input
+            type="text"
+            id="lastName"
+            formControlName="lastName"
+            class="input-field"
+            [class.border-red-500]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
+            placeholder=" "
+            required
+          >
+          <label for="lastName" class="input-label">الاسم الأخير</label>
+          <div *ngIf="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
+               class="text-red-500 text-sm mt-1">
+            {{ getFieldError('lastName') }}
+          </div>
+        </div>
+
+        <div class="input-group">
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="input-field"
+            [class.border-red-500]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+            placeholder=" "
+            required
+          >
+          <label for="email" class="input-label">البريد الإلكتروني</label>
+          <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+               class="text-red-500 text-sm mt-1">
+            {{ getFieldError('email') }}
+          </div>
+        </div>
+
+        <div class="input-group">
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            class="input-field"
+            [class.border-red-500]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+            placeholder=" "
+            required
+          >
+          <label for="password" class="input-label">كلمة المرور</label>
+          <div class="password-requirements">
+            <div class="flex justify-between items-center">
+              <span>يجب أن تحتوي كلمة المرور على رقم واحد على الأقل وحرف صغير وطول لا يقل عن 8 أحرف</span>
+              <span *ngIf="registerForm.get('password')?.value"
+                    [class]="getPasswordStrengthColor()"
+                    class="font-semibold text-xs">
+                {{ getPasswordStrength() }}
+              </span>
+            </div>
+          </div>
+          <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+               class="text-red-500 text-sm mt-1">
+            {{ getFieldError('password') }}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="submit-btn w-full"
+          [disabled]="registerForm.invalid || isSubmitting">
+          {{ isSubmitting ? 'جاري الإنشاء...' : 'إنشاء الحساب' }}
+        </button>
+      </form>
+
+      <div class="text-center mt-6">
+        <p class="text-gray-600">
+          لديك حساب بالفعل؟
+          <a routerLink="/login" class="text-purple-600 hover:text-purple-800 font-semibold underline">
+            تسجيل الدخول
+          </a>
+        </p>
+      </div>
+
+      <div class="text-center mt-4">
+        <a routerLink="/register-selection" class="text-sm text-gray-500 hover:text-gray-700">
+          ← العودة لاختيار نوع الحساب
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

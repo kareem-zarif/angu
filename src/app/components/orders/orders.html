@@ -1,0 +1,117 @@
+<div class="w-full mt-10 px-4 mx-auto max-w-7xl mb-[250px]">  <!-- Breadcrumb -->
+
+  <div class="text-sm text-gray-500 mb-2">
+    Your Account &gt; <span class="text-orange-500 font-semibold">Your Orders</span>
+  </div>
+  <h1 class="text-2xl font-bold mb-4">Your Orders</h1>
+
+  <!-- Loading and Error States -->
+  <div *ngIf="loading" class="text-center py-4">
+    <p>Loading orders...</p>
+  </div>
+  <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <input type="text" class="border rounded px-3 py-1 w-64 focus:outline-none focus:ring-2 focus:ring-orange-400"
+      placeholder="Search all orders" [(ngModel)]="searchQuery" (input)="onSearch(searchQuery)" />
+    <button class="bg-gray-800 text-white px-4 py-1 rounded hover:bg-gray-900 cursor-pointer"
+      (click)="onSearch(searchQuery)">Search Orders</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-6 border-b mb-4">
+    <button class="py-2 px-2 -mb-px border-b-2"
+      [ngClass]="{'border-orange-400 text-orange-500 font-bold': activeTab==='orders', 'border-transparent text-gray-600': activeTab!=='orders'}"
+      (click)="setTab('orders')">Orders</button>
+    <button class="py-2 px-2 -mb-px border-b-2"
+      [ngClass]="{'border-orange-400 text-orange-500 font-bold': activeTab==='buyAgain', 'border-transparent text-gray-600': activeTab!=='buyAgain'}"
+      (click)="setTab('buyAgain')">Buy Again</button>
+    <button class="py-2 px-2 -mb-px border-b-2"
+      [ngClass]="{'border-orange-400 text-orange-500 font-bold': activeTab==='cancelled', 'border-transparent text-gray-600': activeTab!=='cancelled'}"
+      (click)="setTab('cancelled')">Cancelled Orders</button>
+  </div>
+
+  <!-- Orders Count and Year Filter -->
+  <div class="flex items-center gap-2 mb-4">
+    <span class="font-semibold">{{ filteredOrders.length }} Orders</span>
+    <span>placed in</span>
+    <select class="border rounded px-2 py-1" [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
+      <option *ngFor="let year of [2024,2023,2022]">{{ year }}</option>
+    </select>
+  </div>
+
+  <!-- Orders List -->
+  <div *ngFor="let order of filteredOrders" class="border rounded-lg mb-6 overflow-hidden bg-white">
+    <div class="flex flex-wrap items-center justify-between bg-gray-50 px-4 py-2 text-xs md:text-sm">
+      <div class="flex flex-col md:flex-row md:items-center gap-2">
+        <span class="font-bold text-gray-700">ORDER PLACED</span>
+        <span>{{ order.createdOn | date:'d MMM yyyy' }}</span>
+      </div>
+      <div class="flex flex-col md:flex-row md:items-center gap-2">
+        <span class="font-bold text-gray-700">TOTAL</span>
+        <span>EGP {{ order.totalAmount }}</span>
+      </div>
+      <div class="flex flex-col md:flex-row md:items-center gap-2">
+        <span class="font-bold text-gray-700">STATUS</span>
+        <span [ngClass]="{
+          'text-green-600': getLatestStatus(order) === 'Delivered',
+          'text-red-600': getLatestStatus(order) === 'Cancelled',
+          'text-yellow-600': getLatestStatus(order) === 'Processing' || getLatestStatus(order) === 'Pending',
+          'text-blue-600': getLatestStatus(order) === 'Shipped'
+        }">
+          {{ getStatusDisplayName(getLatestStatus(order)) }}
+        </span>
+      </div>
+      <div class="flex flex-col md:flex-row md:items-center gap-2">
+        <span class="font-bold text-gray-700">SHIP TO</span>
+        <span class="text-orange-500 font-semibold">{{ order.customerName }}</span>
+      </div>
+      <div class="flex flex-col md:flex-row md:items-center gap-2">
+        <span class="font-bold text-gray-700">ORDER {{ order.id }}</span>
+        <a href="#" class="text-blue-600 hover:underline">view order details</a>
+        <span>|</span>
+        <a href="#" class="text-blue-600 hover:underline">invoice</a>
+      </div>
+    </div>
+    <div class="p-4 flex flex-col gap-4">
+      <div *ngFor="let item of order.orderItems" class="flex gap-4 items-center">
+        <img [src]="item.productImage || 'assets/placeholder-image.png'" alt="{{ item.productName }}"
+          class="w-16 h-16 object-contain border rounded" />
+        <div class="flex-1">
+          <div class="font-semibold">{{ item.productName }}</div>
+          <div class="text-sm text-gray-600">Quantity: {{ item.quantity }} × EGP {{ item.pricePerPiece }}</div>
+        </div>
+        <div class="flex flex-col gap-2">
+          <button *ngIf="getLatestStatus(order) === 'Delivered'"
+            class="border border-gray-400 rounded-full px-3 py-1 text-xs font-semibold hover:bg-gray-100 cursor-pointer">Buy
+            it again</button>
+          <button
+            class="border border-gray-400 rounded-full px-3 py-1 text-xs font-semibold hover:bg-gray-100 cursor-pointer">View
+            your item</button>
+        </div>
+      </div>
+
+      <!-- Order Status History -->
+      <div *ngIf="order.orderStatusHistory && order.orderStatusHistory.length > 0" class="mt-4 border-t pt-3">
+        <h3 class="font-semibold text-sm mb-2">Order Status History</h3>
+        <div class="text-xs space-y-1">
+          <div *ngFor="let status of getSortedOrderStatusHistory(order)" class="flex justify-between">
+
+            <span [ngClass]="{
+              'text-green-600': status.orderStatus === 'Delivered',
+              'text-red-600': status.orderStatus === 'Cancelled',
+              'text-yellow-600': status.orderStatus === 'Processing' || status.orderStatus === 'Pending',
+              'text-blue-600': status.orderStatus === 'Shipped'
+            }">{{ status.orderStatus }}</span>
+            <span class="text-gray-500">{{ status.modifiedOn | date:'d MMM yyyy, h:mm a' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="filteredOrders.length === 0 && !loading" class="text-center text-gray-400 py-10">No orders found for the
+    selected filters.</div>
+</div>
