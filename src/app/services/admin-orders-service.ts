@@ -1,15 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export enum OrderStatus {
-  pending = 1,
-  Confirmed = 2,
-  Shipped = 3,
-  Deliverd = 4,
-  Cancelled = 5,
-  Returned = 6
-}
+import { OrderStatus } from '../models/i-order-status-history';
 
 export interface OrderItem {
   id: string;
@@ -113,4 +105,4 @@ export class AdminOrdersService {
   deleteOrderStatusHistory(id: string): Observable<OrderStatusHistory> {
     return this.http.delete<OrderStatusHistory>(`${this.apiUrl}/status-history/${id}`);
   }
-} 
+}

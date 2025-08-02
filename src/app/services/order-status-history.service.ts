@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
-import { OrderStatus } from './admin-orders-service';
-import {  of, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { Observable, map, of, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { IOrderStatusHistory, OrderStatus } from '../models/i-order-status-history';
+import { environment } from '../../environment/environment';
 
+// Keep existing interfaces
 export interface OrderStatusHistory {
   id: string;
   orderStatus: OrderStatus;
@@ -20,7 +20,7 @@ export interface OrderStatusHistoryCreateDto {
 
 export interface OrderStatusHistoryResDto {
   id: string;
-  orderStatus: OrderStatus;
+  orderStatus: OrderStatus; // Make sure this matches the enum
   modifiedOn: Date;
   orderId: string;
 }
@@ -33,51 +33,7 @@ export interface OrderStatusHistoryUpdateDto {
 
 @Injectable({ providedIn: 'root' })
 export class OrderStatusHistoryService {
-  private apiUrl = 'https://localhost:7253/api/OrderStatusHistory';
-
-  constructor(private http: HttpClient) {}
-
-  createOrderStatusHistory(statusHistory: OrderStatusHistoryCreateDto): Observable<OrderStatusHistoryResDto> {
-    return this.http.post<OrderStatusHistoryResDto>(this.apiUrl, statusHistory);
-  }
-
-  getAllOrderStatusHistory(): Observable<OrderStatusHistoryResDto[]> {
-    return this.http.get<OrderStatusHistoryResDto[]>(this.apiUrl);
-  }
-
-  getOrderStatusHistoryById(id: string): Observable<OrderStatusHistoryResDto> {
-    return this.http.get<OrderStatusHistoryResDto>(`${this.apiUrl}/${id}`);
-  }
-
-  updateOrderStatusHistory(statusHistory: OrderStatusHistoryUpdateDto): Observable<OrderStatusHistoryResDto> {
-    return this.http.put<OrderStatusHistoryResDto>(this.apiUrl, statusHistory);
-  }
-
-  deleteOrderStatusHistory(id: string): Observable<OrderStatusHistoryResDto> {
-    return this.http.delete<OrderStatusHistoryResDto>(`${this.apiUrl}/${id}`);
-  }
-
-  getOrderStatusHistoryByOrderId(orderId: string): Observable<OrderStatusHistoryResDto[]> {
-    // Since the controller doesn't have a specific endpoint for order ID,
-    // we'll get all status history and filter by order ID on the client side
-    console.log(`Fetching all status history from: ${this.apiUrl}`);
-    return this.http.get<OrderStatusHistoryResDto[]>(this.apiUrl).pipe(
-      map(allHistory => {
-        console.log(`All status history received:`, allHistory);
-        const filteredHistory = allHistory.filter(history => history.orderId === orderId);
-        console.log(`Filtered history for order ${orderId}:`, filteredHistory);
-        return filteredHistory;
-      })
-    );
-  }
-} 
-
-
-@Injectable({
-  providedIn: 'root'
-})
-export class OrderStatusHistoryService {
-  private _baseUrl = 'https://localhost:7777/api/OrderStatusHistory';
+  private apiUrl = `${environment.apiUrl}/OrderStatusHistory`;
 
   // Cache management
   private statusHistoryCache: IOrderStatusHistory[] = [];
@@ -86,84 +42,11 @@ export class OrderStatusHistoryService {
 
   constructor(private http: HttpClient) { }
 
-  // Get all order status histories
-  getAll(): Observable<IOrderStatusHistory[]> {
-    // Check if we have a valid cache
-    const now = Date.now();
-    if (this.statusHistoryCache.length > 0 && (now - this.lastFetchTime) < this.cacheDuration) {
-      return of(this.statusHistoryCache);
-    }
-
-    return this.http.get<IOrderStatusHistory[]>(`${this._baseUrl}`).pipe(
-      tap(histories => {
-        this.statusHistoryCache = histories;
-        this.lastFetchTime = Date.now();
-      }),
-      catchError(error => {
-        console.error('Error fetching order status histories:', error);
-        return throwError(() => new Error('Failed to fetch order status histories'));
-      })
-    );
-  }
-
-  // Get order status history by ID
-  getById(id: string): Observable<IOrderStatusHistory> {
-    // Check cache first
-    const cachedHistory = this.statusHistoryCache.find(h => h.id === id);
-    if (cachedHistory) {
-      return of(cachedHistory);
-    }
-
-    return this.http.get<IOrderStatusHistory>(`${this._baseUrl}/${id}`).pipe(
-      catchError(error => {
-        console.error(`Error fetching order status history with ID ${id}:`, error);
-        return throwError(() => new Error(`Order status history with ID ${id} not found`));
-      })
-    );
-  }
-
-  // Get order status histories by order ID
-  getByOrderId(orderId: string): Observable<IOrderStatusHistory[]> {
-    // Check cache first
-    const cachedHistories = this.statusHistoryCache.filter(h => h.orderId === orderId);
-    if (cachedHistories.length > 0) {
-      return of(cachedHistories);
-    }
-
-    return this.http.get<IOrderStatusHistory[]>(`${this._baseUrl}/order/${orderId}`).pipe(
-      tap(histories => {
-        // Update cache with new histories
-        const existingIds = this.statusHistoryCache.map(h => h.id);
-        const newHistories = histories.filter(h => !existingIds.includes(h.id));
-        this.statusHistoryCache = [...this.statusHistoryCache, ...newHistories];
-      }),
-      catchError(error => {
-        console.error(`Error fetching order status histories for order ${orderId}:`, error);
-        return throwError(() => new Error('Failed to fetch order status histories for order'));
-      })
-    );
-  }
-
-  // Get latest status for an order
-  getLatestStatusForOrder(orderId: string): Observable<IOrderStatusHistory | null> {
-    return this.getByOrderId(orderId).pipe(
-      map(histories => {
-        if (histories.length === 0) return null;
-
-        // Sort by modified date descending and return the first (most recent)
-        return histories.sort((a, b) =>
-          new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-        )[0];
-      })
-    );
-  }
-
-  // Create a new order status history
-  create(orderStatusHistory: IOrderStatusHistory): Observable<IOrderStatusHistory> {
-    return this.http.post<IOrderStatusHistory>(`${this._baseUrl}`, orderStatusHistory).pipe(
+  // Combine both service implementations
+  createOrderStatusHistory(statusHistory: OrderStatusHistoryCreateDto): Observable<OrderStatusHistoryResDto> {
+    return this.http.post<OrderStatusHistoryResDto>(this.apiUrl, statusHistory).pipe(
       tap(newHistory => {
-        // Update cache
-        this.statusHistoryCache.push(newHistory);
+        this.statusHistoryCache.push(newHistory as IOrderStatusHistory);
       }),
       catchError(error => {
         console.error('Error creating order status history:', error);
@@ -172,40 +55,98 @@ export class OrderStatusHistoryService {
     );
   }
 
-  // Update an existing order status history
-  update(orderStatusHistory: IOrderStatusHistory): Observable<IOrderStatusHistory> {
-    return this.http.put<IOrderStatusHistory>(`${this._baseUrl}/${orderStatusHistory.id}`, orderStatusHistory).pipe(
+  getAllOrderStatusHistory(): Observable<OrderStatusHistoryResDto[]> {
+    // Use cache if available
+    const now = Date.now();
+    if (this.statusHistoryCache.length > 0 && (now - this.lastFetchTime) < this.cacheDuration) {
+      return of(this.statusHistoryCache as OrderStatusHistoryResDto[]);
+    }
+
+    return this.http.get<OrderStatusHistoryResDto[]>(this.apiUrl).pipe(
+      tap(histories => {
+        this.statusHistoryCache = histories as IOrderStatusHistory[];
+        this.lastFetchTime = Date.now();
+      })
+    );
+  }
+
+  // Keep your existing methods with caching
+  getOrderStatusHistoryById(orderId: string): Observable<IOrderStatusHistory[]> {
+    const cachedHistory = this.statusHistoryCache.filter(h => h.id === orderId);
+    if (cachedHistory.length > 0) {
+      return of(cachedHistory);
+    }
+
+    return this.http.get<OrderStatusHistoryResDto[]>(`${this.apiUrl}/${orderId}`).pipe(
+      map(histories => histories.map(h => ({
+        id: h.id,
+        orderStatus: h.orderStatus,
+        modifiedOn: h.modifiedOn,
+        orderId: h.orderId
+      } as IOrderStatusHistory)))
+    );
+  }
+
+  // Combine update methods
+  updateOrderStatusHistory(statusHistory: OrderStatusHistoryUpdateDto): Observable<OrderStatusHistoryResDto> {
+    return this.http.put<OrderStatusHistoryResDto>(this.apiUrl, statusHistory).pipe(
       tap(updatedHistory => {
-        // Update cache
         const index = this.statusHistoryCache.findIndex(h => h.id === updatedHistory.id);
         if (index !== -1) {
-          this.statusHistoryCache[index] = updatedHistory;
+          this.statusHistoryCache[index] = updatedHistory as IOrderStatusHistory;
         }
-      }),
-      catchError(error => {
-        console.error(`Error updating order status history with ID ${orderStatusHistory.id}:`, error);
-        return throwError(() => new Error('Failed to update order status history'));
       })
     );
   }
 
-  // Delete an order status history
-  delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this._baseUrl}/${id}`).pipe(
+  // Keep delete with cache update
+  deleteOrderStatusHistory(id: string): Observable<OrderStatusHistoryResDto> {
+    return this.http.delete<OrderStatusHistoryResDto>(`${this.apiUrl}/${id}`).pipe(
       tap(() => {
-        // Update cache
         this.statusHistoryCache = this.statusHistoryCache.filter(h => h.id !== id);
-      }),
-      catchError(error => {
-        console.error(`Error deleting order status history with ID ${id}:`, error);
-        return throwError(() => new Error('Failed to delete order status history'));
       })
     );
   }
 
-  // Clear cache
+  // Keep existing getByOrderId with caching
+  getOrderStatusHistoryByOrderId(orderId: string): Observable<OrderStatusHistoryResDto[]> {
+    const cachedHistories = this.statusHistoryCache.filter(h => h.orderId === orderId);
+    if (cachedHistories.length > 0) {
+      return of(cachedHistories as OrderStatusHistoryResDto[]);
+    }
+
+    return this.http.get<OrderStatusHistoryResDto[]>(this.apiUrl).pipe(
+      map(allHistory => {
+        const filteredHistory = allHistory.filter(history => history.orderId === orderId);
+        // Update cache
+        this.updateCache(filteredHistory as IOrderStatusHistory[]);
+        return filteredHistory;
+      })
+    );
+  }
+
+  // Keep utility methods
+  getLatestStatusForOrder(orderId: string): Observable<IOrderStatusHistory | null> {
+    return this.getOrderStatusHistoryByOrderId(orderId).pipe(
+      map(histories => {
+        if (histories.length === 0) return null;
+        return histories.sort((a, b) =>
+          new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
+        )[0] as IOrderStatusHistory;
+      })
+    );
+  }
+
+  // Cache management methods
   clearCache(): void {
     this.statusHistoryCache = [];
     this.lastFetchTime = 0;
+  }
+
+  private updateCache(histories: IOrderStatusHistory[]): void {
+    const existingIds = this.statusHistoryCache.map(h => h.id);
+    const newHistories = histories.filter(h => !existingIds.includes(h.id));
+    this.statusHistoryCache = [...this.statusHistoryCache, ...newHistories];
+    this.lastFetchTime = Date.now();
   }
 }

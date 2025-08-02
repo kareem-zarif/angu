@@ -1,10 +1,10 @@
 export enum OrderStatus {
-  Pending = 'Pending',
-  Processing = 'Processing',
-  Shipped = 'Shipped',
-  Delivered = 'Delivered',
-  Cancelled = 'Cancelled',
-  Returned = 'Returned'
+  Pending = 1,
+  Confirmed = 2,
+  Shipped = 3,
+  Delivered = 4,
+  Cancelled = 5,
+  Returned = 6
 }
 
 export interface IOrderStatusHistory {
