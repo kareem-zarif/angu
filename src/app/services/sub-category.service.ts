@@ -8,7 +8,7 @@ import { ISubCategory } from '../models/i-sub-category';
   providedIn: 'root'
 })
 export class SubCategoryService {
-  private _baseUrl = 'https://localhost:7777/api/SubCategory';
+  private _baseUrl = 'https://localhost:7253/api/SubCategory';
 
   // Cache for subcategories by category ID
   private subCategoriesCache: { [categoryId: string]: ISubCategory[] } = {};

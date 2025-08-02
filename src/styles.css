@@ -5,11 +5,11 @@
   themes: light --default;
 }
 
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; */
 
-:root {
+/* :root {
   --primary-color: #483c21;
   --primary-light: #6a5a3e;
   --primary-dark: #2a2314;
@@ -17,16 +17,16 @@
   --text-on-primary: #ffffff;
   --background-light: #f5f3ef;
   --background-dark: #e5e1d8;
-}
+} */
 
 /* Apply primary color to various elements */
-.btn-primary {
+/* .btn-primary {
   background-color: var(--primary-color) !important;
   color: var(--text-on-primary) !important;
   border-color: var(--primary-color) !important;
-}
+} */
 
-.btn-primary:hover {
+/* .btn-primary:hover {
   background-color: var(--primary-light) !important;
 }
 
@@ -40,34 +40,34 @@
 
 .border-primary {
   border-color: var(--primary-color) !important;
-}
+} */
 
 /* Header and navigation styling */
-header {
+/* header {
   background-color: var(--primary-color);
   color: var(--text-on-primary);
-}
+} */
 
 /* Footer styling */
-footer {
+/* footer {
   background-color: var(--primary-dark);
   color: var(--text-on-primary);
-}
+} */
 
 /* Card styling */
-.card {
+/* .card {
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s, box-shadow 0.2s;
-}
+} */
 
-.card:hover {
+/* .card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
+} */
 
 /* Animation utilities */
-@layer utilities {
+/* @layer utilities {
   .animate-slide-in-left {
     animation: slideInLeft 0.6s ease-out forwards;
   }
@@ -99,10 +99,10 @@ footer {
       transform: translateY(0);
     }
   }
-}
+} */
 
 /* Form controls */
-input,
+/* input,
 select,
 textarea {
   border: 1px solid #ccc;
@@ -117,10 +117,10 @@ textarea:focus {
   border-color: var(--primary-color);
   outline: none;
   box-shadow: 0 0 0 2px rgba(72, 60, 33, 0.2);
-}
+} */
 
 /* Toast notifications */
-.toast {
+/* .toast {
   position: fixed;
   top: 1rem;
   right: 1rem;
@@ -131,12 +131,12 @@ textarea:focus {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   animation: fadeIn 0.3s ease-out forwards;
-}
+} */
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-}
+} */

@@ -29,6 +29,8 @@
     "*": false
   },
   "purecode-ai.errorLens": false,
+  "trae.tab.enableRename": false,
+  "trae.tab.enableAutoImport": false,
 
 
 }

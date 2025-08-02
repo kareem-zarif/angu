@@ -10,6 +10,7 @@ import { Rating } from '../../rating/rating/rating';
 import { SupplierSidebar } from '../supplier-sidebar/supplier-sidebar';
 import { Pagination } from '../../pagination/pagination';
 import { SubCategoryService } from '../../../services/sub-category.service';
+import { WishlistService } from '../../../services/wishlist';
 
 @Component({
   selector: 'app-supplier-list',
@@ -60,6 +61,7 @@ export class SupplierList implements OnInit, OnDestroy {
     private supplierService: SupplierService,
     private subCategoryService: SubCategoryService,
     private cartService: CartService,
+    private wishlistService: WishlistService,
     private router: Router
   ) { }
 
@@ -199,8 +201,44 @@ export class SupplierList implements OnInit, OnDestroy {
   }
 
   // Navigate to product details
-  navigateToProductDetails(productId: string): void {
+  navigateToProductDetails(productId: string, event: Event): void {
+    event.stopPropagation(); // Prevent event bubbling
     this.router.navigate(['/products', productId]);
+  }
+
+  // Add product to cart (for sample request)
+  requestSample(product: IProduct, event: Event): void {
+    event.stopPropagation(); // Prevent event bubbling
+    this.cartService.addToCart(product);
+    this.showToast(`تمت إضافة ${product.name} إلى السلة`);
+  }
+
+  // Toggle wishlist
+  toggleWishlist(product: IProduct, event: Event): void {
+    event.stopPropagation(); // Prevent event bubbling
+
+    if (this.isInWishlist(product.id)) {
+      this.wishlistService.removeFromWishlist(product.id);
+      this.showToast(`تمت إزالة ${product.name} من المفضلة`);
+    } else {
+      this.wishlistService.addToWishlist(product);
+      this.showToast(`تمت إضافة ${product.name} إلى المفضلة`);
+    }
+  }
+
+  // Check if product is in wishlist
+  isInWishlist(productId: string): boolean {
+    return this.wishlistService.isInWishlist(productId);
+  }
+
+  // Show toast notification
+  toastMessage: string | null = null;
+
+  showToast(message: string): void {
+    this.toastMessage = message;
+    setTimeout(() => {
+      this.toastMessage = null;
+    }, 3000);
   }
 
   // Add product to cart
@@ -222,7 +260,10 @@ export class SupplierList implements OnInit, OnDestroy {
   // View all products from a supplier
   viewSupplierProducts(supplierName: string): void {
     this.router.navigate(['/products'], {
-      queryParams: { supplier: supplierName }
+      queryParams: {
+        supplier: supplierName,
+        supplierName: supplierName // Add the supplier name as a separate parameter
+      }
     });
   }
 
