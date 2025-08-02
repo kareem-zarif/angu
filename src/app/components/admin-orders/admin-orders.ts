@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminOrdersService, Order, OrderCreateDto, OrderUpdateDto, OrderStatus, OrderItemCreateDto } from '../../services/admin-orders-service';
+import { AdminOrdersService, Order, OrderCreateDto, OrderUpdateDto, OrderItemCreateDto } from '../../services/admin-orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryCreateDto } from '../../services/order-status-history.service';
 import { PaginationComponent } from '../shared/pagination/pagination';
+import { OrderStatus, OrderStatus as OrderStatusModel } from '../../models/i-order-status-history';
 
 @Component({
   selector: 'app-admin-orders',
@@ -21,29 +22,29 @@ export class AdminOrdersComponent implements OnInit {
   editOrder: Order | null = null;
   form: Partial<Order> = {};
   selectedOrderHistory: any[] = [];
-  
+
   // Pagination properties
   currentPage = 1;
   itemsPerPage = 10;
   totalItems = 0;
   totalPages = 1;
-  
+
   // Search properties
   searchTerm = '';
   searchField = 'all'; // 'all', 'customer', 'orderId', 'status'
-  
+
   // Validation properties
   formErrors: { [key: string]: string } = {};
   isSubmitting = false;
 
   // Order status options
   orderStatuses = [
-    { value: OrderStatus.pending, label: 'Pending' },
-    { value: OrderStatus.Confirmed, label: 'Confirmed' },
-    { value: OrderStatus.Shipped, label: 'Shipped' },
-    { value: OrderStatus.Deliverd, label: 'Delivered' },
-    { value: OrderStatus.Cancelled, label: 'Cancelled' },
-    { value: OrderStatus.Returned, label: 'Returned' }
+    { value: OrderStatusModel.Pending, label: 'Pending' },
+    { value: OrderStatusModel.Confirmed, label: 'Confirmed' },
+    { value: OrderStatusModel.Shipped, label: 'Shipped' },
+    { value: OrderStatusModel.Delivered, label: 'Delivered' },
+    { value: OrderStatusModel.Cancelled, label: 'Cancelled' },
+    { value: OrderStatusModel.Returned, label: 'Returned' }
   ];
 
   constructor(
@@ -82,16 +83,16 @@ export class AdminOrdersComponent implements OnInit {
         console.log('Orders loaded:', res);
         this.orders = res;
         this.applyFilters();
-        
+
         // Debug: Log order IDs
         console.log('Order IDs available:', this.orders.map(order => order.id));
-        
+
         // Load status history for each order
         this.orders.forEach(order => {
           console.log(`Loading status history for order ID: ${order.id}`);
           this.loadOrderStatusHistory(order.id);
         });
-        
+
         this.loading = false;
       },
       error: (error) => {
@@ -105,9 +106,9 @@ export class AdminOrdersComponent implements OnInit {
     // Apply search filter
     this.filteredOrders = this.orders.filter(order => {
       if (!this.searchTerm) return true;
-      
+
       const searchLower = this.searchTerm.toLowerCase();
-      
+
       switch (this.searchField) {
         case 'customer':
           return (order.customerName && order.customerName.toLowerCase().includes(searchLower));
@@ -125,11 +126,11 @@ export class AdminOrdersComponent implements OnInit {
           );
       }
     });
-    
+
     // Update pagination
     this.totalItems = this.filteredOrders.length;
     this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-    
+
     // Reset to first page if current page is out of bounds
     if (this.currentPage > this.totalPages && this.totalPages > 0) {
       this.currentPage = 1;
@@ -228,7 +229,7 @@ export class AdminOrdersComponent implements OnInit {
       this.ordersService.updateOrder(updateDto).subscribe({
         next: (response) => {
           console.log('Order updated successfully:', response);
-          
+
           // Create status history entry if status changed
           if (this.editOrder && this.editOrder.currentStatus !== this.form.currentStatus) {
             const statusHistoryDto: OrderStatusHistoryCreateDto = {
@@ -320,7 +321,7 @@ export class AdminOrdersComponent implements OnInit {
 
   getStatusClass(status: OrderStatus): string {
     switch (status) {
-      case OrderStatus.Deliverd:
+      case OrderStatus.Delivered:
         return 'bg-green-200 text-green-800';
       case OrderStatus.Shipped:
         return 'bg-blue-200 text-blue-800';
@@ -330,7 +331,7 @@ export class AdminOrdersComponent implements OnInit {
         return 'bg-red-200 text-red-800';
       case OrderStatus.Returned:
         return 'bg-purple-200 text-purple-800';
-      case OrderStatus.pending:
+      case OrderStatus.Pending:
       default:
         return 'bg-gray-200 text-gray-800';
     }
@@ -402,13 +403,13 @@ export class AdminOrdersComponent implements OnInit {
   updateOrderStatus(order: Order, event: Event) {
     const selectElement = event.target as HTMLSelectElement;
     const newStatus = parseInt(selectElement.value) as OrderStatus;
-    
+
     if (newStatus === order.currentStatus) {
       return; // No change needed
     }
 
     this.isSubmitting = true;
-    
+
     const updateDto: OrderUpdateDto = {
       id: order.id,
       totalAmount: order.totalAmount,
@@ -422,7 +423,7 @@ export class AdminOrdersComponent implements OnInit {
     this.ordersService.updateOrder(updateDto).subscribe({
       next: (response) => {
         console.log('Order status updated successfully:', response);
-        
+
         // Create status history entry
         const statusHistoryDto: OrderStatusHistoryCreateDto = {
           orderStatus: newStatus,

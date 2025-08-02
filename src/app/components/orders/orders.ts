@@ -4,7 +4,7 @@ import { IOrder } from '../../models/i-order';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { OrderStatus } from '../../models/i-order-status-history';
+import { IOrderStatusHistory, OrderStatus } from '../../models/i-order-status-history';
 import { OrderStatusHistoryService } from '../../services/order-status-history.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -23,6 +23,9 @@ export class OrdersComponent implements OnInit {
   activeTab: 'orders' | 'buyAgain' | 'cancelled' = 'orders';
   loading: boolean = false;
   error: string | null = null;
+
+  // Add OrderStatus enum as a class property to use in template
+  OrderStatus = OrderStatus;
 
   constructor(
     private ordersService: OrdersService,
@@ -44,14 +47,15 @@ export class OrdersComponent implements OnInit {
         // For each order, ensure we have the latest status
         const orderStatusObservables = orders.map(order => {
           if (!order.orderStatusHistory || order.orderStatusHistory.length === 0) {
-            return this.orderStatusHistoryService.getByOrderId(order.id).pipe(
+            return this.orderStatusHistoryService.getOrderStatusHistoryById(order.id).pipe(
               map(statusHistories => {
                 order.orderStatusHistory = statusHistories;
                 return order;
               }),
               catchError(error => {
                 console.error(`Error fetching status history for order ${order.id}:`, error);
-                return of(order); // Return the order without status history
+                order.orderStatusHistory = []; // Initialize as empty array
+                return of(order);
               })
             );
           }
@@ -148,30 +152,36 @@ export class OrdersComponent implements OnInit {
     this.applyFilters();
   }
 
-  // Helper method to get the latest status for an order
+  // Update getLatestStatus to handle null safely
   getLatestStatus(order: IOrder): OrderStatus | null {
-    if (!order.orderStatusHistory || order.orderStatusHistory.length === 0) {
-      return null;
-    }
+    if (!order.orderStatusHistory?.length) return null;
 
-    // Sort by modified date descending and return the status of the first (most recent)
-    const latestStatusHistory = order.orderStatusHistory.sort((a, b) =>
+    const sorted = [...order.orderStatusHistory].sort((a, b) =>
       new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-    )[0];
-
-    return latestStatusHistory.orderStatus;
+    );
+    return sorted[0]?.orderStatus ?? null;
   }
 
-  // Helper method to get a display-friendly status name
+  // Add method to convert OrderStatus to display name
   getStatusDisplayName(status: OrderStatus | null): string {
     if (!status) return 'Unknown';
 
-    // Convert enum value to a more user-friendly format
-    // e.g., "OrderStatus.Delivered" becomes "Delivered"
-    return status.toString();
+    switch (status) {
+      case OrderStatus.Pending: return 'Pending';
+      case OrderStatus.Confirmed: return 'Confirmed';
+      case OrderStatus.Shipped: return 'Shipped';
+      case OrderStatus.Delivered: return 'Delivered';
+      case OrderStatus.Cancelled: return 'Cancelled';
+      case OrderStatus.Returned: return 'Returned';
+      default: return 'Unknown';
+    }
   }
 
-  getSortedOrderStatusHistory(order: IOrder): any[] {
-    return order.orderStatusHistory!.sort((a, b) => new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime());
+  getSortedOrderStatusHistory(order: IOrder): IOrderStatusHistory[] {
+    if (!order.orderStatusHistory) return [];
+
+    return [...order.orderStatusHistory].sort((a, b) =>
+      new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
+    );
   }
 }

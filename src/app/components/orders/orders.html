@@ -1,4 +1,4 @@
-<div class="w-full mt-10 px-4 mx-auto max-w-7xl mb-[250px]">  <!-- Breadcrumb -->
+<div class="w-full mt-10 px-4 mx-auto max-w-7xl mb-[250px]"> <!-- Breadcrumb -->
 
   <div class="text-sm text-gray-500 mb-2">
     Your Account &gt; <span class="text-orange-500 font-semibold">Your Orders</span>
@@ -57,10 +57,10 @@
       <div class="flex flex-col md:flex-row md:items-center gap-2">
         <span class="font-bold text-gray-700">STATUS</span>
         <span [ngClass]="{
-          'text-green-600': getLatestStatus(order) === 'Delivered',
-          'text-red-600': getLatestStatus(order) === 'Cancelled',
-          'text-yellow-600': getLatestStatus(order) === 'Processing' || getLatestStatus(order) === 'Pending',
-          'text-blue-600': getLatestStatus(order) === 'Shipped'
+          'text-green-600': getLatestStatus(order) === OrderStatus.Delivered,
+          'text-red-600': getLatestStatus(order) === OrderStatus.Cancelled,
+          'text-yellow-600': getLatestStatus(order) === OrderStatus.Pending || getLatestStatus(order) === OrderStatus.Confirmed,
+          'text-blue-600': getLatestStatus(order) === OrderStatus.Shipped
         }">
           {{ getStatusDisplayName(getLatestStatus(order)) }}
         </span>
@@ -85,7 +85,7 @@
           <div class="text-sm text-gray-600">Quantity: {{ item.quantity }} × EGP {{ item.pricePerPiece }}</div>
         </div>
         <div class="flex flex-col gap-2">
-          <button *ngIf="getLatestStatus(order) === 'Delivered'"
+          <button *ngIf="getLatestStatus(order) === OrderStatus.Delivered"
             class="border border-gray-400 rounded-full px-3 py-1 text-xs font-semibold hover:bg-gray-100 cursor-pointer">Buy
             it again</button>
           <button
@@ -99,13 +99,12 @@
         <h3 class="font-semibold text-sm mb-2">Order Status History</h3>
         <div class="text-xs space-y-1">
           <div *ngFor="let status of getSortedOrderStatusHistory(order)" class="flex justify-between">
-
             <span [ngClass]="{
-              'text-green-600': status.orderStatus === 'Delivered',
-              'text-red-600': status.orderStatus === 'Cancelled',
-              'text-yellow-600': status.orderStatus === 'Processing' || status.orderStatus === 'Pending',
-              'text-blue-600': status.orderStatus === 'Shipped'
-            }">{{ status.orderStatus }}</span>
+              'text-green-600': status.orderStatus === OrderStatus.Delivered,
+              'text-red-600': status.orderStatus === OrderStatus.Cancelled,
+              'text-yellow-600': status.orderStatus === OrderStatus.Pending || status.orderStatus === OrderStatus.Confirmed,
+              'text-blue-600': status.orderStatus === OrderStatus.Shipped
+            }">{{ getStatusDisplayName(status.orderStatus) }}</span>
             <span class="text-gray-500">{{ status.modifiedOn | date:'d MMM yyyy, h:mm a' }}</span>
           </div>
         </div>
