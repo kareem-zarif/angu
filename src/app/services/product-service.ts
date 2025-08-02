@@ -8,8 +8,8 @@ import { IProduct, ProductApprovalStatus, ShippingTypes } from '../models/i-prod
   providedIn: 'root'
 })
 export class ProductService {
-  private _baseUrl = 'https://localhost:7777/api/Product';
-  private _imageBaseUrl = 'https://localhost:7777';
+  private _baseUrl = 'https://localhost:7253/api/Product';
+  private _imageBaseUrl = 'https://localhost:7253';
 
   // Cache management
   private productsCache: IProduct[] = [];

@@ -9,7 +9,7 @@ import { IProduct } from '../models/i-product';
   providedIn: 'root'
 })
 export class SupplierService {
-  private _baseUrl = 'https://localhost:7777/api/Supplier';
+  private _baseUrl = 'https://localhost:7253/api/Supplier';
   private suppliersCache: ISupplier[] = [];
   private lastFetchTime: number = 0;
   private cacheDuration: number = 5 * 60 * 1000; // 5 minutes cache

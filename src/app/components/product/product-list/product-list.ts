@@ -178,9 +178,9 @@ export class ProductList implements OnInit, OnDestroy {
     this.priceRange = filters.priceRange || this.priceRange;
     this.selectedSuppliers = filters.suppliers || [];
     this.includeOutOfStock = filters.includeOutOfStock !== undefined ? filters.includeOutOfStock : true;
-    this.filteredProducts = filters.filteredProducts || this.allProducts; // Update this line
+    // this.filteredProducts = filters.filteredProducts || this.allProducts; // Update this line
     this.applyFilters();
-}
+  }
 
   applyFilters(): void {
     this.filteredProducts = this.allProducts.filter(product => {
@@ -206,6 +206,13 @@ export class ProductList implements OnInit, OnDestroy {
         product.pricePer50Piece,
         product.pricePer100Piece
       ].filter(price => price !== null && price !== undefined) as number[];
+      const isInRange = productPrices.some(p => p >= this.priceRange[0] && p <= this.priceRange[1]);
+      if (!product.pricePerPiece ||
+        product.pricePerPiece < this.priceRange[0] ||
+        product.pricePerPiece > this.priceRange[1]) {
+        return false;
+      }
+
 
       // If any price is within range, include the product
       const anyPriceInRange = productPrices.some(
@@ -235,7 +242,14 @@ export class ProductList implements OnInit, OnDestroy {
       }
 
       return true;
+    })
+    // Sort products by pricePerPiece after filtering
+    .sort((a, b) => {
+      const priceA = a.pricePerPiece || 0;
+      const priceB = b.pricePerPiece || 0;
+      return priceA - priceB; // Sort ascending by default
     });
+;
 
     // Reset to first page when filters change
     this.currentPage = 1;

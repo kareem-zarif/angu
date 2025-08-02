@@ -8,7 +8,7 @@ import { ICategory } from '../models/i-category';
   providedIn: 'root'
 })
 export class CategoryService {
-  private _baseUrl = 'https://localhost:7777/api/Category';
+  private _baseUrl = 'https://localhost:7253/api/Category';
 
   // Cache for categories
   private categoriesCache: ICategory[] = [];

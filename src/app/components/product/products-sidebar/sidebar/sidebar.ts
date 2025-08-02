@@ -1,13 +1,9 @@
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Rating } from '../../../rating/rating/rating';
 import { IProduct } from '../../../../models/i-product';
 import { CategoryService } from '../../../../services/category.service';
 import { SubCategoryService } from '../../../../services/sub-category.service';
-import { ICategory } from '../../../../models/i-category';
-import { ISubCategory } from '../../../../models/i-sub-category';
-import { forkJoin } from 'rxjs';
 import { NestedCategoryDropdown } from '../../../category/nested-category-dropdown/nested-category-dropdown';
 
 @Component({
@@ -165,7 +161,7 @@ export class Sidebar implements OnChanges, OnInit {
       includeOutOfStock: this.includeOutOfStock,
       lastViewedActive: this.lastViewedActive,
       priceRange: this.priceRange,
-      products: this.filteredProducts //to show only in price range
+      // products: this.filteredProducts //to show only in price range
     });
   }
 
