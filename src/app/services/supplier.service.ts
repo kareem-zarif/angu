@@ -4,12 +4,14 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { ISupplier } from '../models/i-supplier';
 import { IProduct } from '../models/i-product';
+import { environment } from '../../environment/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SupplierService {
-  private _baseUrl = 'https://localhost:7777/api/Supplier';
+  private _baseUrl = `${environment.apiUrl}/Supplier`;
+  private _imageBaseUrl = 'https://localhost:7253';
   private suppliersCache: ISupplier[] = [];
   private lastFetchTime: number = 0;
   private cacheDuration: number = 5 * 60 * 1000; // 5 minutes cache
@@ -25,15 +27,19 @@ export class SupplierService {
 
     return this.http.get<ISupplier[]>(`${this._baseUrl}`).pipe(
       map(suppliers => {
-        // Calculate average rating for each supplier based on their products
-        suppliers.forEach(supplier => {
+        return suppliers.map(supplier => {
+          // Process supplier's products images
+          supplier = this.processSupplierProducts(supplier);
+
+          // Calculate average rating
           if (supplier.products && supplier.products.length > 0) {
             supplier.averageRating = this.calculateAverageRating(supplier.products);
           } else {
             supplier.averageRating = 0;
           }
+
+          return supplier;
         });
-        return suppliers;
       }),
       tap(suppliers => {
         this.suppliersCache = suppliers;
@@ -56,12 +62,16 @@ export class SupplierService {
 
     return this.http.get<ISupplier>(`${this._baseUrl}/${id}`).pipe(
       map(supplier => {
-        // Calculate average rating for the supplier
+        // Process supplier's products images
+        supplier = this.processSupplierProducts(supplier);
+
+        // Calculate average rating
         if (supplier.products && supplier.products.length > 0) {
           supplier.averageRating = this.calculateAverageRating(supplier.products);
         } else {
           supplier.averageRating = 0;
         }
+
         return supplier;
       }),
       tap(supplier => {
@@ -318,10 +328,42 @@ export class SupplierService {
   private calculateAverageRating(products: IProduct[]): number {
     if (!products || products.length === 0) return 0;
 
-    const totalRating = products.reduce((sum, product) => {
+    const productsWithRatings = products.filter(p => p.rating !== null && p.rating !== undefined);
+    if (productsWithRatings.length === 0) return 0;
+
+    const totalRating = productsWithRatings.reduce((sum, product) => {
       return sum + (product.rating || 0);
     }, 0);
 
-    return totalRating / products.length;
+    return totalRating / productsWithRatings.length;
+  }
+
+  // Add this method to process products with images
+  private processSupplierProducts(supplier: ISupplier): ISupplier {
+    if (supplier.products) {
+      supplier.products = supplier.products.map(product => this.processProductImage(product));
+    }
+    return supplier;
+  }
+
+  // Add product image processing method
+  private processProductImage(product: IProduct): IProduct {
+    if (!product.productPicsPathes || product.productPicsPathes.length === 0) {
+      product.productPicsPathes = ['assets/placeholder.png'];
+      return product;
+    }
+
+    product.productPicsPathes = product.productPicsPathes.map(path => {
+      // Skip paths that are already complete URLs or local assets
+      if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('assets/')) {
+        return path;
+      }
+      // Otherwise, prepend the base URL
+      return `${this._imageBaseUrl}${path}`;
+    });
+
+    return product;
   }
 }
+
+
