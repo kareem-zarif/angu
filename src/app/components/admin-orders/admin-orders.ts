@@ -50,7 +50,7 @@ export class AdminOrdersComponent implements OnInit {
   constructor(
     private ordersService: AdminOrdersService,
     private orderStatusHistoryService: OrderStatusHistoryService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadOrders();

@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
 import { catchError, map, tap, switchMap, take } from 'rxjs/operators';
 import { IProduct } from '../models/i-product';
-import {  IWishlist } from '../models/i-wishlist';
+import { IWishlist } from '../models/i-wishlist';
 
 export interface WishListCreateDto {
   customerId: string;
@@ -20,8 +20,8 @@ export interface ProductWishlistCreateDto {
 })
 export class WishlistService {
 
-  private _baseUrl = 'https://localhost:7777/api/WishList';
-  private _productWishlistUrl = 'https://localhost:7777/api/ProductWishlist';
+  private _baseUrl = 'https://localhost:7253/api/WishList';
+  private _productWishlistUrl = 'https://localhost:7253/api/ProductWishlist';
   private wishlistKey = 'user_wishlist';
   private wishlistSubject = new BehaviorSubject<IProduct[]>([]);
   private wishlistCountSubject = new BehaviorSubject<number>(0);

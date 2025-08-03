@@ -25,8 +25,8 @@ export interface CartItemCreateDto {
   providedIn: 'root'
 })
 export class CartService {
-  private _baseUrl = 'https://localhost:7777/api/Cart';
-  private _cartItemUrl = 'https://localhost:7777/api/CartItem';
+  private _baseUrl = 'https://localhost:7253/api/Cart';
+  private _cartItemUrl = 'https://localhost:7253/api/CartItem';
   private cartKey = 'user_cart';
   private cartItems: CartItem[] = [];
   private cartItemsSubject = new BehaviorSubject<CartItem[]>([]);//BehaviorSubject ==تحديث  لحظة بلحظة
@@ -150,7 +150,7 @@ export class CartService {
 
           // We need to fetch product details for each cart item
           const productFetchPromises = cart.cartItems.map(item => {
-            return this.http.get<IProduct>(`https://localhost:7777/api/Product/${item.id}`).pipe(
+            return this.http.get<IProduct>(`https://localhost:7253/api/Product/${item.id}`).pipe(
               catchError(error => {
                 console.error(`Error fetching product ${item.id}:`, error);
                 return of(null);

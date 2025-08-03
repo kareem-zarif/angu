@@ -36,6 +36,7 @@ export class ProductList implements OnInit, OnDestroy {
   selectedSuppliers: string[] = [];
   includeOutOfStock: boolean = true;
   supplierFilter: string | null = null;
+  supplierName: string | null = null;
 
   // Pagination
   currentPage: number = 1;
@@ -49,6 +50,8 @@ export class ProductList implements OnInit, OnDestroy {
 
   // Subcategory mapping
   private subCategoryToCategory: Map<string, string> = new Map();
+
+  toastMessage: string | null = null;
 
   constructor(
     private productService: ProductService,
@@ -66,6 +69,7 @@ export class ProductList implements OnInit, OnDestroy {
     // Subscribe to query params to get supplier filter
     this.subscription = this.activatedRoute.queryParams.subscribe((params: Params) => {
       this.supplierFilter = params['supplier'] || null;
+      this.supplierName = params['supplierName'] || this.supplierFilter;
       this.loadProducts();
     });
   }
@@ -160,13 +164,12 @@ export class ProductList implements OnInit, OnDestroy {
 
   onCategorySelected(categoryId: string | null): void {
     this.selectedCategory = categoryId;
-    this.selectedSubCategory = null; // Reset subcategory when category changes
+    this.selectedSubCategory = null;
     this.applyFilters();
   }
 
   onSubCategorySelected(subCategoryId: string | null): void {
     this.selectedSubCategory = subCategoryId;
-    // If a subcategory is selected, we can determine its parent category
     if (subCategoryId && this.subCategoryToCategory.has(subCategoryId)) {
       this.selectedCategory = this.subCategoryToCategory.get(subCategoryId) || null;
     }
@@ -178,9 +181,9 @@ export class ProductList implements OnInit, OnDestroy {
     this.priceRange = filters.priceRange || this.priceRange;
     this.selectedSuppliers = filters.suppliers || [];
     this.includeOutOfStock = filters.includeOutOfStock !== undefined ? filters.includeOutOfStock : true;
-    this.filteredProducts = filters.filteredProducts || this.allProducts; // Update this line
+    this.filteredProducts = filters.filteredProducts || this.allProducts;
     this.applyFilters();
-}
+  }
 
   applyFilters(): void {
     this.filteredProducts = this.allProducts.filter(product => {
@@ -303,7 +306,20 @@ export class ProductList implements OnInit, OnDestroy {
     this.router.navigate(['/products', product.id]);
   }
 
-  // Helper method to check if a product's subcategory belongs to a category
+  requestSample(product: IProduct, event: Event): void {
+    event.stopPropagation();
+    this.cartService.addToCart(product);
+    // Show toast notification
+    this.showToast(`تمت إضافة ${product.name} إلى السلة`);
+  }
+
+  showToast(message: string): void {
+    this.toastMessage = message;
+    setTimeout(() => {
+      this.toastMessage = null;
+    }, 3000);
+  }
+
   private isCategoryMatch(subCategoryId: string, categoryId: string): boolean {
     return this.subCategoryToCategory.get(subCategoryId) === categoryId;
   }

@@ -10,7 +10,10 @@ import { SubCategoryService } from '../../../services/sub-category.service';
 @Component({
   selector: 'app-nested-category-dropdown',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule
+  ],
   templateUrl: './nested-category-dropdown.html',
   styleUrl: './nested-category-dropdown.css'
 })
@@ -33,7 +36,9 @@ export class NestedCategoryDropdown implements OnInit {
   constructor(
     private categoryService: CategoryService,
     private subCategoryService: SubCategoryService
-  ) { }
+  ) {
+    console.log('NestedCategoryDropdown initialized'); // Debug log
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -43,14 +48,35 @@ export class NestedCategoryDropdown implements OnInit {
     this.loading = true;
     this.error = null;
 
-    // Load categories
+    // First load categories
     this.categoryService.getAll().subscribe({
       next: (categories) => {
+        console.log('Categories loaded:', categories); // Debug log
         this.categories = categories;
 
-        // Load subcategories for each category
+        // Then load subcategories after categories are loaded
         if (categories.length > 0) {
-          this.loadSubCategories();
+          this.subCategoryService.getAll().subscribe({
+            next: (subCategories) => {
+              console.log('Subcategories loaded:', subCategories); // Debug log
+
+              // Group subcategories by category ID
+              this.subCategoriesByCategory = subCategories.reduce((acc, subCat) => {
+                if (!acc[subCat.categoryId]) {
+                  acc[subCat.categoryId] = [];
+                }
+                acc[subCat.categoryId].push(subCat);
+                return acc;
+              }, {} as { [key: string]: ISubCategory[] });
+
+              this.loading = false;
+            },
+            error: (err) => {
+              console.error('Error loading subcategories:', err);
+              this.error = 'Failed to load subcategories';
+              this.loading = false;
+            }
+          });
         } else {
           this.loading = false;
         }
@@ -63,26 +89,27 @@ export class NestedCategoryDropdown implements OnInit {
     });
   }
 
+  // Update loadSubCategories to prevent multiple loads
   loadSubCategories(): void {
+    if (this.loading) return; // Prevent multiple simultaneous loads
+
     this.loading = true;
+    this.error = null;
 
-    // Load subcategories for ALL categories
-    const requests = this.categories.map(category =>
-      this.subCategoryService.getByCategoryId(category.id).pipe(
-        map(subcategories => ({ categoryId: category.id, subcategories })),
-        catchError(error => {
-          console.error(`Error loading subcategories for ${category.id}:`, error);
-          return of({ categoryId: category.id, subcategories: [] });
-        })
-      )
-    );
+    this.subCategoryService.getAll().subscribe({
+      next: (subCategories) => {
+        // Group subcategories by category ID
+        this.subCategoriesByCategory = subCategories.reduce((acc, subCat) => {
+          if (!acc[subCat.categoryId]) {
+            acc[subCat.categoryId] = [];
+          }
+          // Only add if not already present
+          if (!acc[subCat.categoryId].find(sc => sc.id === subCat.id)) {
+            acc[subCat.categoryId].push(subCat);
+          }
+          return acc;
+        }, {} as { [key: string]: ISubCategory[] });
 
-    forkJoin(requests).subscribe({
-      next: (results) => {
-        // Map subcategories to their categories
-        results.forEach(result => {
-          this.subCategoriesByCategory[result.categoryId] = result.subcategories;
-        });
         this.loading = false;
       },
       error: (err) => {
@@ -110,12 +137,19 @@ export class NestedCategoryDropdown implements OnInit {
 
   // Modify click handler to always show subcategories
   onCategoryContainerClick(categoryId: string): void {
-    // Always try to load subcategories if not already loaded
+    // If already expanded, collapse it
+    if (this.expandedCategoryId === categoryId) {
+      this.expandedCategoryId = null;
+      return;
+    }
+
+    // If subcategories aren't loaded yet, load them
     if (!this.subCategoriesByCategory[categoryId]) {
       this.loadSubCategories();
     }
 
-    this.expandedCategoryId = this.expandedCategoryId === categoryId ? null : categoryId;
+    // Set the expanded category
+    this.expandedCategoryId = categoryId;
   }
 
   // Handle subcategory click - for filtering

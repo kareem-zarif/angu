@@ -8,7 +8,7 @@ import { OrderStatusHistoryService } from './order-status-history.service';
 
 @Injectable({ providedIn: 'root' })
 export class OrdersService {
-  private _baseUrl = 'https://localhost:7777/api/Order';
+  private _baseUrl = 'https://localhost:7253/api/Order';
 
   // Cache management
   private ordersCache: IOrder[] = [];
