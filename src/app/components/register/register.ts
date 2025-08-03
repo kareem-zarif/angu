@@ -102,12 +102,8 @@ export class Register implements OnInit {
         console.log('Registration successful:', response);
         this.isSubmitting = false;
 
-        // رسالة نجاح
-        if (this.selectedRole === 'Seller') {
-          this.successMessage = 'تم إنشاء حسابك بنجاح! سيتم مراجعة طلبك من قبل الإدارة قريباً.';
-        } else {
-          this.successMessage = 'تم إنشاء حسابك بنجاح! مرحباً بك في منصتنا.';
-        }
+        // رسالة نجاح موحدة للجميع
+        this.successMessage = 'تم إنشاء حسابك بنجاح! مرحباً بك في منصتنا.';
 
         // تأخير قبل التوجيه
         setTimeout(() => {

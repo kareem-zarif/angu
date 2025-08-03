@@ -36,7 +36,7 @@ export class Login implements OnInit, OnDestroy {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]],
-      rememberMe: [false]
+      rememberMe: [false],
     });
   }
 
@@ -49,7 +49,7 @@ export class Login implements OnInit, OnDestroy {
 
     // استلام المعاملات من الـ URL
     this.subscription.add(
-      this.route.queryParams.subscribe(params => {
+      this.route.queryParams.subscribe((params) => {
         // التحقق من رسالة نجاح التسجيل
         if (params['message'] === 'registration_success') {
           this.registrationSuccess = true;
@@ -61,7 +61,7 @@ export class Login implements OnInit, OnDestroy {
         // تعبئة البريد الإلكتروني إذا تم تمريره
         if (params['email']) {
           this.loginForm.patchValue({
-            email: params['email']
+            email: params['email'],
           });
         }
 
@@ -69,7 +69,8 @@ export class Login implements OnInit, OnDestroy {
         if (params['error']) {
           switch (params['error']) {
             case 'session_expired':
-              this.errorMessage = 'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى.';
+              this.errorMessage =
+                'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى.';
               break;
             case 'unauthorized':
               this.errorMessage = 'يجب تسجيل الدخول للوصول إلى هذه الصفحة.';
@@ -139,14 +140,17 @@ export class Login implements OnInit, OnDestroy {
 
           // معالجة محسّنة للأخطاء
           if (error.message) {
-            if (error.message.includes('بيانات تسجيل الدخول غير صحيحة') ||
-                error.message.includes('Unauthorized')) {
+            if (
+              error.message.includes('بيانات تسجيل الدخول غير صحيحة') ||
+              error.message.includes('Unauthorized')
+            ) {
               this.errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
               // تسليط الضوء على الحقول
-              this.loginForm.get('email')?.setErrors({ 'incorrect': true });
-              this.loginForm.get('password')?.setErrors({ 'incorrect': true });
+              this.loginForm.get('email')?.setErrors({ incorrect: true });
+              this.loginForm.get('password')?.setErrors({ incorrect: true });
             } else if (error.message.includes('لا يمكن الاتصال بالخادم')) {
-              this.errorMessage = 'لا يمكن الاتصال بالخادم. تحقق من اتصالك بالإنترنت.';
+              this.errorMessage =
+                'لا يمكن الاتصال بالخادم. تحقق من اتصالك بالإنترنت.';
             } else {
               this.errorMessage = error.message;
             }
@@ -172,15 +176,13 @@ export class Login implements OnInit, OnDestroy {
 
     console.log('Redirecting user with roles:', currentUser.roles);
 
-    // توجيه بناءً على الدور
+    // توجيه بناءً على الدور - تم إزالة PendingSeller
     if (currentUser.roles.includes('Admin')) {
-      this.router.navigate(['/admin/dashboard']);
+      this.router.navigate(['/admin']);
     } else if (currentUser.roles.includes('Seller')) {
-      this.router.navigate(['/seller/dashboard']);
-    } else if (currentUser.roles.includes('PendingSeller')) {
-      this.router.navigate(['/pending-seller']);
+      this.router.navigate(['/about-us']);
     } else if (currentUser.roles.includes('Customer')) {
-      this.router.navigate(['/customer/dashboard']);
+      this.router.navigate(['/products']);
     } else {
       // fallback للمستخدمين بدون أدوار محددة
       this.router.navigate(['/dashboard']);
@@ -194,7 +196,7 @@ export class Login implements OnInit, OnDestroy {
 
   // تعليم جميع الحقول كما لو تم لمسها لإظهار رسائل الخطأ
   private markFormGroupTouched() {
-    Object.keys(this.loginForm.controls).forEach(key => {
+    Object.keys(this.loginForm.controls).forEach((key) => {
       const control = this.loginForm.get(key);
       control?.markAsTouched();
     });
@@ -212,10 +214,14 @@ export class Login implements OnInit, OnDestroy {
       }
       if (field.errors['minlength']) {
         const requiredLength = field.errors['minlength'].requiredLength;
-        return `${this.getFieldDisplayName(fieldName)} يجب أن يكون على الأقل ${requiredLength} أحرف`;
+        return `${this.getFieldDisplayName(
+          fieldName
+        )} يجب أن يكون على الأقل ${requiredLength} أحرف`;
       }
       if (field.errors['incorrect']) {
-        return fieldName === 'email' ? 'البريد الإلكتروني غير صحيح' : 'كلمة المرور غير صحيحة';
+        return fieldName === 'email'
+          ? 'البريد الإلكتروني غير صحيح'
+          : 'كلمة المرور غير صحيحة';
       }
     }
     return '';
@@ -223,8 +229,8 @@ export class Login implements OnInit, OnDestroy {
 
   private getFieldDisplayName(fieldName: string): string {
     const displayNames: { [key: string]: string } = {
-      'email': 'البريد الإلكتروني',
-      'password': 'كلمة المرور'
+      email: 'البريد الإلكتروني',
+      password: 'كلمة المرور',
     };
     return displayNames[fieldName] || fieldName;
   }
