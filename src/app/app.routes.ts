@@ -13,6 +13,7 @@ import { ProductList } from './components/product/product-list/product-list';
 import { ProductDetails } from './components/product/product-details/product-details';
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
+import { Recommendation } from './components/recommendation/recommendation';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
 import { SuccessComponent } from './components/payment/success/success';
@@ -25,6 +26,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register-selection', component: RegisterSelection },
   { path: 'register', component: Register },
+  { path: 'recommendation', component: Recommendation },
 
   // Main content routes
   { path: 'products', component: ProductList },
