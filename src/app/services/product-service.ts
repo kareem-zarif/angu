@@ -59,11 +59,23 @@ export class ProductService {
     // Check cache first
     const cachedProduct = this.productsCache.find(p => p.id === id);
     if (cachedProduct) {
-      return of(cachedProduct);
+      // Only return approved products to customers
+      if (cachedProduct.approvalStatus === 2) {
+        return of(cachedProduct);
+      } else {
+        return throwError(() => new Error(`Product with ID ${id} not found`));
+      }
     }
 
     return this.http.get<IProduct>(`${this._baseUrl}/${id}`).pipe(
-      map(product => this.processProductImage(product)),
+      map(product => {
+        // Only return approved products to customers
+        if (product.approvalStatus === 2) {
+          return this.processProductImage(product);
+        } else {
+          throw new Error(`Product with ID ${id} not found`);
+        }
+      }),
       catchError(error => {
         console.error(`Error fetching product with ID ${id}:`, error);
         return throwError(() => new Error(`Product with ID ${id} not found`));
@@ -213,9 +225,11 @@ export class ProductService {
     );
   }
 
-  // Process multiple products' images
+  // Process multiple products' images and filter for approved products only
   private processProductImages(products: IProduct[]): IProduct[] {
-    return products.map(product => this.processProductImage(product));
+    // Filter to only show approved products to customers
+    const approvedProducts = products.filter(product => product.approvalStatus === 2); // 2 = Approved
+    return approvedProducts.map(product => this.processProductImage(product));
   }
 
   // Process single product's image paths

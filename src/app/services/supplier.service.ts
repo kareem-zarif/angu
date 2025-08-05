@@ -359,7 +359,7 @@ export class SupplierService {
         return path;
       }
       // Otherwise, prepend the base URL
-      return `${this._imageBaseUrl}${path}`;
+      return `${this._imageBaseUrl}/${path}`;
     });
 
     return product;

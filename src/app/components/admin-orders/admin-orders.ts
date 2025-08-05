@@ -42,7 +42,7 @@ export class AdminOrdersComponent implements OnInit {
     { value: OrderStatusModel.Pending, label: 'Pending' },
     { value: OrderStatusModel.Confirmed, label: 'Confirmed' },
     { value: OrderStatusModel.Shipped, label: 'Shipped' },
-    { value: OrderStatusModel.Delivered, label: 'Delivered' },
+    { value: OrderStatusModel.Deliverd, label: 'Delivered' },
     { value: OrderStatusModel.Cancelled, label: 'Cancelled' },
     { value: OrderStatusModel.Returned, label: 'Returned' }
   ];
@@ -61,7 +61,7 @@ export class AdminOrdersComponent implements OnInit {
   // Test method to debug status history API
   testStatusHistoryAPI() {
     console.log('Testing status history API...');
-    this.orderStatusHistoryService.getAllOrderStatusHistory().subscribe({
+    this.orderStatusHistoryService.getOrderStatusHistories().subscribe({
       next: (allHistory) => {
         console.log('All status history from API:', allHistory);
         if (allHistory.length > 0) {
@@ -321,7 +321,7 @@ export class AdminOrdersComponent implements OnInit {
 
   getStatusClass(status: OrderStatus): string {
     switch (status) {
-      case OrderStatus.Delivered:
+      case OrderStatus.Deliverd:
         return 'bg-green-200 text-green-800';
       case OrderStatus.Shipped:
         return 'bg-blue-200 text-blue-800';
@@ -352,13 +352,15 @@ export class AdminOrdersComponent implements OnInit {
 
   // Method to load status history for an order (without showing modal)
   loadOrderStatusHistory(orderId: string) {
-    this.orderStatusHistoryService.getOrderStatusHistoryByOrderId(orderId).subscribe({
+    console.log(`Attempting to load status history for order: ${orderId}`);
+    this.orderStatusHistoryService.getOrderStatusHistoriesByOrderId(orderId).subscribe({
       next: (history) => {
         this.orderStatusHistory[orderId] = history;
         console.log(`Status history loaded for order ${orderId}:`, history);
       },
       error: (error) => {
         console.error(`Error loading status history for order ${orderId}:`, error);
+        console.error('Error details:', error);
         this.orderStatusHistory[orderId] = [];
       }
     });
@@ -367,7 +369,7 @@ export class AdminOrdersComponent implements OnInit {
   // Method to show status history modal for an order
   showOrderStatusHistory(orderId: string) {
     console.log(`Attempting to load status history for order: ${orderId}`);
-    this.orderStatusHistoryService.getOrderStatusHistoryByOrderId(orderId).subscribe({
+    this.orderStatusHistoryService.getOrderStatusHistoriesByOrderId(orderId).subscribe({
       next: (history) => {
         console.log(`Raw status history response for order ${orderId}:`, history);
         this.selectedOrderHistory = history || [];
