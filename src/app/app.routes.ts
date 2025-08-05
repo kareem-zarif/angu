@@ -14,6 +14,8 @@ import { ProductDetails } from './components/product/product-details/product-det
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
+import { PaymentComponent } from './components/payment/payment/payment';
+import { SuccessComponent } from './components/payment/success/success';
 
 export const routes: Routes = [
   // Default route
@@ -36,6 +38,11 @@ export const routes: Routes = [
   { path: 'account-management', component: AccountManagement },
   { path: 'cart', component: Cart },
   { path: 'checkout', component: CheckoutComponent },
+
+  // Payment Routes
+  { path: 'payment', component: PaymentComponent },
+  { path: 'success', component: SuccessComponent },
+
 
   // Admin routes
   {
