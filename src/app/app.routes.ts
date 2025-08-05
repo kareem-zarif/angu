@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { WishlistComponent } from './components/wishlist/wishlist';
 import { OrdersComponent } from './components/orders/orders';
 import { AccountManagement } from './components/account-management/account-management';
 import { CheckoutComponent } from './components/checkout/checkout';
@@ -13,6 +12,7 @@ import { ProductList } from './components/product/product-list/product-list';
 import { ProductDetails } from './components/product/product-details/product-details';
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
+import { WishlistComponent } from './components/wishlist/wishlist';
 
 export const routes: Routes = [
   // Default route

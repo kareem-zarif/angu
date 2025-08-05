@@ -1,8 +1,13 @@
+import { IProduct } from "./i-product";
+
 export interface ICartItem {
-  id: string;
-  productName: string;
+ id: string;
   quantity: number;
-  pricePerPiece: number;
-  pricePer100Piece: number;
-  productPicsPathes: string[];
+  Product:IProduct;
+  // productId: string;
+  // productName: string;
+  // pricePerPiece: number;
+  // totalPrice: number;
+  // orderId: string;
+  // productImage?: string;
 }

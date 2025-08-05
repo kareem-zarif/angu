@@ -4,13 +4,14 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ProductService } from '../../../services/product-service';
-import { WishlistService } from '../../../services/wishlist';
+import { WishlistService } from '../../../services/wishlistService';
 import { CartService } from '../../../services/cart.service';
 import { SupplierService } from '../../../services/supplier.service';
 import { IProduct, ShippingTypes } from '../../../models/i-product';
 import { Rating } from '../../rating/rating/rating';
 import { TranslateModule } from '@ngx-translate/core';
 import { SubCategoryService } from '../../../services/sub-category.service';
+import { Auth } from '../../../services/auth';
 
 @Component({
   selector: 'app-product-details',
@@ -29,7 +30,7 @@ export class ProductDetails implements OnInit, OnDestroy {
   supplierName: string = '';
   categoryName: string = '';
   subCategoryName: string = '';
-
+  currentUserId: string | undefined = undefined;
   // Dynamic breadcrumbs
   breadcrumbs: { label: string, link?: string }[] = [
     { label: 'Home', link: '/' }
@@ -42,10 +43,12 @@ export class ProductDetails implements OnInit, OnDestroy {
     private wishlistService: WishlistService,
     private cartService: CartService,
     private supplierService: SupplierService,
-    private subCategoryService: SubCategoryService
+    private subCategoryService: SubCategoryService,
+    private _auth: Auth
   ) { }
 
   ngOnInit(): void {
+    this.currentUserId = this._auth.getCurrentUser()?.UserId;
     this.subscription = this.route.params.subscribe(params => {
       const id = params['id'];
       if (id) {
@@ -179,7 +182,7 @@ export class ProductDetails implements OnInit, OnDestroy {
     if (this.isInWishlist()) {
       this.wishlistService.removeFromWishlist(this.product.id);
     } else {
-      this.wishlistService.addToWishlist(this.product);
+      this.wishlistService.addToWishlist(this.product, this.currentUserId);
     }
   }
 

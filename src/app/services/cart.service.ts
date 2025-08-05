@@ -5,11 +5,7 @@ import { catchError, map, tap, switchMap, take } from 'rxjs/operators';
 import { IProduct } from '../models/i-product';
 import { ICart } from '../models/i-cart';
 import { ICartItem } from '../models/i-cart-item';
-
-export interface CartItem {
-  product: IProduct;
-  quantity: number;
-}
+import { environment } from '../../environment/environment';
 
 export interface CartCreateDto {
   customerId: string;
@@ -25,12 +21,12 @@ export interface CartItemCreateDto {
   providedIn: 'root'
 })
 export class CartService {
-  private _baseUrl = 'https://localhost:7253/api/Cart';
-  private _cartItemUrl = 'https://localhost:7253/api/CartItem';
+  private _baseUrl = `${environment.apiUrl}/Cart`;
+  private _cartItemUrl = `${environment.apiUrl}/CartItem`;
   private cartKey = 'user_cart';
-  private cartItems: CartItem[] = [];
-  private cartItemsSubject = new BehaviorSubject<CartItem[]>([]);//BehaviorSubject ==تحديث  لحظة بلحظة
-  private cartTotalSubject = new BehaviorSubject<number>(0); //تحديث السعر الكلي تلقائيًا
+  private cartItems: ICartItem[] = [];
+  private cartItemsSubject = new BehaviorSubject<ICartItem[]>([]);
+  private cartTotalSubject = new BehaviorSubject<number>(0);
   private cartCountSubject = new BehaviorSubject<number>(0);
 
   constructor(private http: HttpClient) {
@@ -47,7 +43,7 @@ export class CartService {
   }
 
   // Get cart items as observable
-  getCartItems(): Observable<CartItem[]> {
+  getCartItems(): Observable<ICartItem[]> {
     return this.cartItemsSubject.asObservable();
   }
 
@@ -63,16 +59,21 @@ export class CartService {
 
   // Add product to cart
   addToCart(product: IProduct, quantity: number = 1, customerId?: string): void {
-    const existingItem = this.cartItems.find(item => item.product.id === product.id);
+    const existingItem = this.cartItems.find(item => item.Product.id === product.id);
 
     if (existingItem) {
       existingItem.quantity += quantity;
     } else {
-      this.cartItems.push({ product, quantity });
+      const newCartItem: Partial<ICartItem> = {
+        Product: product,
+        quantity: quantity
+      };
+
+      this.cartItems.push(newCartItem as ICartItem);
     }
 
     this.updateCart();
-
+    this.saveCartToStorage();
     // Sync with API if user is authenticated
     if (customerId) {
       this.syncWithApi(customerId, product.id, existingItem ? existingItem.quantity : quantity);
@@ -81,7 +82,7 @@ export class CartService {
 
   // Remove product from cart
   removeFromCart(productId: string, customerId?: string): void {
-    this.cartItems = this.cartItems.filter(item => item.product.id !== productId);
+    this.cartItems = this.cartItems.filter(item => item.Product.id !== productId);
     this.updateCart();
 
     // Sync with API if user is authenticated
@@ -92,7 +93,7 @@ export class CartService {
 
   // Update product quantity
   updateQuantity(productId: string, quantity: number, customerId?: string): void {
-    const item = this.cartItems.find(item => item.product.id === productId);
+    const item = this.cartItems.find(item => item.Product.id === productId);
 
     if (item) {
       item.quantity = quantity;
@@ -117,8 +118,8 @@ export class CartService {
   }
 
   // Calculate product price based on quantity
-  calculateItemPrice(item: CartItem): number {
-    const { product, quantity } = item;
+  calculateItemPrice(item: ICartItem): number {
+    const { Product: product, quantity } = item;
 
     if (quantity >= 100 && product.pricePer100Piece) {
       return product.pricePer100Piece * quantity;
@@ -146,11 +147,11 @@ export class CartService {
       next: (cart) => {
         if (cart && cart.cartItems) {
           // Convert API cart items to local format
-          const cartItems: CartItem[] = [];
+          const cartItems: ICartItem[] = [];
 
           // We need to fetch product details for each cart item
           const productFetchPromises = cart.cartItems.map(item => {
-            return this.http.get<IProduct>(`https://localhost:7253/api/Product/${item.id}`).pipe(
+            return this.http.get<IProduct>(`${environment.apiUrl}/Product/${item.id}`).pipe(
               catchError(error => {
                 console.error(`Error fetching product ${item.id}:`, error);
                 return of(null);
@@ -163,10 +164,11 @@ export class CartService {
               // Filter out null products and create cart items
               products.filter(p => p !== null).forEach((product, index) => {
                 if (product) {
-                  cartItems.push({
-                    product: product,
-                    quantity: cart.cartItems[index].quantity
-                  });
+                  const newCartItem: Partial<ICartItem> = {
+                    Product: product,
+                  };
+
+                  this.cartItems.push(newCartItem as ICartItem);
                 }
               });
 
@@ -311,6 +313,62 @@ export class CartService {
     ).subscribe({
       next: () => console.log('Item removed from cart in API'),
       error: (err) => console.error('Error removing item from cart in API:', err)
+    });
+  }
+
+  syncLocalCartWithApi(customerId: string): Observable<any> {
+    const localCart = this.cartItems;
+
+    // First create or get cart
+    return this.http.get<ICart>(`${this._baseUrl}/${customerId}`).pipe(
+      catchError(error => {
+        if (error.status === 404) {
+          // Create new cart if it doesn't exist
+          return this.http.post<ICart>(this._baseUrl, { customerId });
+        }
+        return throwError(() => error);
+      }),
+      switchMap(cart => {
+        if (localCart.length === 0) {
+          return of(null);
+        }
+
+        // Create observables for each cart item
+        const itemObservables = localCart.map(item => {
+          const cartItemDto: CartItemCreateDto = {
+            productId: item.Product.id,
+            cartId: cart.id,
+            quantity: item.quantity
+          };
+
+          return this.http.post(`${this._cartItemUrl}`, cartItemDto).pipe(
+            catchError(error => {
+              console.error('Error adding item to cart:', error);
+              return of(null);
+            })
+          );
+        });
+
+        // Execute all requests
+        return forkJoin(itemObservables);
+      }),
+      tap(() => {
+        console.log('Cart synced with API');
+        // Clear local storage after successful sync
+        this.loadCartFromApi(customerId);
+      })
+    );
+  }
+
+  private loadCartFromApi(customerId: string): void {
+    this.http.get<ICart>(`${this._baseUrl}/${customerId}`).subscribe({
+      next: (cart) => {
+        if (cart && cart.cartItems) {
+          this.cartItems = cart.cartItems;
+          this.updateCart();
+        }
+      },
+      error: (error) => console.error('Error loading cart from API:', error)
     });
   }
 }

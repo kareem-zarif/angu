@@ -94,10 +94,11 @@
       </div>
 
       <!-- Wishlist items -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" *ngIf="filteredWishlist.length > 0">
-        <div *ngFor="let product of filteredWishlist" class="group w-72 bg-white rounded-xl border shadow p-4 flex flex-col items-center relative transition-transform duration-200">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg gap-4" *ngIf="filteredWishlist.length > 0">
+        <div *ngFor="let product of filteredWishlist" class="group w-77 bg-white rounded-xl border shadow p-4 flex flex-col items-center relative transition-transform duration-200">
+
           <!-- Heart icon in top-right corner -->
-          <span class="absolute top-3 right-3 text-red-500 cursor-pointer" (click)="removeFromWishlist(product)">
+          <span class="absolute top-3 right-3 text-red-500 cursor-pointer z-10" (click)="removeFromWishlist(product)">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" class="w-5 h-5">
               <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
             </svg>

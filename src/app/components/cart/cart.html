@@ -32,30 +32,30 @@
           <div class="divide-y divide-gray-200">
             <div *ngFor="let item of cartItems" class="py-4 flex flex-col sm:flex-row items-start sm:items-center">
               <!-- Product image -->
-              <a [routerLink]="['/products', item.product.id]" class="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
-                <img [src]="item.product.productPicsPathes[0]" [alt]="item.product.name"
+              <a [routerLink]="['/products', item.Product.id]" class="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
+                <img [src]="item.Product.productPicsPathes[0]" [alt]="item.Product.name"
                   class="w-24 h-24 object-contain rounded border">
               </a>
 
               <!-- Product details -->
               <div class="flex-1 min-w-0">
-                <a [routerLink]="['/products', item.product.id]"
+                <a [routerLink]="['/products', item.Product.id]"
                   class="text-lg font-medium text-[#483C21] hover:underline">
-                  {{ item.product.name }}
+                  {{ item.Product.name }}
                 </a>
-                <p class="text-sm text-gray-500 line-clamp-2 mt-1">{{ item.product.description }}</p>
+                <p class="text-sm text-gray-500 line-clamp-2 mt-1">{{ item.Product.description }}</p>
 
                 <!-- Price info -->
                 <div class="mt-2 text-sm">
-                  <span *ngIf="item.quantity >= 100 && item.product.pricePer100Piece" class="font-medium">
-                    {{ item.product.pricePer100Piece }} EGP per item (100+ price)
+                  <span *ngIf="item.quantity >= 100 && item.Product.pricePer100Piece" class="font-medium">
+                    {{ item.Product.pricePer100Piece }} EGP per item (100+ price)
                   </span>
-                  <span *ngIf="item.quantity >= 50 && item.quantity < 100 && item.product.pricePer50Piece"
+                  <span *ngIf="item.quantity >= 50 && item.quantity < 100 && item.Product.pricePer50Piece"
                     class="font-medium">
-                    {{ item.product.pricePer50Piece }} EGP per item (50+ price)
+                    {{ item.Product.pricePer50Piece }} EGP per item (50+ price)
                   </span>
                   <span *ngIf="item.quantity < 50" class="font-medium">
-                    {{ item.product.pricePerPiece }} EGP per item
+                    {{ item.Product.pricePerPiece }} EGP per item
                   </span>
                 </div>
               </div>
@@ -64,14 +64,14 @@
               <div class="mt-4 sm:mt-0 sm:ml-6 flex flex-col items-end">
                 <div class="flex items-center mb-2">
                   <button class="px-2 py-1 border border-gray-300 rounded-l-md bg-gray-100 hover:bg-gray-200"
-                    (click)="updateQuantity(item.product.id, item.quantity - 1)" [disabled]="item.quantity <= 1">
+                    (click)="updateQuantity(item.Product.id, item.quantity - 1)" [disabled]="item.quantity <= 1">
                     -
                   </button>
                   <input type="number" [(ngModel)]="item.quantity"
-                    (change)="updateQuantity(item.product.id, item.quantity)" min="1"
+                    (change)="updateQuantity(item.Product.id, item.quantity)" min="1"
                     class="w-12 text-center border-t border-b border-gray-300 py-1">
                   <button class="px-2 py-1 border border-gray-300 rounded-r-md bg-gray-100 hover:bg-gray-200"
-                    (click)="updateQuantity(item.product.id, item.quantity + 1)">
+                    (click)="updateQuantity(item.Product.id, item.quantity + 1)">
                     +
                   </button>
                 </div>
@@ -80,7 +80,7 @@
                   <div class="text-lg font-bold text-[#483C21]">
                     {{ calculateItemPrice(item) | number:'1.2-2' }} EGP
                   </div>
-                  <button (click)="removeItem(item.product.id)" class="text-sm text-red-500 hover:text-red-700 mt-1">
+                  <button (click)="removeItem(item.Product.id)" class="text-sm text-red-500 hover:text-red-700 mt-1">
                     Remove
                   </button>
                 </div>
