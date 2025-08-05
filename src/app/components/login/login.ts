@@ -126,6 +126,9 @@ export class Login implements OnInit, OnDestroy {
           console.log('Login successful:', response);
           this.isSubmitting = false;
 
+           // ✅ تخزين التوكن في localStorage
+          localStorage.setItem('token', response.token);
+
           // حفظ خيار "تذكرني" إذا تم اختياره
           if (this.loginForm.value.rememberMe) {
             localStorage.setItem('rememberMe', 'true');
@@ -180,7 +183,7 @@ export class Login implements OnInit, OnDestroy {
     if (currentUser.roles.includes('Admin')) {
       this.router.navigate(['/admin']);
     } else if (currentUser.roles.includes('Seller')) {
-      this.router.navigate(['/about-us']);
+      this.router.navigate(['/seller']);
     } else if (currentUser.roles.includes('Customer')) {
       this.router.navigate(['/products']);
     } else {
@@ -309,3 +312,5 @@ export class Login implements OnInit, OnDestroy {
     localStorage.removeItem('rememberMe');
   }
 }
+
+// enough

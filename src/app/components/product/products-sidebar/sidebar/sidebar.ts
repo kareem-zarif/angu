@@ -5,11 +5,12 @@ import { IProduct } from '../../../../models/i-product';
 import { CategoryService } from '../../../../services/category.service';
 import { SubCategoryService } from '../../../../services/sub-category.service';
 import { NestedCategoryDropdown } from '../../../category/nested-category-dropdown/nested-category-dropdown';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, NestedCategoryDropdown],
+  imports: [CommonModule, FormsModule, NestedCategoryDropdown, RouterModule],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css'
 })
@@ -34,6 +35,8 @@ export class Sidebar implements OnChanges, OnInit {
   newReleasesOpen: boolean = false;
   lastViewedActive: boolean = false;
   categoriesOpen: boolean = true;
+  tooltipVisible = false;
+
 
   // Loading state
   loading: boolean = false;
