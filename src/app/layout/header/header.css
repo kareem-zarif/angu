@@ -1,0 +1,33 @@
+/* RTL/LTR support */
+:host {
+  display: block;
+}
+
+/* RTL specific styles */
+:host-context([dir="rtl"]) .dropdown-content {
+  text-align: right;
+}
+
+:host-context([dir="rtl"]) .dropdown-content li a {
+  justify-content: flex-start;
+}
+
+/* Language dropdown styles */
+.dropdown-content {
+  min-width: 120px;
+}
+
+.dropdown-content li {
+  cursor: pointer;
+}
+
+.dropdown-content li a {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s;
+}
+
+.dropdown-content li a:hover {
+  background-color: #f3f4f6;
+}
