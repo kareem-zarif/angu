@@ -46,20 +46,22 @@ export class OrdersComponent implements OnInit {
 
         // For each order, ensure we have the latest status
         const orderStatusObservables = orders.map(order => {
-          if (!order.orderStatusHistory || order.orderStatusHistory.length === 0) {
-            return this.orderStatusHistoryService.getOrderStatusHistoryById(order.id).pipe(
-              map(statusHistories => {
-                order.orderStatusHistory = statusHistories;
-                return order;
-              }),
-              catchError(error => {
-                console.error(`Error fetching status history for order ${order.id}:`, error);
-                order.orderStatusHistory = []; // Initialize as empty array
-                return of(order);
-              })
-            );
-          }
-          return of(order);
+          return this.orderStatusHistoryService.getOrderStatusHistoriesByOrderId(order.id).pipe(
+            map(statusHistories => {
+              // Create a proper IOrder object with status history
+              return {
+                ...order,
+                orderStatusHistory: statusHistories
+              } as IOrder;
+            }),
+            catchError(error => {
+              console.error(`Error fetching status history for order ${order.id}:`, error);
+              return of({
+                ...order,
+                orderStatusHistory: [] // Initialize as empty array
+              } as IOrder);
+            })
+          );
         });
 
         forkJoin(orderStatusObservables).subscribe({
@@ -128,7 +130,7 @@ export class OrdersComponent implements OnInit {
           const latestStatus = order.orderStatusHistory.sort((a, b) =>
             new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
           )[0];
-          return latestStatus.orderStatus === OrderStatus.Delivered;
+          return latestStatus.orderStatus === OrderStatus.Deliverd;
         }
         return false;
       });
@@ -170,7 +172,7 @@ export class OrdersComponent implements OnInit {
       case OrderStatus.Pending: return 'Pending';
       case OrderStatus.Confirmed: return 'Confirmed';
       case OrderStatus.Shipped: return 'Shipped';
-      case OrderStatus.Delivered: return 'Delivered';
+      case OrderStatus.Deliverd: return 'Delivered';
       case OrderStatus.Cancelled: return 'Cancelled';
       case OrderStatus.Returned: return 'Returned';
       default: return 'Unknown';

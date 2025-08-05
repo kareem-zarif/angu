@@ -1,9 +1,12 @@
 <div class="p-6">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">Admin Products Management</h1>
-    <div class="text-sm text-gray-600">
-      Manage product approvals and updates
-    </div>
+    <h1 class="text-2xl font-bold">Seller Products Management</h1>
+    <button
+      (click)="openAddModal()"
+      class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      Add New Product
+    </button>
   </div>
 
   <!-- Error Message -->
@@ -170,13 +173,6 @@
                   Edit
                 </button>
                 <button
-                  *ngIf="product.approvalStatus === 1"
-                  (click)="openApprovalModal(product)"
-                  class="text-yellow-600 hover:text-yellow-900"
-                >
-                  Approve/Reject
-                </button>
-                <button
                   (click)="openDeleteModal(product)"
                   class="text-red-600 hover:text-red-900"
                 >
@@ -214,13 +210,13 @@
     ></app-pagination>
   </div>
 
-  <!-- Edit Product Modal -->
-  <div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <!-- Add/Edit Product Modal -->
+  <div *ngIf="showAddModal || showEditModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold">Edit Product</h3>
+        <h3 class="text-lg font-bold">{{ selectedProduct ? 'Edit Product' : 'Add New Product' }}</h3>
         <button
-          (click)="showEditModal = false"
+          (click)="showAddModal = false; showEditModal = false"
           class="text-gray-400 hover:text-gray-600"
         >
           &times;
@@ -299,18 +295,13 @@
           />
         </div>
 
-        <!-- Approval Status -->
+        <!-- Approval Status (Read-only for sellers) -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Approval Status</label>
-          <select
-            [(ngModel)]="form.approvalStatus"
-            name="approvalStatus"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option [value]="1">Pending</option>
-            <option [value]="2">Approved</option>
-            <option [value]="3">Rejected</option>
-          </select>
+          <div class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+            {{ getApprovalStatusLabel(form.approvalStatus || 1) }}
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Only admins can change approval status</p>
         </div>
 
         <!-- Shipping Type -->
@@ -346,7 +337,7 @@
         <div class="flex justify-end space-x-3 pt-4">
           <button
             type="button"
-            (click)="showEditModal = false"
+            (click)="showAddModal = false; showEditModal = false"
             class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
           >
             Cancel
@@ -356,7 +347,7 @@
             [disabled]="isSubmitting"
             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
           >
-            {{ isSubmitting ? 'Saving...' : 'Update Product' }}
+            {{ isSubmitting ? 'Saving...' : (selectedProduct ? 'Update Product' : 'Create Product') }}
           </button>
         </div>
       </form>
@@ -532,62 +523,6 @@
         >
           Close
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Approval Modal -->
-  <div *ngIf="showApprovalModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-      <div class="flex items-center justify-between mb-6">
-        <h3 class="text-2xl font-bold text-gray-900">Product Approval</h3>
-        <button
-          (click)="showApprovalModal = false"
-          class="text-gray-400 hover:text-gray-600"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div *ngIf="selectedProduct" class="space-y-4">
-        <div>
-          <h4 class="text-lg font-semibold text-gray-900">{{ selectedProduct.name }}</h4>
-          <p class="text-sm text-gray-600">{{ selectedProduct.description }}</p>
-        </div>
-
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p class="text-sm text-yellow-800">
-            This product is currently pending approval. Please review and decide whether to approve or reject it.
-          </p>
-        </div>
-
-        <div class="flex justify-end space-x-3 pt-4">
-          <button
-            type="button"
-            (click)="showApprovalModal = false"
-            class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            (click)="rejectProduct()"
-            [disabled]="isSubmitting"
-            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
-          >
-            {{ isSubmitting ? 'Rejecting...' : 'Reject' }}
-          </button>
-          <button
-            type="button"
-            (click)="approveProduct()"
-            [disabled]="isSubmitting"
-            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
-          >
-            {{ isSubmitting ? 'Approving...' : 'Approve' }}
-          </button>
-        </div>
       </div>
     </div>
   </div>

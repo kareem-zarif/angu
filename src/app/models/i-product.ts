@@ -8,60 +8,59 @@ export enum ShippingTypes {
   Free = 1,
   FreeINSameGovernate = 2,
   Paid = 3,
-  None = 4
+  None = 0
 }
 
-// Main product interface matching ProductResDto
+// Main product interface matching ProductResDto from backend
 export interface IProduct {
-  id: string;
+  id: string; // Backend returns Guid as string
   rating?: number;
   supplierNames?: string[];
-
+  suppliers?: string[]; // For backward compatibility
   productPicsPathes: string[];
   name: string;
   description: string;
   pricePerPiece: number;
   pricePer50Piece?: number;
   pricePer100Piece?: number;
-  noINStock: number;  // Changed to match C# property name
+  noINStock: number;
   minNumToFactoryOrder: number;
   approvalStatus: ProductApprovalStatus;
   warrantyNMonths?: number;
   shipping: ShippingTypes;
-  subCategoryId: string;
-  suppliers: string[];
+  subCategoryId: string; // Backend returns Guid as string
 }
 
-// Create DTO interface
+// Create DTO interface matching ProductCreateDto from backend
 export interface ProductCreateDto {
   name: string;
   description: string;
   pricePerPiece: number;
   pricePer50Piece?: number;
   pricePer100Piece?: number;
-  noINStock: number;  // Changed to match C# property name
+  noINStock: number;
   minNumToFactoryOrder: number;
   approvalStatus: ProductApprovalStatus;
   images?: File[];
   warrantyNMonths?: number;
   shipping: ShippingTypes;
-  subCategoryId: string;
+  subCategoryId: string; // Backend expects Guid but we handle as string
 }
 
-// Update DTO interface
+// Update DTO interface matching ProductUpdateDto from backend
 export interface ProductUpdateDto {
-  id: string;
+  id: string; // Backend expects Guid but we handle as string
   name: string;
   description: string;
   pricePerPiece: number;
   pricePer50Piece?: number;
   pricePer100Piece?: number;
-  noINStock: number;  // Changed to match C# property name
+  noINStock: number;
   minNumToFactoryOrder: number;
   approvalStatus: ProductApprovalStatus;
   images?: File[] | null;
   warrantyNMonths?: number;
   shipping: ShippingTypes;
-  subCategoryId: string;
-
+  subCategoryId: string; // Backend expects Guid but we handle as string
 }
+

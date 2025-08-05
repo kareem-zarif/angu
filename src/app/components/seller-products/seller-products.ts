@@ -6,13 +6,13 @@ import { IProduct, ProductApprovalStatus, ShippingTypes } from '../../models/i-p
 import { PaginationComponent } from '../shared/pagination/pagination';
 
 @Component({
-  selector: 'app-admin-products',
+  selector: 'app-seller-products',
   standalone: true,
   imports: [CommonModule, FormsModule, PaginationComponent],
-  templateUrl: './admin-products.html',
-  styleUrl: './admin-products.css'
+  templateUrl: './seller-products.html',
+  styleUrl: './seller-products.css'
 })
-export class AdminProductsComponent implements OnInit {
+export class SellerProductsComponent implements OnInit {
   products: IProduct[] = [];
   filteredProducts: IProduct[] = [];
   isLoading = false;
@@ -25,10 +25,10 @@ export class AdminProductsComponent implements OnInit {
   stockFilter = 'all';
 
   // Modal states
+  showAddModal = false;
   showEditModal = false;
   showDeleteModal = false;
   showViewModal = false;
-  showApprovalModal = false;
   selectedProduct: IProduct | null = null;
   isSubmitting = false;
 
@@ -145,62 +145,28 @@ export class AdminProductsComponent implements OnInit {
     this.applyFilters();
   }
 
-  openApprovalModal(product: IProduct) {
-    this.selectedProduct = product;
-    this.showApprovalModal = true;
-  }
-
-  approveProduct() {
-    if (!this.selectedProduct) return;
-
-    this.isSubmitting = true;
-    const updateData: IProduct = {
-      ...this.selectedProduct,
-      approvalStatus: ProductApprovalStatus.Approved
+  openAddModal() {
+    this.selectedProduct = null;
+    this.form = {
+      name: '',
+      description: '',
+      pricePerPiece: 0,
+      noINStock: 0,
+      minNumToFactoryOrder: 1,
+      approvalStatus: ProductApprovalStatus.Pending,
+      shipping: ShippingTypes.Free,
+      subCategoryId: '',
+      productPicsPathes: []
     };
-
-    this.productService.updateProduct(updateData).subscribe({
-      next: () => {
-        this.loadProducts();
-        this.showApprovalModal = false;
-        this.isSubmitting = false;
-        alert('Product approved successfully!');
-      },
-      error: (error) => {
-        console.error('Error approving product:', error);
-        this.isSubmitting = false;
-        alert('Failed to approve product. Please try again.');
-      }
-    });
-  }
-
-  rejectProduct() {
-    if (!this.selectedProduct) return;
-
-    this.isSubmitting = true;
-    const updateData: IProduct = {
-      ...this.selectedProduct,
-      approvalStatus: ProductApprovalStatus.Rejected
-    };
-
-    this.productService.updateProduct(updateData).subscribe({
-      next: () => {
-        this.loadProducts();
-        this.showApprovalModal = false;
-        this.isSubmitting = false;
-        alert('Product rejected successfully!');
-      },
-      error: (error) => {
-        console.error('Error rejecting product:', error);
-        this.isSubmitting = false;
-        alert('Failed to reject product. Please try again.');
-      }
-    });
+    this.formErrors = {};
+    this.showAddModal = true;
   }
 
   openEditModal(product: IProduct) {
     this.selectedProduct = product;
     this.form = { ...product };
+    // Sellers cannot change approval status, so we don't include it in the form
+    delete this.form.approvalStatus;
     this.formErrors = {};
     this.showEditModal = true;
   }
@@ -248,25 +214,48 @@ export class AdminProductsComponent implements OnInit {
 
     this.isSubmitting = true;
 
-    // Update existing product only
-    const updateData: IProduct = {
-      ...this.selectedProduct!,
-      ...this.form
-    };
+    if (this.selectedProduct) {
+      // Update existing product - preserve original approval status
+      const updateData: IProduct = {
+        ...this.selectedProduct,
+        ...this.form,
+        approvalStatus: this.selectedProduct.approvalStatus // Keep original approval status
+      };
 
-    this.productService.updateProduct(updateData).subscribe({
-      next: () => {
-        this.loadProducts();
-        this.showEditModal = false;
-        this.isSubmitting = false;
-        alert('Product updated successfully!');
-      },
-      error: (error) => {
-        console.error('Error updating product:', error);
-        this.isSubmitting = false;
-        alert('Failed to update product. Please try again.');
-      }
-    });
+      this.productService.updateProduct(updateData).subscribe({
+        next: () => {
+          this.loadProducts();
+          this.showEditModal = false;
+          this.isSubmitting = false;
+          alert('Product updated successfully!');
+        },
+        error: (error) => {
+          console.error('Error updating product:', error);
+          this.isSubmitting = false;
+          alert('Failed to update product. Please try again.');
+        }
+      });
+    } else {
+      // Create new product
+      const createData: IProduct = {
+        ...this.form as IProduct,
+        id: ''
+      };
+
+      this.productService.createProduct(createData).subscribe({
+        next: () => {
+          this.loadProducts();
+          this.showAddModal = false;
+          this.isSubmitting = false;
+          alert('Product created successfully!');
+        },
+        error: (error) => {
+          console.error('Error creating product:', error);
+          this.isSubmitting = false;
+          alert('Failed to create product. Please try again.');
+        }
+      });
+    }
   }
 
   deleteProduct() {
