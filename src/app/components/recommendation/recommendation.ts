@@ -1,8 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { IProduct } from '../../models/i-product';
 import { RecommendationService } from '../../services/recommendation-service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { DecJwt } from '../../services/dec-jwt';
+import { RecItems } from '../../models/rec-items';
 
 @Component({
   selector: 'app-recommendation',
@@ -11,20 +12,22 @@ import { CommonModule } from '@angular/common';
   styleUrl: './recommendation.css'
 })
 export class Recommendation implements OnInit {
-  recommendedProducts: IProduct[] = [];
-  userId: string = 'GUID_HERE'; // هنعرف إزاي نجيبه ديناميك بعدين
+recommendations: RecItems[] = [];
 
-  // constructor(private recommendationService: RecommendationService) {}
-  private recommendationService = inject(RecommendationService);
+  constructor(
+    private recService: RecommendationService,
+    private decoding: DecJwt
+  ) {}
 
   ngOnInit(): void {
-    this.loadRecommendations();
-  }
-
-  loadRecommendations(): void {
-    this.recommendationService.getRecommendations(this.userId).subscribe({
-      next: (products) => this.recommendedProducts = products,
-      error: (err) => console.error('Error loading recommendations', err)
-    });
+    const userId = this.decoding.getUserIdFromToken();
+    if (userId) {
+      this.recService.getRecommendations(userId).subscribe({
+        next: (res) => this.recommendations = res,
+        error: (err) => console.error('Error loading recommendations', err)
+      });
+    } else {
+      console.warn('User not logged in or token missing');
+    }
   }
 }

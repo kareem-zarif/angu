@@ -13,6 +13,11 @@ import { ProductDetails } from './components/product/product-details/product-det
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
 import { WishlistComponent } from './components/wishlist/wishlist';
+import { Recommendation } from './components/recommendation/recommendation';
+import { SellerLayoutComponent } from './layout/seller/seller-layout';
+import { PaymentComponent } from './components/payment/payment/payment';
+import { SuccessComponent } from './components/payment/success/success';
+
 
 export const routes: Routes = [
   // Default route
@@ -22,6 +27,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register-selection', component: RegisterSelection },
   { path: 'register', component: Register },
+  { path: 'recommendation', component: Recommendation },
 
   // Main content routes
   { path: 'products', component: ProductList },
@@ -35,6 +41,11 @@ export const routes: Routes = [
   { path: 'account-management', component: AccountManagement },
   { path: 'cart', component: Cart },
   { path: 'checkout', component: CheckoutComponent },
+
+  // Payment Routes
+  { path: 'payment', component: PaymentComponent },
+  { path: 'success', component: SuccessComponent },
+
 
   // Admin routes
   {
@@ -72,6 +83,56 @@ export const routes: Routes = [
         path: 'categories',
         loadComponent: () => import('./components/admin-categories/admin-categories')
           .then(m => m.AdminCategoriesComponent)
+      }
+    ]
+  },
+
+  // Seller routes
+  {
+    path: 'seller',
+    component: SellerLayoutComponent,
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./components/seller-dashboard/seller-dashboard')
+          .then(m => m.SellerDashboardComponent)
+      },
+      {
+        path: 'products',
+        loadComponent: () => import('./components/seller-products/seller-products')
+          .then(m => m.SellerProductsComponent)
+      },
+      {
+        path: 'orders',
+        loadComponent: () => import('./components/seller-orders/seller-orders')
+          .then(m => m.SellerOrdersComponent)
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('./components/seller-reports/seller-reports')
+          .then(m => m.SellerReportsComponent)
+      },
+      {
+        path: 'payouts',
+        loadComponent: () => import('./components/seller-payouts/seller-payouts')
+          .then(m => m.SellerPayoutsComponent)
+      },
+      {
+        path: 'customers',
+        loadComponent: () => import('./components/seller-customers/seller-customers')
+          .then(m => m.SellerCustomersComponent)
+      },
+      {
+        path: 'promotions',
+        loadComponent: () => import('./components/seller-promotions/seller-promotions')
+          .then(m => m.SellerPromotionsComponent)
+      },
+
+      {
+        path: 'compliance',
+        loadComponent: () => import('./components/seller-compliance/seller-compliance')
+          .then(m => m.SellerComplianceComponent)
       }
     ]
   },
