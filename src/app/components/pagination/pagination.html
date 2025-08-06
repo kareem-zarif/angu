@@ -1,0 +1,35 @@
+<div class="pagination-container">
+  <div class="flex items-center justify-center space-x-2 rtl:space-x-reverse">
+    <!-- Previous button -->
+    <button class="pagination-arrow" [class.disabled]="currentPage === 1" (click)="previousPage()"
+      [disabled]="currentPage === 1" aria-label="Previous page">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+        class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </button>
+
+    <!-- Page numbers -->
+    <div class="flex justify-center items-center rtl:space-x-reverse gap-3 ">
+      <ng-container *ngFor="let page of pages">
+        <!-- Ellipsis -->
+        <span *ngIf="page < 0" class="pagination-ellipsis">...</span>
+
+        <!-- Page number -->
+        <button *ngIf="page > 0" class="pagination-page" [class.active]="page === currentPage"
+          (click)="changePage(page)">
+          {{ page }}
+        </button>
+      </ng-container>
+    </div>
+
+    <!-- Next button -->
+    <button class="pagination-arrow mx-2" [class.disabled]="currentPage === totalPages" (click)="nextPage()"
+      [disabled]="currentPage === totalPages" aria-label="Next page">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+        class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+      </svg>
+    </button>
+  </div>
+</div>

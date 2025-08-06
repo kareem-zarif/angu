@@ -1,0 +1,62 @@
+<div class="flex flex-col sm:flex-row justify-between items-center gap-4 py-4">
+  <!-- Items per page selector -->
+  <div *ngIf="showItemsPerPage" class="flex items-center gap-2">
+    <label class="text-sm text-gray-600">Show:</label>
+    <select 
+      (change)="onItemsPerPageChange($event)"
+      class="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="5">5</option>
+      <option value="10" selected>10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+    <span class="text-sm text-gray-600">per page</span>
+  </div>
+
+  <!-- Items info -->
+  <div class="text-sm text-gray-600">
+    Showing {{ startItem }} to {{ endItem }} of {{ totalItems }} items
+  </div>
+
+  <!-- Pagination controls -->
+  <div class="flex items-center gap-1">
+    <!-- Previous button -->
+    <button
+      (click)="onPageChange(currentPage - 1)"
+      [disabled]="!canGoPrevious()"
+      class="px-3 py-1 text-sm border border-gray-300 rounded-l hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      Previous
+    </button>
+
+    <!-- Page numbers -->
+    <ng-container *ngFor="let page of pages">
+      <button
+        *ngIf="!isEllipsis(page)"
+        (click)="onPageChange(page)"
+        [class]="page === currentPage 
+          ? 'px-3 py-1 text-sm bg-blue-500 text-white border border-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500' 
+          : 'px-3 py-1 text-sm border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500'"
+      >
+        {{ page }}
+      </button>
+      <span
+        *ngIf="isEllipsis(page)"
+        class="px-2 py-1 text-sm text-gray-500"
+      >
+        ...
+      </span>
+    </ng-container>
+
+    <!-- Next button -->
+    <button
+      (click)="onPageChange(currentPage + 1)"
+      [disabled]="!canGoNext()"
+      class="px-3 py-1 text-sm border border-gray-300 rounded-r hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      Next
+    </button>
+  </div>
+</div> 
