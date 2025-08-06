@@ -4,6 +4,7 @@ import { BehaviorSubject, map, catchError, throwError, Observable, tap, exhaustM
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { WishlistService } from './wishlistService';
+import { CartService } from './cart.service';
 
 export interface User {
   UserId: string;
@@ -37,7 +38,7 @@ export class Auth {
 
   jwtHelper = new JwtHelperService();
 
-  constructor(private http: HttpClient, private wishlistService: WishlistService) {
+  constructor(private http: HttpClient, private wishlistService: WishlistService, private cartService: CartService) {
     // تحميل المستخدم من localStorage عند بدء التطبيق
     this.loadCurrentUserFromStorage();
   }
@@ -57,7 +58,8 @@ export class Auth {
   httpOptions = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' })
   };
- login(values: LoginDto): Observable<User> {
+  login(values: LoginDto): Observable<User> {
+  this.cartService.clearCache(); // Clear cache before login
   return this.http.post<User>(`${this.baseUrl}/login`, values, this.httpOptions).pipe(
     map((response: any) => {
       if (response && response.token) {
@@ -82,15 +84,27 @@ export class Auth {
         tap(wishlist => {
           console.log('✅ Wishlist ensured or created:', wishlist.id);
         }),
-        switchMap(wishlist =>
+        switchMap((wishlist) =>
           this.wishlistService.syncLocalWishlistWithApi(customerId, wishlist.id).pipe(
-            tap(() => console.log('✅ Local wishlist synced with server')),
-            map(() => user)
+            tap(() => console.log('✅ Local wishlist synced with server'))
           )
         ),
+        switchMap(() =>
+          this.cartService.ensureCartExists(customerId, true).pipe( // Force refresh
+            tap(cart => {
+              console.log('🛒 Cart ensured or created:', cart.id);
+            }),
+            switchMap(() =>
+              this.cartService.syncLocalCartWithApi(customerId).pipe(
+                tap(() => console.log('🛒 Local cart synced with server'))
+              )
+            )
+          )
+        ),
+        map(() => user),
         catchError(err => {
-          console.error('❌ Error with wishlist sync:', err);
-          return of(user); // نكمل تسجيل الدخول حتى لو فشل تهيئة قائمة الرغبات
+          console.error('❌ Error with wishlist/cart sync:', err);
+          return of(user);
         })
       );
     }),
@@ -148,7 +162,7 @@ export class Auth {
   logout() {
     localStorage.removeItem('user');
     this.currentUserSource.next(null);
-  this.wishlistService.clearCache(); // ✨
+    this.wishlistService.clearCache(); // ✨
     console.log('cache Cleared');
     console.log('User logged out');
   }

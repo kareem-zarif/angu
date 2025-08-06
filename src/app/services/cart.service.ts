@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
-import { catchError, map, tap, switchMap, take } from 'rxjs/operators';
+import { catchError, filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { IProduct } from '../models/i-product';
 import { ICart } from '../models/i-cart';
 import { ICartItem } from '../models/i-cart-item';
@@ -17,358 +17,272 @@ export interface CartItemCreateDto {
   quantity: number;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class CartService {
   private _baseUrl = `${environment.apiUrl}/Cart`;
   private _cartItemUrl = `${environment.apiUrl}/CartItem`;
   private cartKey = 'user_cart';
-  private cartItems: ICartItem[] = [];
+
   private cartItemsSubject = new BehaviorSubject<ICartItem[]>([]);
   private cartTotalSubject = new BehaviorSubject<number>(0);
   private cartCountSubject = new BehaviorSubject<number>(0);
 
+  private cartCache$?: Observable<ICart>;
   constructor(private http: HttpClient) {
     this.loadCartFromStorage();
   }
 
-  // Get API URLs for external use
-  getCartApiUrl(): string {
-    return this._baseUrl;
-  }
-
-  getCartItemApiUrl(): string {
-    return this._cartItemUrl;
-  }
-
-  // Get cart items as observable
   getCartItems(): Observable<ICartItem[]> {
     return this.cartItemsSubject.asObservable();
   }
 
-  // Get cart total as observable
   getCartTotal(): Observable<number> {
     return this.cartTotalSubject.asObservable();
   }
 
-  // Get cart count as observable
   getCartCount(): Observable<number> {
     return this.cartCountSubject.asObservable();
   }
 
-  // Add product to cart
   addToCart(product: IProduct, quantity: number = 1, customerId?: string): void {
-    const existingItem = this.cartItems.find(item => item.Product.id === product.id);
+    const items = this.cartItemsSubject.value;
+    const existing = items.find(i => i.Product.id === product.id);
 
-    if (existingItem) {
-      existingItem.quantity += quantity;
+    if (existing) {
+      existing.quantity += quantity;
     } else {
-      const newCartItem: Partial<ICartItem> = {
-        Product: product,
-        quantity: quantity
-      };
-
-      this.cartItems.push(newCartItem as ICartItem);
+      items.push({ Product: product, quantity });
     }
 
-    this.updateCart();
-    this.saveCartToStorage();
-    // Sync with API if user is authenticated
+    this.updateCart(items);
+
     if (customerId) {
-      this.syncWithApi(customerId, product.id, existingItem ? existingItem.quantity : quantity);
+      this.syncItemToApi(customerId, product.id, existing ? existing.quantity : quantity).subscribe();
     }
   }
 
-  // Remove product from cart
   removeFromCart(productId: string, customerId?: string): void {
-    this.cartItems = this.cartItems.filter(item => item.Product.id !== productId);
-    this.updateCart();
+    const items = this.cartItemsSubject.value.filter(i => i.Product.id !== productId);
+    this.updateCart(items);
 
-    // Sync with API if user is authenticated
     if (customerId) {
-      this.removeFromApi(customerId, productId);
+      this.removeItemFromApi(customerId, productId).subscribe();
     }
   }
 
-  // Update product quantity
+  clearCart(customerId?: string): void {
+    this.updateCart([]);
+    if (customerId) {
+      this.clearCartFromApi(customerId).subscribe();
+    }
+  }
+
   updateQuantity(productId: string, quantity: number, customerId?: string): void {
-    const item = this.cartItems.find(item => item.Product.id === productId);
+    if (quantity <= 0) return this.removeFromCart(productId, customerId);
 
-    if (item) {
-      item.quantity = quantity;
+    const items = this.cartItemsSubject.value;
+    const item = items.find(i => i.Product.id === productId);
+    if (item) item.quantity = quantity;
 
-      if (quantity <= 0) {
-        this.removeFromCart(productId, customerId);
-      } else {
-        this.updateCart();
+    this.updateCart(items);
 
-        // Sync with API if user is authenticated
-        if (customerId) {
-          this.syncWithApi(customerId, productId, quantity);
-        }
-      }
+    if (customerId) {
+      this.syncItemToApi(customerId, productId, quantity).subscribe();
     }
   }
 
-  // Clear cart
-  clearCart(): void {
-    this.cartItems = [];
-    this.updateCart();
-  }
-
-  // Calculate product price based on quantity
   calculateItemPrice(item: ICartItem): number {
-    const { Product: product, quantity } = item;
-
-    if (quantity >= 100 && product.pricePer100Piece) {
-      return product.pricePer100Piece * quantity;
-    } else if (quantity >= 50 && product.pricePer50Piece) {
-      return product.pricePer50Piece * quantity;
-    } else {
-      return (product.pricePerPiece || 0) * quantity;
-    }
+    const q = item.quantity;
+    const p = item.Product;
+    if (q >= 100 && p.pricePer100Piece) return p.pricePer100Piece * q;
+    if (q >= 50 && p.pricePer50Piece) return p.pricePer50Piece * q;
+    return (p.pricePerPiece || 0) * q;
   }
 
-  // Calculate total cart price
-  calculateTotal(): number {
-    return this.cartItems.reduce((total, item) => {
-      return total + this.calculateItemPrice(item);
-    }, 0);
-  }
-
-  // Refresh cart from API
-  refreshCart(customerId?: string): void {
-    if (!customerId) {
-      return;
-    }
-
-    this.getCartFromApi(customerId).subscribe({
-      next: (cart) => {
-        if (cart && cart.cartItems) {
-          // Convert API cart items to local format
-          const cartItems: ICartItem[] = [];
-
-          // We need to fetch product details for each cart item
-          const productFetchPromises = cart.cartItems.map(item => {
-            return this.http.get<IProduct>(`${environment.apiUrl}/Product/${item.id}`).pipe(
-              catchError(error => {
-                console.error(`Error fetching product ${item.id}:`, error);
-                return of(null);
-              })
-            );
-          });
-
-          forkJoin(productFetchPromises).subscribe({
-            next: (products) => {
-              // Filter out null products and create cart items
-              products.filter(p => p !== null).forEach((product, index) => {
-                if (product) {
-                  const newCartItem: Partial<ICartItem> = {
-                    Product: product,
-                  };
-
-                  this.cartItems.push(newCartItem as ICartItem);
-                }
-              });
-
-              if (cartItems.length > 0) {
-                this.cartItems = cartItems;
-                this.updateCart();
-              }
-            },
-            error: (error) => {
-              console.error('Error fetching products for cart:', error);
-            }
-          });
-        }
-      },
-      error: (error) => {
-        console.error('Error refreshing cart:', error);
-      }
-    });
-  }
-
-  // Private methods
-  private updateCart(): void {
-    this.cartItemsSubject.next([...this.cartItems]);
-    this.cartTotalSubject.next(this.calculateTotal());
-    this.cartCountSubject.next(this.calculateCount());
-    this.saveCartToStorage();
-  }
-
-  private calculateCount(): number {
-    return this.cartItems.reduce((count, item) => count + item.quantity, 0);
-  }
-
-  private saveCartToStorage(): void {
-    localStorage.setItem(this.cartKey, JSON.stringify(this.cartItems));
+  private updateCart(items: ICartItem[]): void {
+    this.cartItemsSubject.next([...items]);
+    this.cartTotalSubject.next(items.reduce((t, i) => t + this.calculateItemPrice(i), 0));
+    this.cartCountSubject.next(items.reduce((c, i) => c + i.quantity, 0));
+    localStorage.setItem(this.cartKey, JSON.stringify(items));
   }
 
   private loadCartFromStorage(): void {
-    const storedCart = localStorage.getItem(this.cartKey);
-
-    if (storedCart) {
-      try {
-        this.cartItems = JSON.parse(storedCart);
-        this.updateCart();
-      } catch (error) {
-        console.error('Error loading cart from storage:', error);
-        this.cartItems = [];
-        this.updateCart();
-      }
+    try {
+      const json = localStorage.getItem(this.cartKey);
+      const items: ICartItem[] = json ? JSON.parse(json) : [];
+      this.updateCart(items);
+    } catch (e) {
+      console.error('Failed to load cart from localStorage');
+      this.updateCart([]);
     }
   }
 
-  private getCartFromApi(customerId: string): Observable<ICart> {
-    return this.http.get<ICart>(`${this._baseUrl}/${customerId}`).pipe(
-      catchError(error => {
-        console.error('Error fetching cart from API:', error);
-        // Return empty cart as fallback
-        return of({
-          id: customerId,
-          customerId: customerId,
-          cartItems: []
-        });
-      })
+ clearCache() {
+  this.cartCache$ =  undefined;
+  this.updateCart([]);
+  localStorage.removeItem(this.cartKey);
+}
+
+
+ensureCartExists(customerId: string, forceRefresh = false): Observable<ICart> {
+  if (this.cartCache$ && !forceRefresh) return this.cartCache$;
+
+  const fetchCart = () => this.http.get<ICart>(`${this._baseUrl}/byCustomer/${customerId}`);
+
+  const request$ = fetchCart().pipe(
+    switchMap(cart => {
+      console.log('Fetched cart:', cart); // Log cart details
+      if (!cart?.id) {
+        console.log('No cart found, creating new one for customer:', customerId);
+        return this.http.post<ICart>(this._baseUrl, { customerId }).pipe(
+          switchMap(newCart => {
+            console.log('Created cart:', newCart); // Log created cart
+            return fetchCart(); // Fetch again to ensure consistency
+          })
+        );
+      }
+      return of(cart);
+    }),
+    catchError(error => {
+      console.error('Error in ensureCartExists:', error);
+      if (error.status === 404 || error.status === 204 || (error.status === 500 && error.error?.includes('Not Found'))) {
+        console.log('Cart not found, creating new one for customer:', customerId);
+        return this.http.post<ICart>(this._baseUrl, { customerId }).pipe(
+          switchMap(newCart => {
+            console.log('Created cart after error:', newCart); // Log created cart
+            return fetchCart();
+          })
+        );
+      } else if (error.status === 409) {
+        console.log('Cart conflict, fetching existing cart');
+        return fetchCart();
+      }
+      return throwError(() => error);
+    }),
+    filter(cart => {
+      if (!cart?.id) console.error('Cart ID is missing:', cart);
+      return !!cart?.id;
+    }),
+    take(1),
+    shareReplay(1)
+  );
+
+  if (!forceRefresh) {
+    this.cartCache$ = request$;
+  }
+
+  return request$;
+}
+
+
+syncLocalCartWithApi(customerId: string): Observable<any> {
+  const items = this.cartItemsSubject.value;
+
+  return this.ensureCartExists(customerId, true).pipe(
+    switchMap(cart => {
+      if (!cart?.id) {
+        console.error('❌ Invalid cart ID, cannot sync items:', cart);
+        return throwError(() => new Error('Invalid cart ID'));
+      }
+      console.log('Syncing cart with ID:', cart.id);
+      if (!items.length) {
+        console.log('ℹ️ No items to sync.');
+        return of(null);
+      }
+
+      const requests = items.map(item => {
+        const dto: CartItemCreateDto = {
+          cartId: cart.id,
+          productId: item.Product.id,
+          quantity: item.quantity
+        };
+        console.log('Syncing item:', dto); // Log item details
+        return this.http.post(`${this._cartItemUrl}`, dto).pipe(
+          catchError(error => {
+            console.error('❌ Error syncing item:', error, dto);
+            return of(null);
+          })
+        );
+      });
+
+      return forkJoin(requests);
+    }),
+    tap(() => {
+      console.log('✅ Cart synced with API');
+      this.loadCartFromApi(customerId);
+    }),
+    catchError(err => {
+      console.error('❌ Failed syncing cart with API:', err);
+      return of(null);
+    })
+  );
+}
+
+
+
+  private syncItemToApi(customerId: string, productId: string, quantity: number): Observable<any> {
+    return this.ensureCartExists(customerId).pipe(
+      switchMap(cart =>
+        this.http.get<ICartItem[]>(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
+          switchMap(items => {
+            const existing = items.find(i => i.Product.id === productId);
+            if (existing) {
+              return this.http.put(`${this._cartItemUrl}/${existing.id}`, {
+                ...existing,
+                quantity
+              });
+            } else {
+              const dto: CartItemCreateDto = {
+                cartId: cart.id,
+                productId,
+                quantity
+              };
+              return this.http.post(`${this._cartItemUrl}`, dto);
+            }
+          })
+        )
+      )
     );
   }
 
-  private syncWithApi(customerId: string, productId: string, quantity: number): void {
-    // Check if cart exists for this customer
-    this.http.get<ICart>(`${this._baseUrl}/${customerId}`).pipe(
-      catchError(error => {
-        if (error.status === 404) {
-          // Cart doesn't exist, create it
-          const cartDto: CartCreateDto = { customerId };
-          return this.http.post<ICart>(`${this._baseUrl}`, cartDto);
-        }
-        return throwError(() => error);
-      }),
-      switchMap((cart) => {
-        // Check if item already exists in cart
-        return this.http.get<ICartItem[]>(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
-          catchError(error => {
-            console.error(`Error fetching cart items for cart ${cart.id}:`, error);
-            return of([]);
-          }),
-          switchMap((cartItems) => {
-            const existingItem = cartItems.find(item => item.id === productId);
-
-            if (existingItem) {
-              // Update existing item
-              return this.http.put(`${this._cartItemUrl}/${existingItem.id}`, {
-                ...existingItem,
-                quantity: quantity
-              });
-            } else {
-              // Add new item to cart
-              const cartItemDto: CartItemCreateDto = {
-                productId: productId,
-                cartId: cart.id,
-                quantity: quantity
-              };
-
-              return this.http.post(`${this._cartItemUrl}`, cartItemDto);
+  private removeItemFromApi(customerId: string, productId: string): Observable<any> {
+    return this.ensureCartExists(customerId).pipe(
+      switchMap(cart =>
+        this.http.get<ICartItem[]>(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
+          switchMap(items => {
+            const existing = items.find(i => i.Product.id === productId);
+            if (existing) {
+              return this.http.delete(`${this._cartItemUrl}/${existing.id}`);
             }
+            return of(null);
           })
-        );
-      })
-    ).subscribe({
-      next: () => console.log('Cart synced with API'),
-      error: (err) => console.error('Error syncing cart with API:', err)
-    });
+        )
+      )
+    );
   }
 
-  private removeFromApi(customerId: string, productId: string): void {
-    // Check if cart exists for this customer
-    this.http.get<ICart>(`${this._baseUrl}/${customerId}`).pipe(
-      catchError(error => {
-        if (error.status === 404) {
-          // Cart doesn't exist, nothing to remove
-          return throwError(() => error);
-        }
-        return throwError(() => error);
-      }),
-      switchMap((cart) => {
-        // Check if item exists in cart
-        return this.http.get<ICartItem[]>(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
-          catchError(error => {
-            console.error(`Error fetching cart items for cart ${cart.id}:`, error);
-            return of([]);
-          }),
-          switchMap((cartItems) => {
-            const existingItem = cartItems.find(item => item.id === productId);
-
-            if (existingItem) {
-              // Remove item from cart
-              return this.http.delete(`${this._cartItemUrl}/${existingItem.id}`);
-            } else {
-              // Item doesn't exist in cart
-              return of(null);
-            }
+  private clearCartFromApi(customerId: string): Observable<any> {
+    return this.ensureCartExists(customerId).pipe(
+      switchMap(cart =>
+        this.http.get<ICartItem[]>(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
+          switchMap(items => {
+            const deleteRequests = items.map(i =>
+              this.http.delete(`${this._cartItemUrl}/${i.id}`).pipe(catchError(() => of(null)))
+            );
+            return forkJoin(deleteRequests);
           })
-        );
-      })
-    ).subscribe({
-      next: () => console.log('Item removed from cart in API'),
-      error: (err) => console.error('Error removing item from cart in API:', err)
-    });
-  }
-
-  syncLocalCartWithApi(customerId: string): Observable<any> {
-    const localCart = this.cartItems;
-
-    // First create or get cart
-    return this.http.get<ICart>(`${this._baseUrl}/${customerId}`).pipe(
-      catchError(error => {
-        if (error.status === 404) {
-          // Create new cart if it doesn't exist
-          return this.http.post<ICart>(this._baseUrl, { customerId });
-        }
-        return throwError(() => error);
-      }),
-      switchMap(cart => {
-        if (localCart.length === 0) {
-          return of(null);
-        }
-
-        // Create observables for each cart item
-        const itemObservables = localCart.map(item => {
-          const cartItemDto: CartItemCreateDto = {
-            productId: item.Product.id,
-            cartId: cart.id,
-            quantity: item.quantity
-          };
-
-          return this.http.post(`${this._cartItemUrl}`, cartItemDto).pipe(
-            catchError(error => {
-              console.error('Error adding item to cart:', error);
-              return of(null);
-            })
-          );
-        });
-
-        // Execute all requests
-        return forkJoin(itemObservables);
-      }),
-      tap(() => {
-        console.log('Cart synced with API');
-        // Clear local storage after successful sync
-        this.loadCartFromApi(customerId);
-      })
+        )
+      )
     );
   }
 
   private loadCartFromApi(customerId: string): void {
-    this.http.get<ICart>(`${this._baseUrl}/${customerId}`).subscribe({
+    this.http.get<ICart>(`${this._baseUrl}/byCustomer/${customerId}`).subscribe({
       next: (cart) => {
-        if (cart && cart.cartItems) {
-          this.cartItems = cart.cartItems;
-          this.updateCart();
-        }
+        this.cartItemsSubject.next(cart.cartItems || []);
+        this.updateCart(cart.cartItems || []);
       },
-      error: (error) => console.error('Error loading cart from API:', error)
+      error: (err) => console.error('Error loading cart from API', err)
     });
   }
 }

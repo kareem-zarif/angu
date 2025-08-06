@@ -29,13 +29,16 @@ export class Cart implements OnInit, OnDestroy {
   private totalSubscription: Subscription | null = null;
   private countSubscription: Subscription | null = null;
 
+  //current user
+  currentUserId: string | undefined = undefined;
   constructor(
     private cartService: CartService,
-    private authService:Auth,
+    private _auth: Auth,
     private router: Router
   ) { }
 
   ngOnInit(): void {
+    this.currentUserId = this._auth.getCurrentUser()?.UserId;
     // Subscribe to cart items
     this.itemsSubscription = this.cartService.getCartItems().subscribe(items => {
       this.cartItems = items;
@@ -69,7 +72,7 @@ export class Cart implements OnInit, OnDestroy {
 
   // Update quantity
   updateQuantity(productId: string, quantity: number): void {
-    this.cartService.updateQuantity(productId, quantity);
+    this.cartService.updateQuantity(productId, quantity,this.currentUserId);
     this.showToast('Cart updated');
   }
 
@@ -77,7 +80,7 @@ export class Cart implements OnInit, OnDestroy {
   removeItem(productId: string): void {
     const item = this.cartItems.find(item => item.Product.id === productId);
     if (item) {
-      this.cartService.removeFromCart(productId);
+      this.cartService.removeFromCart(productId,this.currentUserId);
       this.showToast(`${item.Product.name} removed from cart`);
     }
   }
@@ -85,7 +88,7 @@ export class Cart implements OnInit, OnDestroy {
   // Clear cart
   clearCart(): void {
     if (confirm('Are you sure you want to clear your cart?')) {
-      this.cartService.clearCart();
+      this.cartService.clearCart(this.currentUserId);
       this.showToast('Cart cleared');
     }
   }
@@ -111,7 +114,7 @@ export class Cart implements OnInit, OnDestroy {
     }
 
     // Check if user is authenticated
-    if (this.authService.isLoggedIn()) {
+    if (this._auth.isLoggedIn()) {
       // User is authenticated, redirect to checkout page
       // This will be implemented by the authentication team
       this.router.navigate(['/checkout']);

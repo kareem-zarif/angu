@@ -1,9 +1,9 @@
 import { IProduct } from "./i-product";
 
 export interface ICartItem {
- id: string;
+  id?: string;
   quantity: number;
-  Product:IProduct;
+  Product: IProduct;
   // productId: string;
   // productName: string;
   // pricePerPiece: number;
