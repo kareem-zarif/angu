@@ -4,7 +4,8 @@ import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Auth, User } from '../../services/auth';
 import { CartService } from '../../services/cart.service';
-import { WishlistService } from '../../services/wishlist';
+import { WishlistService } from '../../services/wishlistService';
+import { ICartItem } from '../../models/i-cart-item';
 
 interface Language {
   code: string;
@@ -25,7 +26,7 @@ export class Header implements OnInit, OnDestroy {
   // Cart and wishlist state
   cartCount: number = 0;
   cartTotal: number = 0;
-  cartItems: any[] = [];
+  cartItems: ICartItem[] = [];
   wishlistCount: number = 0;
 
   // Language settings
@@ -68,11 +69,10 @@ export class Header implements OnInit, OnDestroy {
       })
     );
 
-    this.subscriptions.add(
-      this.wishlistService.getWishlistCount().subscribe(count => {
-        this.wishlistCount = count;
-      })
-    );
+    this.wishlistService.getWishlistObservable().subscribe(products => {
+      this.wishlistCount = products.length;
+    });
+
 
     // Load saved language preference
     this.loadSavedLanguage();

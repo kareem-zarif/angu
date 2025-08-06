@@ -1,15 +1,15 @@
-export enum ProductApprovalStatus {
-  Pending = 1,
-  Approved = 2,
-  Rejected = 3
-}
+  export enum ProductApprovalStatus {
+    Pending = 1,
+    Approved = 2,
+    Rejected = 3
+  }
 
-export enum ShippingTypes {
-  Free = 1,
-  FreeINSameGovernate = 2,
-  Paid = 3,
-  None = 0
-}
+  export enum ShippingTypes {
+    Free = 1,
+    FreeINSameGovernate = 2,
+    Paid = 3,
+    None = 4
+  }
 
 // Main product interface matching ProductResDto from backend
 export interface IProduct {

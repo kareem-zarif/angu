@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router, Params } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ProductService } from '../../../services/product-service';
-import { WishlistService } from '../../../services/wishlist';
+import { WishlistService } from '../../../services/wishlistService';
 import { CartService } from '../../../services/cart.service';
 import { IProduct } from '../../../models/i-product';
 import { Rating } from '../../rating/rating/rating';
@@ -11,6 +11,7 @@ import { Sidebar } from '../products-sidebar/sidebar/sidebar';
 import { Pagination } from '../../pagination/pagination';
 import { TranslateModule } from '@ngx-translate/core';
 import { SubCategoryService } from '../../../services/sub-category.service';
+import { Auth } from '../../../services/auth';
 
 @Component({
   selector: 'app-product-list',
@@ -53,16 +54,20 @@ export class ProductList implements OnInit, OnDestroy {
 
   toastMessage: string | null = null;
 
+  //current user
+  currentUserId: string | undefined = undefined;
   constructor(
     private productService: ProductService,
     private subCategoryService: SubCategoryService,
     private activatedRoute: ActivatedRoute,
     private wishlistService: WishlistService,
     private cartService: CartService,
-    private router: Router
+    private router: Router,
+    private _auth:Auth
   ) { }
 
   ngOnInit(): void {
+    this.currentUserId=this._auth.getCurrentUser()?.UserId;
     // Load subcategory mapping
     this.loadSubCategoryMapping();
 
@@ -282,7 +287,7 @@ export class ProductList implements OnInit, OnDestroy {
     if (this.isInWishlist(product.id)) {
       this.wishlistService.removeFromWishlist(product.id);
     } else {
-      this.wishlistService.addToWishlist(product);
+      this.wishlistService.addToWishlist(product,this.currentUserId);
     }
   }
 

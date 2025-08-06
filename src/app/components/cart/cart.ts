@@ -2,9 +2,12 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CartService, CartItem } from '../../services/cart.service';
-import { AccountService } from '../../services/account-service';
+import { CartService } from '../../services/cart.service';
 import { Subscription } from 'rxjs';
+import { ICart } from '../../models/i-cart';
+import { ICategory } from '../../models/i-category';
+import { ICartItem } from '../../models/i-cart-item';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-cart',
@@ -14,7 +17,7 @@ import { Subscription } from 'rxjs';
   styleUrl: './cart.css'
 })
 export class Cart implements OnInit, OnDestroy {
-  cartItems: CartItem[] = [];
+  cartItems: ICartItem[] = [];
   cartTotal: number = 0;
   cartCount: number = 0;
 
@@ -26,13 +29,16 @@ export class Cart implements OnInit, OnDestroy {
   private totalSubscription: Subscription | null = null;
   private countSubscription: Subscription | null = null;
 
+  //current user
+  currentUserId: string | undefined = undefined;
   constructor(
     private cartService: CartService,
-    private accountService: AccountService,
+    private _auth: Auth,
     private router: Router
   ) { }
 
   ngOnInit(): void {
+    this.currentUserId = this._auth.getCurrentUser()?.UserId;
     // Subscribe to cart items
     this.itemsSubscription = this.cartService.getCartItems().subscribe(items => {
       this.cartItems = items;
@@ -66,29 +72,29 @@ export class Cart implements OnInit, OnDestroy {
 
   // Update quantity
   updateQuantity(productId: string, quantity: number): void {
-    this.cartService.updateQuantity(productId, quantity);
+    this.cartService.updateQuantity(productId, quantity,this.currentUserId);
     this.showToast('Cart updated');
   }
 
   // Remove item from cart
   removeItem(productId: string): void {
-    const item = this.cartItems.find(item => item.product.id === productId);
+    const item = this.cartItems.find(item => item.Product.id === productId);
     if (item) {
-      this.cartService.removeFromCart(productId);
-      this.showToast(`${item.product.name} removed from cart`);
+      this.cartService.removeFromCart(productId,this.currentUserId);
+      this.showToast(`${item.Product.name} removed from cart`);
     }
   }
 
   // Clear cart
   clearCart(): void {
     if (confirm('Are you sure you want to clear your cart?')) {
-      this.cartService.clearCart();
+      this.cartService.clearCart(this.currentUserId);
       this.showToast('Cart cleared');
     }
   }
 
   // Calculate item price
-  calculateItemPrice(item: CartItem): number {
+  calculateItemPrice(item: ICartItem): number {
     return this.cartService.calculateItemPrice(item);
   }
 
@@ -108,7 +114,7 @@ export class Cart implements OnInit, OnDestroy {
     }
 
     // Check if user is authenticated
-    if (this.accountService.isAuthenticated) {
+    if (this._auth.isLoggedIn()) {
       // User is authenticated, redirect to checkout page
       // This will be implemented by the authentication team
       this.router.navigate(['/checkout']);
@@ -125,7 +131,7 @@ export class Cart implements OnInit, OnDestroy {
 
   // Increment quantity
   incrementQuantity(productId: string): void {
-    const item = this.cartItems.find(item => item.product.id === productId);
+    const item = this.cartItems.find(item => item.Product.id === productId);
     if (item) {
       this.updateQuantity(productId, item.quantity + 1);
     }
@@ -133,7 +139,7 @@ export class Cart implements OnInit, OnDestroy {
 
   // Decrement quantity
   decrementQuantity(productId: string): void {
-    const item = this.cartItems.find(item => item.product.id === productId);
+    const item = this.cartItems.find(item => item.Product.id === productId);
     if (item && item.quantity > 1) {
       this.updateQuantity(productId, item.quantity - 1);
     }

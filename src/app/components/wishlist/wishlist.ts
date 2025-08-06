@@ -1,20 +1,19 @@
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { WishlistService } from '../../services/wishlist';
 import { IProduct, ShippingTypes } from '../../models/i-product';
-import {RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Rating } from '../rating/rating/rating';
 import { Subscription } from 'rxjs';
+import { IWishlist, WishlistService } from '../../services/wishlistService';
 
 @Component({
   selector: 'app-wishlist',
   standalone: true,
-
-  imports: [ RouterModule, CommonModule, Rating],
+  imports: [RouterModule, CommonModule, Rating],
   templateUrl: './wishlist.html'
 })
 export class WishlistComponent implements OnInit, OnDestroy {
+  currenWishlist:IWishlist|null=null;
   wishlist: IProduct[] = [];
   shippingTypes = ShippingTypes;
 
@@ -34,7 +33,7 @@ export class WishlistComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Initial load
-    this.refreshWishlist();
+    // this.refreshWishlist();
 
     // Subscribe to wishlist changes
     this.subscription = this.wishlistService.getWishlistObservable().subscribe(products => {
@@ -48,12 +47,14 @@ export class WishlistComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ... existing code ...404
   refreshWishlist(): void {
-    this.wishlist = this.wishlistService.getWishlist();
-    // Refresh from API
-    this.wishlistService.refreshWishlist();
+    const customerId = 'current-user-id'; // Replace with actual customer ID
+    this.wishlistService.refreshWishlist(customerId);
+    const wishlist = this.wishlistService.getWishlistFromService();
+    this.wishlist = wishlist?.products || [];
   }
-
+  // ... existing code ...
   showToast(message: string): void {
     this.toastMessage = message;
     setTimeout(() => {
