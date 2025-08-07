@@ -1,0 +1,10 @@
+<div class="flex items-center overflow-hidden gap-4 py-4 px-2">
+  <button class="btn btn-sm btn-circle">&#10094;</button>
+
+  <div *ngFor="let cat of categories" class="flex flex-col items-center text-[#483C21]">
+    <img [src]="cat.img" class="w-16 h-16 rounded-full border border-base-300 shadow-sm" />
+    <span class="text-xs font-bold mt-1">{{ cat.name }}</span>
+  </div>
+
+  <button class="btn btn-sm btn-circle">&#10095;</button>
+</div>
