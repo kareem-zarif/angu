@@ -58,6 +58,7 @@ export class Auth {
   httpOptions = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' })
   };
+  
   login(values: LoginDto): Observable<User> {
   this.cartService.clearCache(); // Clear cache before login
   return this.http.post<User>(`${this.baseUrl}/login`, values, this.httpOptions).pipe(
