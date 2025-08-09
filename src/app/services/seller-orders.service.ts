@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of } from 'rxjs';
-import { OrdersService, OrderResDto } from './orders-service';
+import { OrdersService } from './orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from './order-status-history.service';
 import { IOrder } from '../models/i-order';
 import { environment } from '../../environment/environment';
@@ -295,11 +295,11 @@ export class SellerOrdersService {
       this.getOrderStatus(order),
       order.createdOn ? new Date(order.createdOn).toLocaleDateString() : 'N/A'
     ]);
-    
+
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => `"${cell}"`).join(','))
       .join('\n');
-    
+
     return csvContent;
   }
 
@@ -310,4 +310,4 @@ export class SellerOrdersService {
     }
     return 'Pending';
   }
-} 
+}

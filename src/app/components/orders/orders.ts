@@ -3,11 +3,12 @@ import { OrdersService } from '../../services/orders-service';
 import { IOrder } from '../../models/i-order';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { IOrderStatusHistory, OrderStatus } from '../../models/i-order-status-history';
 import { OrderStatusHistoryService } from '../../services/order-status-history.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-orders',
@@ -29,14 +30,21 @@ export class OrdersComponent implements OnInit {
 
   constructor(
     private ordersService: OrdersService,
-    private orderStatusHistoryService: OrderStatusHistoryService
+    private orderStatusHistoryService: OrderStatusHistoryService,
+    private router:Router,
+    private auth:Auth
   ) { }
 
   ngOnInit(): void {
+if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/orders' } });
+      return; //علشان نوقف أي تنفيذ بعد التحويل (يعني مينفذش الكود اللي بعده).
+    }
+
     this.loadOrders();
   }
 
-  loadOrders() {
+  loadOrders(): void {
     this.loading = true;
     this.error = null;
 
@@ -86,7 +94,7 @@ export class OrdersComponent implements OnInit {
     });
   }
 
-  applyFilters() {
+  applyFilters(): void {
     let result = [...this.orders];
 
     // Year filter
@@ -112,44 +120,25 @@ export class OrdersComponent implements OnInit {
 
     // Tab filtering
     if (this.activeTab === 'cancelled') {
-      result = result.filter(order => {
-        if (order.orderStatusHistory && order.orderStatusHistory.length > 0) {
-          // Get the latest status
-          const latestStatus = order.orderStatusHistory.sort((a, b) =>
-            new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-          )[0];
-          return latestStatus.orderStatus === OrderStatus.Cancelled;
-        }
-        return false;
-      });
+      result = result.filter(order => this.getLatestStatus(order) === OrderStatus.Cancelled);
     } else if (this.activeTab === 'buyAgain') {
-      // Filter for delivered orders that can be purchased again
-      result = result.filter(order => {
-        if (order.orderStatusHistory && order.orderStatusHistory.length > 0) {
-          // Get the latest status
-          const latestStatus = order.orderStatusHistory.sort((a, b) =>
-            new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-          )[0];
-          return latestStatus.orderStatus === OrderStatus.Deliverd;
-        }
-        return false;
-      });
+      result = result.filter(order => this.getLatestStatus(order) === OrderStatus.Deliverd);
     }
 
     this.filteredOrders = result;
   }
 
-  onSearch(query: string) {
+  onSearch(query: string): void {
     this.searchQuery = query;
     this.applyFilters();
   }
 
-  onYearChange(year: string) {
+  onYearChange(year: string): void {
     this.selectedYear = year;
     this.applyFilters();
   }
 
-  setTab(tab: 'orders' | 'buyAgain' | 'cancelled') {
+  setTab(tab: 'orders' | 'buyAgain' | 'cancelled') : void{
     this.activeTab = tab;
     this.applyFilters();
   }
