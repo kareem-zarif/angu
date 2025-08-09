@@ -14,6 +14,7 @@ import { ProductDetails } from './components/product/product-details/product-det
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
 import { Recommendation } from './components/recommendation/recommendation';
+import { SellerProfile } from './components/seller-profile/seller-profile';
 
 export const routes: Routes = [
   // Default route
@@ -24,6 +25,7 @@ export const routes: Routes = [
   { path: 'register-selection', component: RegisterSelection },
   { path: 'register', component: Register },
   { path: 'recommendation', component: Recommendation },
+  { path: 'seller-profile', component: SellerProfile },
 
   // Main content routes
   { path: 'products', component: ProductList },

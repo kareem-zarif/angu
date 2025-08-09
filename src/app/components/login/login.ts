@@ -11,6 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Auth, User } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
+import { SellerService } from '../../services/seller.service';
 
 @Component({
   selector: 'app-login',
@@ -31,7 +32,8 @@ export class Login implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private authService: Auth,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private sellerService: SellerService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -126,7 +128,7 @@ export class Login implements OnInit, OnDestroy {
           console.log('Login successful:', response);
           this.isSubmitting = false;
 
-           // ✅ تخزين التوكن في localStorage
+          // ✅ تخزين التوكن في localStorage
           localStorage.setItem('token', response.token);
 
           // حفظ خيار "تذكرني" إذا تم اختياره
@@ -134,8 +136,29 @@ export class Login implements OnInit, OnDestroy {
             localStorage.setItem('rememberMe', 'true');
           }
 
-          // توجيه المستخدم بناءً على دوره
-          this.redirectBasedOnRole();
+          // ✅ التعديل هنا:
+          // لو المستخدم بائع، نتحقق من حالة البروفايل
+          if (response.roles && response.roles.includes('Seller')) {
+            this.sellerService.getProfileStatus().subscribe({
+              next: (status) => {
+                if (status.isComplete) {
+                  // لو البروفايل كامل، نوديه لصفحة البائع الرئيسية
+                  this.router.navigate(['/about-us']);
+                } else {
+                  // لو مش كامل، نوديه لصفحة إكمال البيانات
+                  this.router.navigate(['/seller-profile']);
+                }
+              },
+              error: (err) => {
+                console.error('Error checking profile status', err);
+                // في حالة وجود خطأ، نعتبر أن البروفايل غير مكتمل احتياطيًا
+                this.router.navigate(['/seller-profile']);
+              },
+            });
+          } else {
+            // لو مش بائع، نستخدم الدالة العادية للتوجيه
+            this.redirectBasedOnRole();
+          }
         },
         error: (error) => {
           console.error('Login error:', error);
@@ -179,11 +202,11 @@ export class Login implements OnInit, OnDestroy {
 
     console.log('Redirecting user with roles:', currentUser.roles);
 
-    // توجيه بناءً على الدور - تم إزالة PendingSeller
+    // توجيه بناءً على الدور
     if (currentUser.roles.includes('Admin')) {
       this.router.navigate(['/admin']);
     } else if (currentUser.roles.includes('Seller')) {
-      this.router.navigate(['/seller']);
+      this.router.navigate(['/about-us']);
     } else if (currentUser.roles.includes('Customer')) {
       this.router.navigate(['/products']);
     } else {
@@ -312,5 +335,3 @@ export class Login implements OnInit, OnDestroy {
     localStorage.removeItem('rememberMe');
   }
 }
-
-// enough

@@ -34,17 +34,23 @@ export class Register implements OnInit {
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [
-        Validators.required,
-        Validators.pattern('^(?=.*[0-9])(?=.*[a-z]).{8,32}$')
-      ]],
+      password: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern('^(?=.*[0-9])(?=.*[a-z]).{8,32}$'),
+        ],
+      ],
     });
   }
 
   ngOnInit() {
     // استلام الـ role من query parameters
-    this.route.queryParams.subscribe(params => {
-      if (params['role'] && (params['role'] === 'Customer' || params['role'] === 'Seller')) {
+    this.route.queryParams.subscribe((params) => {
+      if (
+        params['role'] &&
+        (params['role'] === 'Customer' || params['role'] === 'Seller')
+      ) {
         this.selectedRole = params['role'];
         console.log('Selected role from params:', this.selectedRole);
       }
@@ -99,20 +105,34 @@ export class Register implements OnInit {
 
     this.authService.register(formData).subscribe({
       next: (response) => {
+        // console.log('Registration successful:', response);
+        // this.isSubmitting = false;
+
+        // // رسالة نجاح موحدة للجميع
+        // this.successMessage = 'تم إنشاء حسابك بنجاح! مرحباً بك في منصتنا.';
+
+        // // تأخير قبل التوجيه
+        // setTimeout(() => {
+        //   this.router.navigate(['/login'], {
+        //     queryParams: {
+        //       message: 'registration_success',
+        //       email: formData.email
+        //     }
+        //   });
+        // }, 2000);
+
         console.log('Registration successful:', response);
         this.isSubmitting = false;
 
         // رسالة نجاح موحدة للجميع
         this.successMessage = 'تم إنشاء حسابك بنجاح! مرحباً بك في منصتنا.';
 
-        // تأخير قبل التوجيه
         setTimeout(() => {
-          this.router.navigate(['/login'], {
-            queryParams: {
-              message: 'registration_success',
-              email: formData.email
-            }
-          });
+          if (this.selectedRole === 'Seller') {
+            this.router.navigate(['/seller-profile']); // ✅ يروح يكمل البروفايل
+          } else {
+            this.router.navigate(['/login']); // الصفحة الرئيسية للعميل
+          }
         }, 2000);
       },
       error: (error) => {
@@ -122,9 +142,10 @@ export class Register implements OnInit {
         // معالجة محسّنة للأخطاء
         if (error.message) {
           if (error.message.includes('Email address is in use')) {
-            this.errorMessage = 'هذا البريد الإلكتروني مستخدم بالفعل. يرجى استخدام بريد آخر أو تسجيل الدخول.';
+            this.errorMessage =
+              'هذا البريد الإلكتروني مستخدم بالفعل. يرجى استخدام بريد آخر أو تسجيل الدخول.';
             // تسليط الضوء على حقل البريد الإلكتروني
-            this.registerForm.get('email')?.setErrors({ 'emailInUse': true });
+            this.registerForm.get('email')?.setErrors({ emailInUse: true });
           } else if (error.message.includes('Password')) {
             this.errorMessage = 'كلمة المرور لا تلبي المتطلبات المطلوبة.';
           } else {
@@ -139,7 +160,7 @@ export class Register implements OnInit {
 
   // تعليم جميع الحقول كما لو تم لمسها لإظهار رسائل الخطأ
   private markFormGroupTouched() {
-    Object.keys(this.registerForm.controls).forEach(key => {
+    Object.keys(this.registerForm.controls).forEach((key) => {
       const control = this.registerForm.get(key);
       control?.markAsTouched();
     });
@@ -160,7 +181,9 @@ export class Register implements OnInit {
       }
       if (field.errors['minlength']) {
         const requiredLength = field.errors['minlength'].requiredLength;
-        return `${this.getFieldDisplayName(fieldName)} يجب أن يكون على الأقل ${requiredLength} أحرف`;
+        return `${this.getFieldDisplayName(
+          fieldName
+        )} يجب أن يكون على الأقل ${requiredLength} أحرف`;
       }
       if (field.errors['emailInUse']) {
         return 'هذا البريد الإلكتروني مستخدم بالفعل';
@@ -171,10 +194,10 @@ export class Register implements OnInit {
 
   private getFieldDisplayName(fieldName: string): string {
     const displayNames: { [key: string]: string } = {
-      'firstName': 'الاسم الأول',
-      'lastName': 'الاسم الأخير',
-      'email': 'البريد الإلكتروني',
-      'password': 'كلمة المرور'
+      firstName: 'الاسم الأول',
+      lastName: 'الاسم الأخير',
+      email: 'البريد الإلكتروني',
+      password: 'كلمة المرور',
     };
     return displayNames[fieldName] || fieldName;
   }
@@ -183,7 +206,7 @@ export class Register implements OnInit {
   goToLogin() {
     const email = this.registerForm.get('email')?.value;
     this.router.navigate(['/login'], {
-      queryParams: email ? { email } : {}
+      queryParams: email ? { email } : {},
     });
   }
 
@@ -227,10 +250,14 @@ export class Register implements OnInit {
   getPasswordStrengthColor(): string {
     const strength = this.getPasswordStrength();
     switch (strength) {
-      case 'ضعيفة': return 'text-red-500';
-      case 'متوسطة': return 'text-yellow-500';
-      case 'قوية': return 'text-green-500';
-      default: return 'text-gray-500';
+      case 'ضعيفة':
+        return 'text-red-500';
+      case 'متوسطة':
+        return 'text-yellow-500';
+      case 'قوية':
+        return 'text-green-500';
+      default:
+        return 'text-gray-500';
     }
   }
 }
