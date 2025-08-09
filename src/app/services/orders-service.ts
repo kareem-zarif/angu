@@ -7,6 +7,7 @@ import { PaymentService } from './payment-service';
 import { IPaymentMethod, PaymentMethodType } from '../models/i-payment-method';
 import { IOrder } from '../models/i-order';
 import { PaymentMethodService } from './payment-method-service';
+import { Auth } from './auth';
 
 export interface OrderCreateDto {
   totalAmount: number;
@@ -69,12 +70,26 @@ export class OrdersService {
     private http: HttpClient,
     private cartService: CartService,
     private paymentService: PaymentService,
-    private paymentMethodService: PaymentMethodService
+    private paymentMethodService: PaymentMethodService,
   ) { }
 
   // Get all orders
   getOrders(): Observable<IOrder[]> {
-    return this.http.get<IOrder[]>(this.apiUrl);
+    return this.http.get<IOrder[]>(`${this.apiUrl}`).pipe(
+      catchError(error => {
+        console.error('Error fetching orders:', error);
+        return [];
+      })
+    );
+  }
+
+  getOrdersByCustomerId(customerId: string): Observable<IOrder[]> {
+    return this.http.get<IOrder[]>(`${this.apiUrl}?customerId=${customerId}`).pipe(
+      catchError(error => {
+        console.error('Error fetching orders:', error);
+        return [];
+      })
+    );
   }
 
   // Get order by ID
@@ -146,7 +161,7 @@ export class OrdersService {
                 return this.http.post<IOrder>(this.apiUrl, order).pipe(
                   tap(response => {
                     this.cartService.clearCart(customerId);
-                    this.paymentService.processCheckout(response.id,response.paymentMethodId).subscribe({
+                    this.paymentService.processCheckout(response.id, response.paymentMethodId).subscribe({
                       error: err => console.error('Payment failed:', err)
                     });
                   }),
@@ -159,6 +174,7 @@ export class OrdersService {
       })
     );
   }
+
 
 }
 
