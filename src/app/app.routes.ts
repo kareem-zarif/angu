@@ -18,6 +18,7 @@ import { SellerProfile } from './components/seller-profile/seller-profile';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
 import { SuccessComponent } from './components/payment/success/success';
+import { SellerProfileEdit } from './components/seller-profile-edit/seller-profile-edit';
 
 export const routes: Routes = [
   // Default route
@@ -29,6 +30,7 @@ export const routes: Routes = [
   { path: 'register', component: Register },
   { path: 'recommendation', component: Recommendation },
   { path: 'seller-profile', component: SellerProfile },
+  { path: 'seller-profile-edit', component: SellerProfileEdit },
 
   // Main content routes
   { path: 'products', component: ProductList },
