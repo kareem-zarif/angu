@@ -16,7 +16,6 @@ import { WishlistComponent } from './components/wishlist/wishlist';
 import { Recommendation } from './components/recommendation/recommendation';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
-import { SuccessComponent } from './components/payment/success/success';
 
 
 export const routes: Routes = [
@@ -44,7 +43,6 @@ export const routes: Routes = [
 
   // Payment Routes
   { path: 'payment', component: PaymentComponent },
-  { path: 'success', component: SuccessComponent },
 
 
   // Admin routes
