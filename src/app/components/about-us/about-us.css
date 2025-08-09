@@ -1,0 +1,147 @@
+.about-us-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+  font-family: Arial, sans-serif;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.about-arabic {
+  text-align: right;
+  margin-bottom: 48px;
+  color: #6d4c1b;
+}
+
+.about-arabic h3 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.about-arabic p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.about-icon {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #6d4c1b;
+  margin-bottom: 24px;
+}
+
+.about-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 32px 0 16px 0;
+}
+
+.about-desc {
+  text-align: center;
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+  color: #444;
+}
+
+.about-divider {
+  border: none;
+  border-top: 2px solid #6d4c1b;
+  margin: 48px 0;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.about-services {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.about-service {
+  flex: 1 1 220px;
+  background: #f7f5f2;
+  border-radius: 10px;
+  padding: 18px 12px;
+  text-align: center;
+  min-width: 200px;
+  margin: 0 4px;
+}
+
+.about-service-icon {
+  font-size: 2rem;
+  color: #6d4c1b;
+  margin-bottom: 8px;
+}
+
+.about-service h3 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #6d4c1b;
+}
+
+.about-service ul {
+  list-style: disc inside;
+  text-align: left;
+  margin: 0 auto;
+  padding-left: 0;
+  color: #444;
+  font-size: 0.98rem;
+}
+
+.about-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.about-value {
+  background: #f7f5f2;
+  border-radius: 10px;
+  padding: 16px 18px;
+  min-width: 180px;
+  text-align: center;
+  font-size: 1rem;
+  color: #444;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+@media (max-width: 700px) {
+  .about-services {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .about-service {
+    min-width: unset;
+    margin: 0 0 16px 0;
+  }
+  .about-values {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .about-value {
+    min-width: unset;
+    padding: 12px 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  .about-us-container {
+    padding: 10px 2px;
+  }
+  .about-title {
+    font-size: 1.2rem;
+  }
+  .about-desc {
+    font-size: 0.95rem;
+  }
+} 
