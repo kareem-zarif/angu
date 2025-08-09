@@ -2,7 +2,7 @@ export enum OrderStatus {
   Pending = 1,
   Confirmed = 2,
   Shipped = 3,
-  Delivered = 4,
+  Deliverd = 4, // Note: matches backend enum spelling
   Cancelled = 5,
   Returned = 6
 }
