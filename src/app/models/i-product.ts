@@ -1,3 +1,4 @@
+  import { IReview } from './i-reviews'; 
   export enum ProductApprovalStatus {
     Pending = 1,
     Approved = 2,
@@ -29,6 +30,7 @@ export interface IProduct {
   warrantyNMonths?: number;
   shipping: ShippingTypes;
   subCategoryId: string; // Backend returns Guid as string
+  reviews?: IReview[];
 }
 
 // Create DTO interface matching ProductCreateDto from backend
