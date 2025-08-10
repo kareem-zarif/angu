@@ -17,6 +17,8 @@ import { Recommendation } from './components/recommendation/recommendation';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
 import { SuccessComponent } from './components/payment/success/success';
+import { SignalrChat } from './components/signalr-chat/signalr-chat';
+import { Chatbot } from './components/chatbot/chatbot';
 
 
 export const routes: Routes = [
@@ -47,6 +49,10 @@ export const routes: Routes = [
   { path: 'success', component: SuccessComponent },
 
 
+  //signalr routes
+    { path: 'signalr', component: SignalrChat },
+//chatbot routes
+    { path: 'chatbot', component: Chatbot },
   // Admin routes
   {
     path: 'admin',
