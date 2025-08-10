@@ -14,9 +14,11 @@ import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
 import { WishlistComponent } from './components/wishlist/wishlist';
 import { Recommendation } from './components/recommendation/recommendation';
+import { SellerProfile } from './components/seller-profile/seller-profile';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
 import { SuccessComponent } from './components/payment/success/success';
+import { SellerProfileEdit } from './components/seller-profile-edit/seller-profile-edit';
 
 
 export const routes: Routes = [
@@ -28,7 +30,11 @@ export const routes: Routes = [
   { path: 'register-selection', component: RegisterSelection },
   { path: 'register', component: Register },
   { path: 'recommendation', component: Recommendation },
+
   { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
+  { path: 'seller-profile', component: SellerProfile },
+  { path: 'seller-profile-edit', component: SellerProfileEdit },
+
 
   // Main content routes
   { path: 'products', component: ProductList },
