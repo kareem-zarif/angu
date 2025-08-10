@@ -3,7 +3,7 @@ import { OrdersService } from '../../services/orders-service';
 import { IOrder } from '../../models/i-order';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { IOrderStatusHistory, OrderStatus } from '../../models/i-order-status-history';
 import { OrderStatusHistoryService } from '../../services/order-status-history.service';
 import { forkJoin, of } from 'rxjs';
@@ -36,6 +36,7 @@ export class OrdersComponent implements OnInit {
     private orderStatusHistoryService: OrderStatusHistoryService,
     private router: Router,
     private auth: Auth,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
@@ -44,9 +45,21 @@ export class OrdersComponent implements OnInit {
       return; //علشان نوقف أي تنفيذ بعد التحويل (يعني مينفذش الكود اللي بعده).
     }
 
+    // Check for orderId from Stripe redirect
+    const orderId = this.route.snapshot.queryParamMap.get('orderId');
+    if (orderId) {
+      this.showToast('Payment successful! Your order is confirmed.');
+      // Clear query params for clean URL
+      this.router.navigate(['/orders'], { replaceUrl: true });
+    }
     this.loadOrders();
   }
-
+  private showToast(message: string): void {
+    this.error = message; // Reuse error property for success message
+    setTimeout(() => {
+      this.error = null;
+    }, 3000);
+  }
   loadOrders(): void {
     this.loading = true;
     this.error = null;
@@ -197,13 +210,13 @@ export class OrdersComponent implements OnInit {
     return imagePath ? `${environment.imgUrl}${imagePath}` : 'assets/placeholder-image.png';
   }
   getShortOrderId(orderId: string): string {
-  if (!this.shortOrderIds.has(orderId)) {
-    const baseId = orderId.slice(-8);
-    // Simple deterministic hash using orderId length and a fixed modulo
-    const hash = (orderId.length + orderId.charCodeAt(0)) % 100; // 00-99
-    const suffix = hash.toString().padStart(2, '0');
-    this.shortOrderIds.set(orderId, `${suffix}${baseId}`);
+    if (!this.shortOrderIds.has(orderId)) {
+      const baseId = orderId.slice(-8);
+      // Simple deterministic hash using orderId length and a fixed modulo
+      const hash = (orderId.length + orderId.charCodeAt(0)) % 100; // 00-99
+      const suffix = hash.toString().padStart(2, '0');
+      this.shortOrderIds.set(orderId, `${suffix}${baseId}`);
+    }
+    return this.shortOrderIds.get(orderId)!;
   }
-  return this.shortOrderIds.get(orderId)!;
-}
 }

@@ -14,14 +14,14 @@ export class PaymentService {
 
   // orderId: string = '9437fe91-37a5-4dfe-1ff6-08ddce3ce388';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   /**
    * Creates a checkout session for the given order
    * @param orderId The ID of the order to checkout
    * @returns Observable<Checkout> containing session details
    */
-  createCheckoutSession(orderId: string,paymentMethodId?: string): Observable<Checkout> {
+  createCheckoutSession(orderId: string, paymentMethodId?: string): Observable<Checkout> {
     const url = `${this.apiUrl}/Stripe/checkout`;
 
     // Create FormData to match [FromForm] parameter in .NET API
