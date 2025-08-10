@@ -14,19 +14,23 @@ export class PaymentService {
 
   // orderId: string = '9437fe91-37a5-4dfe-1ff6-08ddce3ce388';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   /**
    * Creates a checkout session for the given order
    * @param orderId The ID of the order to checkout
    * @returns Observable<Checkout> containing session details
    */
-  createCheckoutSession(orderId: string): Observable<Checkout> {
+  createCheckoutSession(orderId: string, paymentMethodId?: string): Observable<Checkout> {
     const url = `${this.apiUrl}/Stripe/checkout`;
-    
+
     // Create FormData to match [FromForm] parameter in .NET API
     const formData = new FormData();
     formData.append('orderId', orderId);
+
+    if (paymentMethodId) {
+      formData.append('paymentMethodId', paymentMethodId);
+    }
 
     return this.http.post<Checkout>(url, formData).pipe(
       catchError(this.handleError)
@@ -46,8 +50,8 @@ export class PaymentService {
    * @param orderId The order ID to process
    * @returns Observable<boolean> indicating success
    */
-  processCheckout(orderId: string): Observable<boolean> {
-    return this.createCheckoutSession(orderId).pipe(
+  processCheckout(orderId: string,paymentMethodId?: string): Observable<boolean> {
+    return this.createCheckoutSession(orderId,paymentMethodId).pipe(
       map((checkout: Checkout) => {
         if (checkout.redirectionUrl) {
           this.redirectToPayment(checkout.redirectionUrl);
@@ -66,14 +70,14 @@ export class PaymentService {
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An unknown error occurred';
-    
+
     if (error.error instanceof ErrorEvent) {
       // Client-side error
       errorMessage = `Client Error: ${error.error.message}`;
     } else {
       // Server-side error
       errorMessage = `Server Error ${error.status}: ${error.message}`;
-      
+
       // Handle specific status codes
       switch (error.status) {
         case 400:
@@ -87,7 +91,7 @@ export class PaymentService {
           break;
       }
     }
-    
+
     console.error('Payment Service Error:', errorMessage);
     return throwError(() => new Error(errorMessage));
   }

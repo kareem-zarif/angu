@@ -5,6 +5,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { WishlistService } from './wishlistService';
 import { CartService } from './cart.service';
+import { OrdersService } from './orders-service';
 
 export interface User {
   UserId: string;
@@ -32,13 +33,18 @@ export interface RegisterDto {
   providedIn: 'root'
 })
 export class Auth {
-  baseUrl = 'https://localhost:7253/api/Account';
+  baseUrl =`${environment.apiUrl}/Account`;
   private currentUserSource = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSource.asObservable();
 
   jwtHelper = new JwtHelperService();
 
-  constructor(private http: HttpClient, private wishlistService: WishlistService, private cartService: CartService) {
+  constructor(
+    private http: HttpClient,
+     private wishlistService: WishlistService,
+      private cartService: CartService,
+    private ordersService:OrdersService
+  ) {
     // تحميل المستخدم من localStorage عند بدء التطبيق
     this.loadCurrentUserFromStorage();
   }
@@ -58,6 +64,7 @@ export class Auth {
   httpOptions = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' })
   };
+
   login(values: LoginDto): Observable<User> {
   this.cartService.clearCache(); // Clear cache before login
   return this.http.post<User>(`${this.baseUrl}/login`, values, this.httpOptions).pipe(
@@ -100,10 +107,15 @@ export class Auth {
               )
             )
           )
+        ),switchMap(() =>
+          this.ordersService.getOrders().pipe(
+            tap(orders => console.log('✅ Orders loaded:', orders.length)),
+            map(() => user)
+          )
         ),
         map(() => user),
         catchError(err => {
-          console.error('❌ Error with wishlist/cart sync:', err);
+          console.error('❌ Error with wishlist/cart/orders:', err);
           return of(user);
         })
       );

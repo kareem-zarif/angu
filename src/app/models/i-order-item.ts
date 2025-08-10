@@ -7,4 +7,5 @@ export interface IOrderItem {
   totalPrice: number;
   orderId: string;
   productImage?: string;
+  unitPrice?: number; // Added as optional
 }

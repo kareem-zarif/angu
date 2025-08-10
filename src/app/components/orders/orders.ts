@@ -3,11 +3,14 @@ import { OrdersService } from '../../services/orders-service';
 import { IOrder } from '../../models/i-order';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { IOrderStatusHistory, OrderStatus } from '../../models/i-order-status-history';
 import { OrderStatusHistoryService } from '../../services/order-status-history.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { Auth } from '../../services/auth';
+import { environment } from '../../../environment/environment';
+import { IOrderItem } from '../../models/i-order-item';
 
 @Component({
   selector: 'app-orders',
@@ -19,7 +22,7 @@ export class OrdersComponent implements OnInit {
   orders: IOrder[] = [];
   filteredOrders: IOrder[] = [];
   searchQuery: string = '';
-  selectedYear: string = '2024';
+  selectedYear: string = '2025';
   activeTab: 'orders' | 'buyAgain' | 'cancelled' = 'orders';
   loading: boolean = false;
   error: string | null = null;
@@ -27,22 +30,57 @@ export class OrdersComponent implements OnInit {
   // Add OrderStatus enum as a class property to use in template
   OrderStatus = OrderStatus;
 
+  private shortOrderIds: Map<string, string> = new Map();
   constructor(
     private ordersService: OrdersService,
-    private orderStatusHistoryService: OrderStatusHistoryService
+    private orderStatusHistoryService: OrderStatusHistoryService,
+    private router: Router,
+    private auth: Auth,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/orders' } });
+      return; //علشان نوقف أي تنفيذ بعد التحويل (يعني مينفذش الكود اللي بعده).
+    }
+
+    // Check for orderId from Stripe redirect
+    const orderId = this.route.snapshot.queryParamMap.get('orderId');
+    if (orderId) {
+      this.showToast('Payment successful! Your order is confirmed.');
+      // Clear query params for clean URL
+      this.router.navigate(['/orders'], { replaceUrl: true });
+    }
     this.loadOrders();
   }
-
-  loadOrders() {
+  private showToast(message: string): void {
+    this.error = message; // Reuse error property for success message
+    setTimeout(() => {
+      this.error = null;
+    }, 3000);
+  }
+  loadOrders(): void {
     this.loading = true;
     this.error = null;
 
-    this.ordersService.getOrders().subscribe({
+    const currUser = this.auth.getCurrentUser();
+    if (!currUser?.UserId || typeof currUser?.UserId !== 'string') {
+      this.error = 'User not authenticated';
+      this.loading = false;
+      return;
+    }
+
+    this.ordersService.getOrdersByCustomerId(currUser?.UserId).subscribe({
       next: (orders) => {
-        this.orders = orders;
+        // this.orders = orders;
+        this.orders = orders.map(order => ({
+          ...order,
+          orderItems: order.orderItems.map(item => ({
+            ...item,
+            unitPrice: item.quantity ? item.totalPrice / item.quantity : item.pricePerPiece // Fallback to pricePerPiece if quantity is 0
+          } as IOrderItem))
+        } as IOrder));
 
         // For each order, ensure we have the latest status
         const orderStatusObservables = orders.map(order => {
@@ -86,7 +124,7 @@ export class OrdersComponent implements OnInit {
     });
   }
 
-  applyFilters() {
+  applyFilters(): void {
     let result = [...this.orders];
 
     // Year filter
@@ -112,44 +150,25 @@ export class OrdersComponent implements OnInit {
 
     // Tab filtering
     if (this.activeTab === 'cancelled') {
-      result = result.filter(order => {
-        if (order.orderStatusHistory && order.orderStatusHistory.length > 0) {
-          // Get the latest status
-          const latestStatus = order.orderStatusHistory.sort((a, b) =>
-            new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-          )[0];
-          return latestStatus.orderStatus === OrderStatus.Cancelled;
-        }
-        return false;
-      });
+      result = result.filter(order => this.getLatestStatus(order) === OrderStatus.Cancelled);
     } else if (this.activeTab === 'buyAgain') {
-      // Filter for delivered orders that can be purchased again
-      result = result.filter(order => {
-        if (order.orderStatusHistory && order.orderStatusHistory.length > 0) {
-          // Get the latest status
-          const latestStatus = order.orderStatusHistory.sort((a, b) =>
-            new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
-          )[0];
-          return latestStatus.orderStatus === OrderStatus.Deliverd;
-        }
-        return false;
-      });
+      result = result.filter(order => this.getLatestStatus(order) === OrderStatus.Deliverd);
     }
 
     this.filteredOrders = result;
   }
 
-  onSearch(query: string) {
+  onSearch(query: string): void {
     this.searchQuery = query;
     this.applyFilters();
   }
 
-  onYearChange(year: string) {
+  onYearChange(year: string): void {
     this.selectedYear = year;
     this.applyFilters();
   }
 
-  setTab(tab: 'orders' | 'buyAgain' | 'cancelled') {
+  setTab(tab: 'orders' | 'buyAgain' | 'cancelled'): void {
     this.activeTab = tab;
     this.applyFilters();
   }
@@ -185,5 +204,19 @@ export class OrdersComponent implements OnInit {
     return [...order.orderStatusHistory].sort((a, b) =>
       new Date(b.modifiedOn).getTime() - new Date(a.modifiedOn).getTime()
     );
+  }
+
+  getImageUrl(imagePath: string | undefined): string {
+    return imagePath ? `${environment.imgUrl}${imagePath}` : 'assets/placeholder-image.png';
+  }
+  getShortOrderId(orderId: string): string {
+    if (!this.shortOrderIds.has(orderId)) {
+      const baseId = orderId.slice(-8);
+      // Simple deterministic hash using orderId length and a fixed modulo
+      const hash = (orderId.length + orderId.charCodeAt(0)) % 100; // 00-99
+      const suffix = hash.toString().padStart(2, '0');
+      this.shortOrderIds.set(orderId, `${suffix}${baseId}`);
+    }
+    return this.shortOrderIds.get(orderId)!;
   }
 }

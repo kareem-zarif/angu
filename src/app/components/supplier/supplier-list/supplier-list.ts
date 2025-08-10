@@ -215,7 +215,7 @@ export class SupplierList implements OnInit, OnDestroy {
   // Add product to cart (for sample request)
   requestSample(product: IProduct, event: Event): void {
     event.stopPropagation(); // Prevent event bubbling
-    this.cartService.addToCart(product);
+    this.cartService.addToCart(product,undefined,this.currentUserId);
     this.showToast(`تمت إضافة ${product.name} إلى السلة`);
   }
 
@@ -249,7 +249,7 @@ export class SupplierList implements OnInit, OnDestroy {
 
   // Add product to cart
   addToCart(product: IProduct): void {
-    this.cartService.addToCart(product);
+    this.cartService.addToCart(product,undefined,this.currentUserId);
     // Show toast or notification here
   }
 

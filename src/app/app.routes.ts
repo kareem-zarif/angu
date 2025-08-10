@@ -19,6 +19,8 @@ import { PaymentComponent } from './components/payment/payment/payment';
 import { SuccessComponent } from './components/payment/success/success';
 import { SignalrChat } from './components/signalr-chat/signalr-chat';
 import { Chatbot } from './components/chatbot/chatbot';
+import { PaymentCancel } from './components/payment/payment-cancel/payment-cancel';
+
 
 
 export const routes: Routes = [
@@ -46,8 +48,7 @@ export const routes: Routes = [
 
   // Payment Routes
   { path: 'payment', component: PaymentComponent },
-  { path: 'success', component: SuccessComponent },
-
+  { path: 'paymentCancel', component: PaymentCancel },
 
   //signalr routes
     { path: 'signalr', component: SignalrChat },

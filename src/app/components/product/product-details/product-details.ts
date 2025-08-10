@@ -150,7 +150,7 @@ export class ProductDetails implements OnInit, OnDestroy {
 
   addToCart(): void {
     if (!this.product) return;
-    this.cartService.addToCart(this.product, this.quantity);
+    this.cartService.addToCart(this.product, this.quantity,this.currentUserId);
     this.router.navigate(['/cart']);
   }
 

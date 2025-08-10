@@ -278,7 +278,7 @@ export class ProductList implements OnInit, OnDestroy {
 
   addToCart(product: IProduct, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product);
+    this.cartService.addToCart(product,undefined,this.currentUserId);
     // Show toast or notification here if needed
   }
 
@@ -313,7 +313,7 @@ export class ProductList implements OnInit, OnDestroy {
 
   requestSample(product: IProduct, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product);
+    this.cartService.addToCart(product,undefined,this.currentUserId);
     // Show toast notification
     this.showToast(`تمت إضافة ${product.name} إلى السلة`);
   }
