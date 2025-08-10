@@ -1,0 +1,89 @@
+<div class="payment-container">
+  <div class="container">
+    <div class="payment-card">
+      <!-- Payment Header -->
+      <div class="payment-header">
+        <i class="fas fa-credit-card"></i>
+        <h2>Secure Checkout</h2>
+        <p class="mb-0 opacity-75">Complete your payment securely with Stripe</p>
+      </div>
+      
+      <!-- Payment Body -->
+      <div class="payment-body">
+        <!-- Payment Information -->
+        <div class="payment-info">
+          <h6><i class="fas fa-info-circle me-2"></i>How it works</h6>
+          <p>Enter your order ID below and you'll be redirected to our secure Stripe payment page to complete your purchase.</p>
+        </div>
+        
+        <!-- Success Alert -->
+        <div class="alert alert-success d-flex align-items-center" *ngIf="successMessage">
+          <i class="fas fa-check-circle me-2"></i>
+          <span>{{ successMessage }}</span>
+        </div>
+        
+        <!-- Error Alert -->
+        <div class="alert alert-danger d-flex align-items-center" *ngIf="errorMessage">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+        
+        <!-- Payment Form -->
+        <form [formGroup]="paymentForm" (ngSubmit)="onSubmit()" novalidate>
+          <!-- Order ID Input -->
+          <div class="form-floating">
+            <input 
+              type="text" 
+              class="form-control" 
+              [class.is-invalid]="hasError('orderId')"
+              id="orderId" 
+              formControlName="orderId"
+              placeholder="Enter your order ID"
+              autocomplete="off"
+              [disabled]="isLoading">
+            <label for="orderId">
+              <i class="fas fa-receipt me-2"></i>Order ID
+            </label>
+            
+            <!-- Validation Messages -->
+            <div class="invalid-feedback" *ngIf="hasError('orderId')">
+              <div *ngIf="getFormControl('orderId')?.errors?.['required']">
+                Order ID is required
+              </div>
+              <div *ngIf="getFormControl('orderId')?.errors?.['minlength']">
+                Order ID must not be empty
+              </div>
+            </div>
+          </div>
+          
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            class="btn btn-payment text-white"
+            [disabled]="isLoading || paymentForm.invalid">
+            <span *ngIf="isLoading" class="loading-spinner"></span>
+            <i class="fas fa-lock me-2" *ngIf="!isLoading"></i>
+            <span *ngIf="!isLoading">Proceed to Payment</span>
+            <span *ngIf="isLoading">Processing...</span>
+          </button>
+          
+          <!-- Reset Button -->
+          <button 
+            type="button" 
+            class="btn btn-reset"
+            (click)="onReset()"
+            [disabled]="isLoading">
+            <i class="fas fa-undo me-2"></i>
+            Reset Form
+          </button>
+        </form>
+        
+        <!-- Security Badge -->
+        <div class="security-badge">
+          <i class="fas fa-shield-alt"></i>
+          <span>SSL Encrypted • Powered by Stripe</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

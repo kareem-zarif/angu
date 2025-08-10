@@ -1,0 +1,36 @@
+<div class="categories-scroll-container relative">
+  <!-- Left scroll button -->
+  <button
+    class="scroll-arrow scroll-left absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full shadow-md p-2"
+    (click)="scrollLeft()">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+      class="w-5 h-5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+  </button>
+
+  <!-- Categories container -->
+  <div #categoriesContainer class="categories-container flex overflow-x-auto py-4 px-8 hide-scrollbar">
+    <div *ngFor="let category of categories"
+      class="category-item flex flex-col items-center mx-3 cursor-pointer transition-all"
+      [ngClass]="{'selected-category': selectedCategoryId === category.id}" (click)="selectCategory(category.id)">
+      <div class="category-image-container mb-2 rounded-full overflow-hidden border-2 transition-all"
+        [ngClass]="{'border-[#483C21]': selectedCategoryId === category.id, 'border-transparent': selectedCategoryId !== category.id}">
+        <img [src]="category.img" [alt]="category.name" class="w-16 h-16 object-cover" />
+      </div>
+      <span class="text-xs font-medium" [ngClass]="{'text-[#483C21] font-bold': selectedCategoryId === category.id}">
+        {{ category.name }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Right scroll button -->
+  <button
+    class="scroll-arrow scroll-right absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full shadow-md p-2"
+    (click)="scrollRight()">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+      class="w-5 h-5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    </svg>
+  </button>
+</div>
