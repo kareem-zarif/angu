@@ -28,6 +28,7 @@ export const routes: Routes = [
   { path: 'register-selection', component: RegisterSelection },
   { path: 'register', component: Register },
   { path: 'recommendation', component: Recommendation },
+  { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
 
   // Main content routes
   { path: 'products', component: ProductList },
@@ -83,6 +84,11 @@ export const routes: Routes = [
         path: 'categories',
         loadComponent: () => import('./components/admin-categories/admin-categories')
           .then(m => m.AdminCategoriesComponent)
+      },
+      {
+        path: 'subcategories',
+        loadComponent: () => import('./components/admin-subcategories/admin-subcategories')
+          .then(m => m.AdminSubCategoriesComponent)
       }
     ]
   },

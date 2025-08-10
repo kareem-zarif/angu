@@ -1,4 +1,4 @@
-<app-header *ngIf="!isAdminRoute()"></app-header>
+<app-header *ngIf="!shouldHideMainHeader()"></app-header>
 
 <div class="container">
   <router-outlet></router-outlet>
@@ -6,8 +6,8 @@
 
 
 <!-- <app-cart></app-cart> -->
-<!-- <app-footer *ngIf="!isAdminRoute()"></app-footer> -->
+<!-- <app-footer *ngIf="!shouldHideMainHeader()"></app-footer> -->
 
-<app-footer></app-footer>
+<app-footer *ngIf="!shouldHideMainHeader()"></app-footer>
 
 

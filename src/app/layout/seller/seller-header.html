@@ -137,13 +137,21 @@
                 <button (click)="markAllAsRead()" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
               </div>
               <div class="space-y-3 max-h-64 overflow-y-auto">
-                <div *ngFor="let notification of notifications" class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded">
-                  <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                <div 
+                  *ngFor="let notification of notifications" 
+                  class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                  [class.bg-blue-50]="!notification.isRead"
+                  (click)="onNotificationClick(notification)"
+                >
+                  <span class="text-lg" [class]="getNotificationColorClass(notification.type)">
+                    {{ getNotificationIcon(notification.type) }}
+                  </span>
                   <div class="flex-1">
                     <div class="font-medium text-gray-800">{{ notification.title }}</div>
                     <div class="text-sm text-gray-500">{{ notification.message }}</div>
                     <div class="text-xs text-gray-400 mt-1">{{ formatTime(notification.timestamp) }}</div>
                   </div>
+                  <div *ngIf="!notification.isRead" class="w-2 h-2 bg-blue-500 rounded-full"></div>
                 </div>
               </div>
             </div>

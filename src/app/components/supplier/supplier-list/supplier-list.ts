@@ -98,7 +98,7 @@ export class SupplierList implements OnInit, OnDestroy {
     this.subCategoryService.getAll().subscribe({
       next: (subCategories) => {
         subCategories.forEach(sc => {
-          this.subCategoryToCategory.set(sc.id, sc.categoryId);
+          this.subCategoryToCategory.set(sc.id, sc.categoryName);
         });
       },
       error: (error) => {

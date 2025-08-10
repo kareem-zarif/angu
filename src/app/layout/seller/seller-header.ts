@@ -1,9 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { SellerDashboardService, SellerDashboardStats, SellerNotification } from '../../services/seller-dashboard.service';
+import { Subscription } from 'rxjs';
+import { SellerDashboardService, SellerDashboardStats } from '../../services/seller-dashboard.service';
+import { LocalStorageNotificationService, LocalNotification, NotificationType } from '../../services/local-storage-notification.service';
+import { Auth } from '../../services/auth';
+import { forkJoin, interval, Subscription as RxSubscription } from 'rxjs';
+import { ProductService } from '../../services/product-service';
+import { ProductApprovalStatus } from '../../models/i-product';
+import { SellerOrdersService } from '../../services/seller-orders.service';
 
 @Component({
   selector: 'app-seller-header',
@@ -12,19 +19,24 @@ import { SellerDashboardService, SellerDashboardStats, SellerNotification } from
   templateUrl: './seller-header.html',
   styleUrl: './seller-header.css'
 })
-export class SellerHeaderComponent implements OnInit {
+export class SellerHeaderComponent implements OnInit, OnDestroy {
   dashboardStats: SellerDashboardStats = {
     totalProducts: 0,
     activeProducts: 0,
+    pendingProducts: 0,
+    rejectedProducts: 0,
     totalOrders: 0,
     pendingOrders: 0,
     completedOrders: 0,
+    cancelledOrders: 0,
     totalRevenue: 0,
     monthlyRevenue: 0,
+    weeklyRevenue: 0,
     totalCustomers: 0,
     averageRating: 0,
     totalReviews: 0,
-    monthlyGrowth: 0
+    monthlyGrowth: 0,
+    lowStockProducts: 0
   };
   headerStats = {
     totalProducts: 0,
@@ -32,7 +44,7 @@ export class SellerHeaderComponent implements OnInit {
     totalEarnings: 0,
     monthlyGrowth: 0
   };
-  notifications: SellerNotification[] = [];
+  notifications: LocalNotification[] = [];
   notificationCount = 0;
   showNotifications = false;
   showUserMenu = false;
@@ -41,14 +53,40 @@ export class SellerHeaderComponent implements OnInit {
   searchResults: any[] = [];
   userName = 'John Seller';
   userInitials = 'JS';
+  private subscription = new Subscription();
+  private currentSellerId: string = '';
+  private refreshSubscription?: RxSubscription;
 
   constructor(
     private sellerDashboardService: SellerDashboardService,
-    private router: Router
+    private localNotificationService: LocalStorageNotificationService,
+    private router: Router,
+    private auth: Auth,
+    private productService: ProductService,
+    private sellerOrdersService: SellerOrdersService
   ) {}
 
   ngOnInit() {
+    this.currentSellerId = this.auth.getCurrentUser()?.UserId || '';
     this.loadDashboardData();
+    this.loadHeaderStats();
+    // Periodically refresh stats to keep navbar numbers in sync
+    this.refreshSubscription = interval(30000).subscribe(() => this.loadHeaderStats());
+    
+    // Subscribe to real-time notifications from local storage service
+    if (this.currentSellerId) {
+      this.subscription.add(
+        this.localNotificationService.getSellerNotifications(this.currentSellerId).subscribe(notifications => {
+          this.notifications = notifications;
+          this.notificationCount = notifications.filter(n => !n.isRead).length;
+        })
+      );
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+    this.refreshSubscription?.unsubscribe();
   }
 
   loadDashboardData() {
@@ -56,12 +94,6 @@ export class SellerHeaderComponent implements OnInit {
     this.sellerDashboardService.getDashboardStats().subscribe({
       next: (stats) => {
         this.dashboardStats = stats;
-        this.headerStats = {
-          totalProducts: stats.totalProducts,
-          pendingOrders: stats.pendingOrders,
-          totalEarnings: stats.totalRevenue,
-          monthlyGrowth: stats.monthlyGrowth
-        };
       },
       error: (error) => {
         console.error('Error loading dashboard stats:', error);
@@ -69,53 +101,51 @@ export class SellerHeaderComponent implements OnInit {
         this.dashboardStats = {
           totalProducts: 156,
           activeProducts: 128,
+          pendingProducts: 20,
+          rejectedProducts: 8,
           totalOrders: 89,
           pendingOrders: 23,
           completedOrders: 66,
+          cancelledOrders: 0,
           totalRevenue: 15420.50,
           monthlyRevenue: 1250.00,
+          weeklyRevenue: 300.00,
           totalCustomers: 45,
           averageRating: 4.3,
           totalReviews: 67,
-          monthlyGrowth: 12.5
-        };
-        this.headerStats = {
-          totalProducts: 156,
-          pendingOrders: 23,
-          totalEarnings: 15420.50,
-          monthlyGrowth: 12.5
+          monthlyGrowth: 12.5,
+          lowStockProducts: 5
         };
       }
     });
 
-    // Load notifications
-    this.sellerDashboardService.getNotifications().subscribe({
-      next: (notifications) => {
-        this.notifications = notifications;
-        this.notificationCount = notifications.filter(n => !n.isRead).length;
+    // Load notifications - handled by subscription in ngOnInit
+  }
+
+  private loadHeaderStats() {
+    // Products + pending from products; earnings from orders
+    forkJoin({
+      products: this.productService.getAllForSeller(),
+      orders: this.sellerOrdersService.getSellerOrders()
+    }).subscribe({
+      next: ({ products, orders }) => {
+        const totalProducts = products.length;
+        const pendingProducts = products.filter(p => p.approvalStatus === ProductApprovalStatus.Pending).length;
+        const totalEarnings = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+        this.headerStats = {
+          totalProducts,
+          pendingOrders: pendingProducts,
+          totalEarnings,
+          monthlyGrowth: this.dashboardStats.monthlyGrowth || 0
+        };
       },
-      error: (error) => {
-        console.error('Error loading notifications:', error);
-        // Fallback to mock data
-        this.notifications = [
-          {
-            id: '1',
-            title: 'New Order Received',
-            message: 'Order #12345 has been placed',
-            type: 'order',
-            isRead: false,
-            timestamp: new Date()
-          },
-          {
-            id: '2',
-            title: 'Low Stock Alert',
-            message: 'Product "Steel Pipe" is running low on stock',
-            type: 'stock',
-            isRead: true,
-            timestamp: new Date()
-          }
-        ];
-        this.notificationCount = this.notifications.filter(n => !n.isRead).length;
+      error: () => {
+        this.headerStats = {
+          totalProducts: this.dashboardStats.totalProducts || 0,
+          pendingOrders: this.dashboardStats.pendingOrders || 0,
+          totalEarnings: this.dashboardStats.totalRevenue || 0,
+          monthlyGrowth: this.dashboardStats.monthlyGrowth || 0
+        };
       }
     });
   }
@@ -152,6 +182,10 @@ export class SellerHeaderComponent implements OnInit {
   }
 
   markNotificationAsRead(notificationId: string) {
+    // Mark as read in local storage service
+    this.localNotificationService.markAsRead(notificationId);
+    
+    // Update local state
     const notification = this.notifications.find(n => n.id === notificationId);
     if (notification && !notification.isRead) {
       notification.isRead = true;
@@ -160,18 +194,14 @@ export class SellerHeaderComponent implements OnInit {
   }
 
   markAllAsRead() {
-    this.sellerDashboardService.markAllNotificationsAsRead().subscribe({
-      next: () => {
-        this.notifications.forEach(n => n.isRead = true);
-        this.notificationCount = 0;
-      },
-      error: (error) => {
-        console.error('Error marking notifications as read:', error);
-        // Fallback to local update
-        this.notifications.forEach(n => n.isRead = true);
-        this.notificationCount = 0;
-      }
-    });
+    if (this.currentSellerId) {
+      // Mark all as read in local storage service
+      this.localNotificationService.markAllAsRead('seller', this.currentSellerId);
+      
+      // Update local state
+      this.notifications.forEach(n => n.isRead = true);
+      this.notificationCount = 0;
+    }
   }
 
   getSearchResultIcon(type: string): string {
@@ -180,6 +210,23 @@ export class SellerHeaderComponent implements OnInit {
       case 'order': return '📋';
       case 'customer': return '👤';
       default: return '📄';
+    }
+  }
+
+  getNotificationIcon(type: NotificationType): string {
+    return this.localNotificationService.getNotificationIcon(type);
+  }
+
+  getNotificationColorClass(type: NotificationType): string {
+    return this.localNotificationService.getNotificationColorClass(type);
+  }
+
+  onNotificationClick(notification: LocalNotification): void {
+    if (notification.actionUrl) {
+      this.router.navigate([notification.actionUrl]);
+    }
+    if (!notification.isRead) {
+      this.markNotificationAsRead(notification.id);
     }
   }
 
@@ -198,7 +245,7 @@ export class SellerHeaderComponent implements OnInit {
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'EGP'
     }).format(amount);
   }
 
