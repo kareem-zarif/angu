@@ -16,7 +16,11 @@ import { WishlistComponent } from './components/wishlist/wishlist';
 import { Recommendation } from './components/recommendation/recommendation';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
+import { SuccessComponent } from './components/payment/success/success';
+import { SignalrChat } from './components/signalr-chat/signalr-chat';
+import { Chatbot } from './components/chatbot/chatbot';
 import { PaymentCancel } from './components/payment/payment-cancel/payment-cancel';
+
 
 
 export const routes: Routes = [
@@ -46,6 +50,10 @@ export const routes: Routes = [
   { path: 'payment', component: PaymentComponent },
   { path: 'paymentCancel', component: PaymentCancel },
 
+  //signalr routes
+    { path: 'signalr', component: SignalrChat },
+//chatbot routes
+    { path: 'chatbot', component: Chatbot },
   // Admin routes
   {
     path: 'admin',

@@ -3,3 +3,4 @@ export const environment = {
   apiUrl: 'https://localhost:7253/api',
   imgUrl:'https://localhost:7253'
 };
+// https://localhost:7253
