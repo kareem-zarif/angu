@@ -1,14 +1,18 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environment/environment';
-import { BehaviorSubject, map, catchError, throwError, Observable } from 'rxjs';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, map, catchError, throwError, Observable, tap, exhaustMap, switchMap, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
+import { WishlistService } from './wishlistService';
+import { CartService } from './cart.service';
 
 export interface User {
+  UserId: string;
   email: string;
   displayName: string;
   token: string;
   roles: string[];
+  isAuthenticated: boolean;
 }
 
 export interface LoginDto {
@@ -28,13 +32,13 @@ export interface RegisterDto {
   providedIn: 'root'
 })
 export class Auth {
-  baseUrl = 'https://localhost:7253/api/account';
+  baseUrl = 'https://localhost:7253/api/Account';
   private currentUserSource = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSource.asObservable();
 
   jwtHelper = new JwtHelperService();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private wishlistService: WishlistService, private cartService: CartService) {
     // تحميل المستخدم من localStorage عند بدء التطبيق
     this.loadCurrentUserFromStorage();
   }
@@ -51,19 +55,66 @@ export class Auth {
       catchError(this.handleError)
     );
   }
-
+  httpOptions = {
+    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  };
   login(values: LoginDto): Observable<User> {
-    return this.http.post<User>(`${this.baseUrl}/login`, values).pipe(
-      map((user: User) => {
-        if (user && user.token) {
-          this.setCurrentUser(user);
-          return user;
-        }
-        throw new Error('Invalid response from server');
-      }),
-      catchError(this.handleError)
-    );
-  }
+  this.cartService.clearCache(); // Clear cache before login
+  return this.http.post<User>(`${this.baseUrl}/login`, values, this.httpOptions).pipe(
+    map((response: any) => {
+      if (response && response.token) {
+        const user: User = {
+          UserId: response.UserId,
+          email: response.email,
+          displayName: response.displayName,
+          token: response.token,
+          isAuthenticated: true,
+          roles: []
+        };
+        this.setCurrentUser(user);
+        return user;
+      }
+      throw new Error('Invalid response from server');
+    }),
+    exhaustMap((user: User) => {
+      const customerId = user.UserId;
+      if (!customerId) return of(user);
+
+      return this.wishlistService.ensureWishlistExists(customerId).pipe(
+        tap(wishlist => {
+          console.log('✅ Wishlist ensured or created:', wishlist.id);
+        }),
+        switchMap((wishlist) =>
+          this.wishlistService.syncLocalWishlistWithApi(customerId, wishlist.id).pipe(
+            tap(() => console.log('✅ Local wishlist synced with server'))
+          )
+        ),
+        switchMap(() =>
+          this.cartService.ensureCartExists(customerId, true).pipe( // Force refresh
+            tap(cart => {
+              console.log('🛒 Cart ensured or created:', cart.id);
+            }),
+            switchMap(() =>
+              this.cartService.syncLocalCartWithApi(customerId).pipe(
+                tap(() => console.log('🛒 Local cart synced with server'))
+              )
+            )
+          )
+        ),
+        map(() => user),
+        catchError(err => {
+          console.error('❌ Error with wishlist/cart sync:', err);
+          return of(user);
+        })
+      );
+    }),
+    catchError(this.handleError)
+  );
+}
+
+
+
+
 
   setCurrentUser(user: User) {
     try {
@@ -89,11 +140,19 @@ export class Auth {
         user.roles = [];
       }
 
+      // ✅ استخراج الـ nameid من التوكن
+      if (decodedToken && decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier']) {
+        user.UserId = decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+      } else if (decodedToken && decodedToken['nameid']) {
+        // fallback للتوافق مع تنسيقات أبسط
+        user.UserId = decodedToken['nameid'];
+      }
+
       // حفظ المستخدم في localStorage
       localStorage.setItem('user', JSON.stringify(user));
       this.currentUserSource.next(user);
 
-      console.log('User set successfully:', { email: user.email, roles: user.roles });
+      console.log('User set successfully:', { UserId: user.UserId, email: user.email, roles: user.roles });
     } catch (error) {
       console.error('Error setting current user:', error);
       this.logout();
@@ -103,6 +162,8 @@ export class Auth {
   logout() {
     localStorage.removeItem('user');
     this.currentUserSource.next(null);
+    this.wishlistService.clearCache(); // ✨
+    console.log('cache Cleared');
     console.log('User logged out');
   }
 
@@ -131,8 +192,8 @@ export class Auth {
   isLoggedIn(): boolean {
     const currentUser = this.currentUserSource.value;
     return currentUser !== null &&
-           currentUser.token !== null &&
-           !this.jwtHelper.isTokenExpired(currentUser.token);
+      currentUser.token !== null &&
+      !this.jwtHelper.isTokenExpired(currentUser.token);
   }
 
   // الحصول على المستخدم الحالي
@@ -201,7 +262,5 @@ export class Auth {
   ngOnDestroy() {
     this.currentUserSource.complete();
   }
-
-
-  
+  //kemo wishlsit
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Supplier, SupplierCreateDto, SupplierResDto, SupplierUpdateDto } from '../../models/supplier';
 import { AdminSuppliersService } from '../../services/admin-suppliers.service';
+import { NotificationService } from '../../services/notification.service';
 import { PaginationComponent } from '../shared/pagination/pagination';
 
 @Component({
@@ -36,7 +37,8 @@ export class AdminSuppliersComponent implements OnInit {
 
   constructor(
     private service: AdminSuppliersService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -209,6 +211,13 @@ export class AdminSuppliersComponent implements OnInit {
           this.loadSuppliers();
           this.showModal = false;
           this.isSubmitting = false;
+
+          // Create notification for admin about new supplier
+          const supplierName = `${this.form.firstName!} ${this.form.lastName!}`;
+          this.notificationService.createNewSupplierNotification(supplierName).subscribe({
+            next: () => console.log('Notification created for new supplier'),
+            error: (error) => console.error('Error creating notification:', error)
+          });
         },
         error: (error) => {
           console.error('Error creating supplier:', error);

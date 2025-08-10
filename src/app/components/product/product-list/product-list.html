@@ -35,12 +35,12 @@
         <div *ngIf="!loading && !error"
           class="products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
           <div *ngFor="let product of displayedProducts"
-            class="product-card bg-white rounded-lg shadow-md overflow-hidden"
+            class="product-card bg-white rounded-lg shadow-md overflow-hidden relative"
             [class.animate-fade-in]="animationsEnabled" (click)="navigateToProductDetails(product, $event)"
             (mouseenter)="onProductHover(product.id)" (mouseleave)="onProductLeave()">
 
             <!-- Wishlist button -->
-            <button class="absolute top-2 right-2 z-10 p-1 rounded-full bg-white shadow-md hover:bg-gray-100"
+            <button class="absolute top-2 right-2 z-10 p-1 rounded-full shadow-md "
               (click)="toggleWishlist(product, $event)">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"
                 [ngClass]="{'text-red-500': isInWishlist(product.id), 'text-gray-400': !isInWishlist(product.id)}"
@@ -54,7 +54,7 @@
             <div class="relative h-48 overflow-hidden">
               <img
                 [src]="product.productPicsPathes && product.productPicsPathes.length > 0 ? product.productPicsPathes[0] : 'assets/placeholder.png'"
-                [alt]="product.name" class="w-full h-full object-cover transition-transform duration-300"
+                [alt]="product.name" class=" h-full object-cover transition-transform duration-300 mx-auto"
                 [ngClass]="{'scale-110': hoveredProductId === product.id}">
             </div>
 

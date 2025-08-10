@@ -1,8 +1,8 @@
 export interface IOrderItem {
   id: string;
+  quantity: number;
   productId: string;
   productName: string;
-  quantity: number;
   pricePerPiece: number;
   totalPrice: number;
   orderId: string;

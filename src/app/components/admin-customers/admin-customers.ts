@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminCustomersService, Customer, CustomerCreateDto, CustomerUpdateDto } from '../../services/admin-customers-service';
+import { NotificationService } from '../../services/notification.service';
 import { PaginationComponent } from '../shared/pagination/pagination';
 
 @Component({
@@ -38,7 +39,7 @@ export class AdminCustomersComponent implements OnInit {
   selectedCustomer: Customer | null = null;
   detailsLoading = false;
 
-  constructor(private customersService: AdminCustomersService) {}
+  constructor(private customersService: AdminCustomersService, private notificationService: NotificationService) {}
 
   ngOnInit(): void {
     this.loadCustomers();
@@ -221,6 +222,13 @@ export class AdminCustomersComponent implements OnInit {
           this.showModal = false;
           this.loadCustomers();
           this.isSubmitting = false;
+
+          // Create notification for admin about new customer
+          const customerName = `${this.form.firstName!.trim()} ${this.form.lastName!.trim()}`;
+          this.notificationService.createNewCustomerNotification(customerName).subscribe({
+            next: () => console.log('Notification created for new customer'),
+            error: (error) => console.error('Error creating notification:', error)
+          });
         },
         error: (error) => {
           console.error('Error creating customer:', error);

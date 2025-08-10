@@ -1,8 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { AdminDashboardService, AdminHeaderStats } from '../../services/admin-dashboard.service';
+import { forkJoin, interval, Subscription as RxSubscription } from 'rxjs';
+import { AdminOrdersService, Order, AdminOrderNotification } from '../../services/admin-orders-service';
+import { AdminProductsService, AdminNotification } from '../../services/admin-products-service';
+import { ProductApprovalStatus } from '../../models/i-product';
+import { LocalStorageNotificationService, LocalNotification, NotificationType } from '../../services/local-storage-notification.service';
+import { AdminSuppliersService, AdminSupplierNotification } from '../../services/admin-suppliers.service';
 
 @Component({
   selector: 'app-admin-header',
@@ -11,7 +18,7 @@ import { AdminDashboardService, AdminHeaderStats } from '../../services/admin-da
   templateUrl: './admin-header.html',
   styleUrls: ['./admin-header.css']
 })
-export class AdminHeaderComponent implements OnInit {
+export class AdminHeaderComponent implements OnInit, OnDestroy {
   // Admin user info
   adminUser = {
     name: 'Admin User',
@@ -36,71 +43,73 @@ export class AdminHeaderComponent implements OnInit {
     activeCustomers: 0
   };
 
-  notifications: any[] = [];
+  notifications: LocalNotification[] = [];
   isLoading = false;
+  private subscription = new Subscription();
+  private refreshSubscription?: RxSubscription;
 
   constructor(
     private router: Router,
-    private adminDashboardService: AdminDashboardService
+    private adminDashboardService: AdminDashboardService,
+    private localNotificationService: LocalStorageNotificationService,
+    private adminOrdersService: AdminOrdersService,
+    private adminProductsService: AdminProductsService,
+    private adminSuppliersService: AdminSuppliersService
   ) {}
 
   ngOnInit(): void {
     this.loadHeaderStats();
+    // Periodically refresh stats to keep navbar numbers in sync
+    this.refreshSubscription = interval(30000).subscribe(() => this.loadHeaderStats());
     this.loadNotifications();
+    
+    // Subscribe to real-time notifications from local storage service
+    this.subscription.add(
+      this.localNotificationService.getAdminNotifications().subscribe(notifications => {
+        this.notifications = notifications;
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+    this.refreshSubscription?.unsubscribe();
   }
 
   loadHeaderStats(): void {
     this.isLoading = true;
-    this.adminDashboardService.getHeaderStats().subscribe({
-      next: (stats) => {
-        this.headerStats = stats;
+    // Combine orders (orders + revenue) with products (pending count)
+    forkJoin({
+      orders: this.adminOrdersService.getOrders(),
+      products: this.adminProductsService.getAllProducts()
+    }).subscribe({
+      next: ({ orders, products }: { orders: Order[]; products: any[] }) => {
+        const totalOrders = orders.length;
+        const totalRevenue = orders.reduce((sum: number, o: Order) => sum + (o.totalAmount || 0), 0);
+        const pendingProducts = products.filter(p => p.approvalStatus === ProductApprovalStatus.Pending).length;
+        this.headerStats = {
+          totalOrders,
+          pendingOrders: pendingProducts,
+          totalRevenue,
+          activeCustomers: this.headerStats.activeCustomers || 0
+        };
         this.isLoading = false;
       },
-      error: (error) => {
-        console.error('Error loading header stats:', error);
+      error: () => {
         this.isLoading = false;
-        // Fallback to mock data if API fails
-        this.headerStats = {
-          totalOrders: 1247,
-          pendingOrders: 23,
-          totalRevenue: 45678.90,
-          activeCustomers: 892
-        };
       }
     });
   }
 
   loadNotifications(): void {
-    this.adminDashboardService.getNotifications().subscribe({
+    // Get notifications from local storage service
+    this.localNotificationService.getAdminNotifications().subscribe({
       next: (notifications) => {
         this.notifications = notifications;
       },
       error: (error) => {
         console.error('Error loading notifications:', error);
-        // Fallback to mock data if API fails
-        this.notifications = [
-          {
-            id: 1,
-            title: 'New Order #12345',
-            message: 'Order placed by Ahmed Ali',
-            time: '2 minutes ago',
-            unread: true
-          },
-          {
-            id: 2,
-            title: 'Payment Received',
-            message: 'Payment of $1,250 received',
-            time: '15 minutes ago',
-            unread: true
-          },
-          {
-            id: 3,
-            title: 'Low Stock Alert',
-            message: 'Steel pipes running low',
-            time: '1 hour ago',
-            unread: false
-          }
-        ];
+        this.notifications = [];
       }
     });
   }
@@ -117,16 +126,18 @@ export class AdminHeaderComponent implements OnInit {
     this.showSearchResults = false;
   }
 
-  markAsRead(notificationId: number): void {
+  markAsRead(notificationId: string): void {
+    this.localNotificationService.markAsRead(notificationId);
     const notification = this.notifications.find(n => n.id === notificationId);
     if (notification) {
-      notification.unread = false;
+      notification.isRead = true;
     }
   }
 
   markAllAsRead(): void {
+    this.localNotificationService.markAllAsRead('admin');
     this.notifications.forEach(notification => {
-      notification.unread = false;
+      notification.isRead = true;
     });
   }
 
@@ -178,7 +189,7 @@ export class AdminHeaderComponent implements OnInit {
 
   // Utility methods
   getUnreadCount(): number {
-    return this.notifications.filter(n => n.unread).length;
+    return this.notifications.filter(n => !n.isRead).length;
   }
 
   getSearchResultIcon(type: string): string {
@@ -193,6 +204,39 @@ export class AdminHeaderComponent implements OnInit {
         return '🏭';
       default:
         return '📢';
+    }
+  }
+
+  getNotificationIcon(type: NotificationType): string {
+    return this.localNotificationService.getNotificationIcon(type);
+  }
+
+  getNotificationColorClass(type: NotificationType): string {
+    return this.localNotificationService.getNotificationColorClass(type);
+  }
+
+  formatTime(timestamp: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 60) {
+      return `${minutes} minutes ago`;
+    } else if (hours < 24) {
+      return `${hours} hours ago`;
+    } else {
+      return `${days} days ago`;
+    }
+  }
+
+  onNotificationClick(notification: LocalNotification): void {
+    if (notification.actionUrl) {
+      this.router.navigate([notification.actionUrl]);
+    }
+    if (!notification.isRead) {
+      this.markAsRead(notification.id);
     }
   }
 

@@ -10,7 +10,8 @@ import { Rating } from '../../rating/rating/rating';
 import { SupplierSidebar } from '../supplier-sidebar/supplier-sidebar';
 import { Pagination } from '../../pagination/pagination';
 import { SubCategoryService } from '../../../services/sub-category.service';
-import { WishlistService } from '../../../services/wishlist';
+import { WishlistService } from '../../../services/wishlistService';
+import { Auth } from '../../../services/auth';
 
 @Component({
   selector: 'app-supplier-list',
@@ -55,6 +56,9 @@ export class SupplierList implements OnInit, OnDestroy {
   // Subcategory mapping
   private subCategoryToCategory: Map<string, string> = new Map();
 
+  //user
+  currentUserId: string | undefined = undefined;
+
   private subscription: Subscription | null = null;
 
   constructor(
@@ -62,10 +66,12 @@ export class SupplierList implements OnInit, OnDestroy {
     private subCategoryService: SubCategoryService,
     private cartService: CartService,
     private wishlistService: WishlistService,
-    private router: Router
+    private router: Router,
+    private _auth:Auth
   ) { }
 
   ngOnInit(): void {
+    this.currentUserId=this._auth.getCurrentUser()?.UserId;
     // Load subcategory mapping
     this.loadSubCategoryMapping();
 
@@ -92,7 +98,7 @@ export class SupplierList implements OnInit, OnDestroy {
     this.subCategoryService.getAll().subscribe({
       next: (subCategories) => {
         subCategories.forEach(sc => {
-          this.subCategoryToCategory.set(sc.id, sc.categoryId);
+          this.subCategoryToCategory.set(sc.id, sc.categoryName);
         });
       },
       error: (error) => {
@@ -221,7 +227,7 @@ export class SupplierList implements OnInit, OnDestroy {
       this.wishlistService.removeFromWishlist(product.id);
       this.showToast(`تمت إزالة ${product.name} من المفضلة`);
     } else {
-      this.wishlistService.addToWishlist(product);
+      this.wishlistService.addToWishlist(product, this.currentUserId);
       this.showToast(`تمت إضافة ${product.name} إلى المفضلة`);
     }
   }

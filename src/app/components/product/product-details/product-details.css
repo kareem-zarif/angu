@@ -1,3 +1,16 @@
+button.z-10.rounded-full {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+button.z-10.rounded-full:hover {
+  background-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+}
+
 /* Product details specific styles */
 .container {
   max-width: 1200px;

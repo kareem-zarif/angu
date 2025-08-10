@@ -2,8 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminProductsService } from '../../services/admin-products-service';
-import { IProduct, ProductApprovalStatus, ShippingTypes } from '../../models/i-product';
+import { NotificationService } from '../../services/notification.service';
+import { IProduct, ProductApprovalStatus, ShippingTypes, ProductUpdateDto } from '../../models/i-product';
+import { ICategory } from '../../models/i-category';
+import { ISubCategory } from '../../models/i-sub-category';
 import { PaginationComponent } from '../shared/pagination/pagination';
+import { CategoryService } from '../../services/category.service';
+import { SubCategoryService } from '../../services/sub-category.service';
 
 @Component({
   selector: 'app-admin-products',
@@ -23,6 +28,10 @@ export class AdminProductsComponent implements OnInit {
   searchField = 'all'; // 'all', 'name', 'description', 'supplier'
   approvalStatusFilter = 'all';
   stockFilter = 'all';
+  minPriceFilter: number | null = null;
+  maxPriceFilter: number | null = null;
+  subcategoryFilter = 'all'; // Changed from categoryFilter to subcategoryFilter
+  categoryFilter = 'all'; // Keep category filter for grouping
 
   // Modal states
   showEditModal = false;
@@ -42,10 +51,26 @@ export class AdminProductsComponent implements OnInit {
   form: Partial<IProduct> = {};
   formErrors: Record<string, string> = {};
 
-  constructor(private productService: AdminProductsService) {}
+  // Category and subcategory properties
+  categories: ICategory[] = [];
+  subcategories: ISubCategory[] = [];
+  subcategoriesByCategory: { [categoryName: string]: ISubCategory[] } = {};
+
+  // Approval modal properties
+  newApprovalStatus: ProductApprovalStatus = ProductApprovalStatus.Pending;
+  approvalNotes: string = '';
+
+  constructor(
+    private productService: AdminProductsService,
+    private notificationService: NotificationService,
+    private categoryService: CategoryService,
+    private subCategoryService: SubCategoryService
+  ) {}
 
   ngOnInit() {
     this.loadProducts();
+    this.loadCategories();
+    this.loadSubcategories();
   }
 
   loadProducts(): void {
@@ -64,6 +89,53 @@ export class AdminProductsComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  loadCategories(): void {
+    this.categoryService.getAll().subscribe({
+      next: (categories: ICategory[]) => {
+        this.categories = categories;
+      },
+      error: (error: any) => {
+        console.error('Error loading categories:', error);
+      }
+    });
+  }
+
+  loadSubcategories(): void {
+    this.subCategoryService.getAll().subscribe({
+      next: (subcategories: ISubCategory[]) => {
+        this.subcategories = subcategories;
+        this.groupSubcategoriesByCategory();
+      },
+      error: (error: any) => {
+        console.error('Error loading subcategories:', error);
+      }
+    });
+  }
+
+  groupSubcategoriesByCategory(): void {
+    this.subcategoriesByCategory = {};
+    this.subcategories.forEach(subcategory => {
+      if (!this.subcategoriesByCategory[subcategory.categoryName]) {
+        this.subcategoriesByCategory[subcategory.categoryName] = [];
+      }
+      this.subcategoriesByCategory[subcategory.categoryName].push(subcategory);
+    });
+  }
+
+  getFilteredSubcategories(): ISubCategory[] {
+    if (this.categoryFilter === 'all') {
+      return this.subcategories;
+    }
+    const categoryName = this.categories.find(cat => cat.id === this.categoryFilter)?.name;
+    return categoryName ? this.subcategoriesByCategory[categoryName] || [] : [];
+  }
+
+  onCategoryFilterChange(): void {
+    // Reset subcategory filter when category changes
+    this.subcategoryFilter = 'all';
+    this.applyFilters();
   }
 
   applyFilters() {
@@ -101,6 +173,23 @@ export class AdminProductsComponent implements OnInit {
       // Stock filter
       if (this.stockFilter === 'inStock' && product.noINStock <= 0) return false;
       if (this.stockFilter === 'outOfStock' && product.noINStock > 0) return false;
+      if (this.stockFilter === 'lowStock' && product.noINStock > 10) return false;
+
+      // Price range filter
+      if (this.minPriceFilter !== null && product.pricePerPiece < this.minPriceFilter) return false;
+      if (this.maxPriceFilter !== null && product.pricePerPiece > this.maxPriceFilter) return false;
+
+      // Category filter - if category is selected, filter by subcategories in that category
+      if (this.categoryFilter !== 'all') {
+        const categoryName = this.categories.find(cat => cat.id === this.categoryFilter)?.name;
+        if (categoryName) {
+          const subcategoryIds = this.subcategoriesByCategory[categoryName]?.map(sub => sub.id) || [];
+          if (!subcategoryIds.includes(product.subCategoryId)) return false;
+        }
+      }
+
+      // Subcategory filter - if subcategory is selected, filter by that specific subcategory
+      if (this.subcategoryFilter !== 'all' && product.subCategoryId !== this.subcategoryFilter) return false;
 
       return true;
     });
@@ -141,12 +230,18 @@ export class AdminProductsComponent implements OnInit {
     this.searchField = 'all';
     this.approvalStatusFilter = 'all';
     this.stockFilter = 'all';
+    this.minPriceFilter = null;
+    this.maxPriceFilter = null;
+    this.subcategoryFilter = 'all';
+    this.categoryFilter = 'all';
     this.currentPage = 1;
     this.applyFilters();
   }
 
   openApprovalModal(product: IProduct) {
     this.selectedProduct = product;
+    this.newApprovalStatus = product.approvalStatus;
+    this.approvalNotes = '';
     this.showApprovalModal = true;
   }
 
@@ -156,7 +251,7 @@ export class AdminProductsComponent implements OnInit {
     this.isSubmitting = true;
     const updateData: IProduct = {
       ...this.selectedProduct,
-      approvalStatus: ProductApprovalStatus.Approved
+      approvalStatus: this.newApprovalStatus
     };
 
     this.productService.updateProduct(updateData).subscribe({
@@ -164,12 +259,31 @@ export class AdminProductsComponent implements OnInit {
         this.loadProducts();
         this.showApprovalModal = false;
         this.isSubmitting = false;
-        alert('Product approved successfully!');
+        this.notificationService.showSuccess('Product status updated successfully!');
+        
+        // Create notification for seller about product approval
+        if (this.selectedProduct && this.selectedProduct.supplierNames && this.selectedProduct.supplierNames.length > 0) {
+          const sellerId = this.getSellerIdFromProduct(this.selectedProduct);
+          console.log('Creating approval notification for seller:', sellerId, 'product:', this.selectedProduct.name);
+          
+          this.notificationService.createProductApprovalNotification(
+            sellerId,
+            this.selectedProduct.name,
+            this.newApprovalStatus === ProductApprovalStatus.Approved
+          ).subscribe({
+            next: (notification) => {
+              console.log('Notification created successfully:', notification);
+            },
+            error: (error) => {
+              console.error('Error creating notification:', error);
+            }
+          });
+        }
       },
       error: (error) => {
-        console.error('Error approving product:', error);
+        console.error('Error updating product status:', error);
         this.isSubmitting = false;
-        alert('Failed to approve product. Please try again.');
+        this.notificationService.showError('Failed to update product status. Please try again.');
       }
     });
   }
@@ -188,14 +302,44 @@ export class AdminProductsComponent implements OnInit {
         this.loadProducts();
         this.showApprovalModal = false;
         this.isSubmitting = false;
-        alert('Product rejected successfully!');
+        this.notificationService.showSuccess('Product rejected successfully!');
+        
+        // Create notification for seller about product rejection
+        if (this.selectedProduct && this.selectedProduct.supplierNames && this.selectedProduct.supplierNames.length > 0) {
+          const sellerId = this.getSellerIdFromProduct(this.selectedProduct);
+          console.log('Creating rejection notification for seller:', sellerId, 'product:', this.selectedProduct.name);
+          
+          this.notificationService.createProductApprovalNotification(
+            sellerId,
+            this.selectedProduct.name,
+            false // rejected
+          ).subscribe({
+            next: (notification) => {
+              console.log('Notification created successfully:', notification);
+            },
+            error: (error) => {
+              console.error('Error creating notification:', error);
+            }
+          });
+        }
       },
       error: (error) => {
         console.error('Error rejecting product:', error);
         this.isSubmitting = false;
-        alert('Failed to reject product. Please try again.');
+        this.notificationService.showError('Failed to reject product. Please try again.');
       }
     });
+  }
+
+  private getSellerIdFromProduct(product: IProduct): string {
+    // This is a placeholder implementation
+    // In a real application, you would have a proper mapping from supplier names to seller IDs
+    if (product.supplierNames && product.supplierNames.length > 0) {
+      // For now, we'll use a hash of the supplier name as a pseudo-ID
+      // In production, you should have a proper supplier/seller mapping table
+      return btoa(product.supplierNames[0]).substring(0, 8);
+    }
+    return 'default-seller-id';
   }
 
   openEditModal(product: IProduct) {
@@ -218,40 +362,55 @@ export class AdminProductsComponent implements OnInit {
   validateForm(): boolean {
     this.formErrors = {};
 
-    if (!this.form.name?.trim()) {
+    if (!this.form.name || this.form.name.trim() === '') {
       this.formErrors['name'] = 'Product name is required';
     }
 
-    if (!this.form.description?.trim()) {
+    if (!this.form.description || this.form.description.trim() === '') {
       this.formErrors['description'] = 'Product description is required';
     }
 
     if (!this.form.pricePerPiece || this.form.pricePerPiece <= 0) {
-      this.formErrors['pricePerPiece'] = 'Price must be greater than 0';
+      this.formErrors['pricePerPiece'] = 'Price per piece must be greater than 0';
     }
 
-    if (this.form.noINStock === undefined || this.form.noINStock < 0) {
-      this.formErrors['noINStock'] = 'Stock quantity must be 0 or greater';
+    if (!this.form.noINStock || this.form.noINStock < 0) {
+      this.formErrors['noINStock'] = 'Stock quantity cannot be negative';
+    }
+
+    if (!this.form.minNumToFactoryOrder || this.form.minNumToFactoryOrder <= 0) {
+      this.formErrors['minNumToFactoryOrder'] = 'Minimum factory order must be greater than 0';
     }
 
     if (!this.form.subCategoryId) {
       this.formErrors['subCategoryId'] = 'Subcategory is required';
     }
 
+    if (!this.form.shipping) {
+      this.formErrors['shipping'] = 'Shipping type is required';
+    }
+
     return Object.keys(this.formErrors).length === 0;
   }
 
   saveProduct() {
-    if (!this.validateForm()) {
-      return;
-    }
+    if (!this.validateForm()) return;
 
     this.isSubmitting = true;
-
-    // Update existing product only
-    const updateData: IProduct = {
-      ...this.selectedProduct!,
-      ...this.form
+    const updateData: ProductUpdateDto = {
+      id: this.selectedProduct!.id,
+      name: this.form.name!,
+      description: this.form.description!,
+      pricePerPiece: this.form.pricePerPiece!,
+      pricePer50Piece: this.form.pricePer50Piece,
+      pricePer100Piece: this.form.pricePer100Piece,
+      noINStock: this.form.noINStock!,
+      minNumToFactoryOrder: this.form.minNumToFactoryOrder!,
+      approvalStatus: this.form.approvalStatus!,
+      shipping: this.form.shipping!,
+      subCategoryId: this.form.subCategoryId!,
+      warrantyNMonths: this.form.warrantyNMonths,
+      images: null // No image updates in admin edit for now
     };
 
     this.productService.updateProduct(updateData).subscribe({
@@ -259,12 +418,12 @@ export class AdminProductsComponent implements OnInit {
         this.loadProducts();
         this.showEditModal = false;
         this.isSubmitting = false;
-        alert('Product updated successfully!');
+        this.notificationService.showSuccess('Product updated successfully!');
       },
       error: (error) => {
         console.error('Error updating product:', error);
         this.isSubmitting = false;
-        alert('Failed to update product. Please try again.');
+        this.notificationService.showError('Failed to update product. Please try again.');
       }
     });
   }
@@ -273,18 +432,17 @@ export class AdminProductsComponent implements OnInit {
     if (!this.selectedProduct) return;
 
     this.isSubmitting = true;
-
     this.productService.deleteProduct(this.selectedProduct.id).subscribe({
       next: () => {
         this.loadProducts();
         this.showDeleteModal = false;
         this.isSubmitting = false;
-        alert('Product deleted successfully!');
+        this.notificationService.showSuccess('Product deleted successfully!');
       },
       error: (error) => {
         console.error('Error deleting product:', error);
         this.isSubmitting = false;
-        alert('Failed to delete product. Please try again.');
+        this.notificationService.showError('Failed to delete product. Please try again.');
       }
     });
   }
@@ -297,29 +455,42 @@ export class AdminProductsComponent implements OnInit {
 
   getApprovalStatusLabel(status: ProductApprovalStatus): string {
     switch (status) {
-      case ProductApprovalStatus.Pending: return 'Pending';
-      case ProductApprovalStatus.Approved: return 'Approved';
-      case ProductApprovalStatus.Rejected: return 'Rejected';
-      default: return 'Unknown';
+      case ProductApprovalStatus.Pending:
+        return 'Pending';
+      case ProductApprovalStatus.Approved:
+        return 'Approved';
+      case ProductApprovalStatus.Rejected:
+        return 'Rejected';
+      default:
+        return 'Unknown';
     }
   }
 
   getApprovalStatusClass(status: ProductApprovalStatus): string {
     switch (status) {
-      case ProductApprovalStatus.Pending: return 'bg-yellow-100 text-yellow-800';
-      case ProductApprovalStatus.Approved: return 'bg-green-100 text-green-800';
-      case ProductApprovalStatus.Rejected: return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case ProductApprovalStatus.Pending:
+        return 'bg-yellow-100 text-yellow-800';
+      case ProductApprovalStatus.Approved:
+        return 'bg-green-100 text-green-800';
+      case ProductApprovalStatus.Rejected:
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   }
 
   getShippingTypeLabel(shipping: ShippingTypes): string {
     switch (shipping) {
-      case ShippingTypes.Free: return 'Free';
-      case ShippingTypes.FreeINSameGovernate: return 'Free in Same Governorate';
-      case ShippingTypes.Paid: return 'Paid';
-      case ShippingTypes.None: return 'None';
-      default: return 'Unknown';
+      case ShippingTypes.Free:
+        return 'Free Shipping';
+      case ShippingTypes.FreeINSameGovernate:
+        return 'Free in Same Governorate';
+      case ShippingTypes.Paid:
+        return 'Paid Shipping';
+      case ShippingTypes.None:
+        return 'No Shipping';
+      default:
+        return 'Unknown';
     }
   }
 
@@ -337,8 +508,17 @@ export class AdminProductsComponent implements OnInit {
   }
 
   getStockClass(product: IProduct): string {
-    if (product.noINStock <= 0) return 'bg-red-100 text-red-800';
-    if (product.noINStock <= 10) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-green-100 text-green-800';
+    if (product.noINStock <= 0) return 'text-red-600';
+    if (product.noINStock <= 10) return 'text-yellow-600';
+    return 'text-green-600';
+  }
+
+  getCategoryName(subCategoryId: string): string {
+    const subcategory = this.subcategories.find(sub => sub.id === subCategoryId);
+    if (subcategory) {
+      // Since ISubCategory has categoryName directly, we can use it
+      return subcategory.categoryName;
+    }
+    return 'Unknown Category';
   }
 } 

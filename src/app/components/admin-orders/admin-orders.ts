@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminOrdersService, Order, OrderCreateDto, OrderUpdateDto, OrderItemCreateDto } from '../../services/admin-orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryCreateDto } from '../../services/order-status-history.service';
+import { NotificationService } from '../../services/notification.service';
 import { PaginationComponent } from '../shared/pagination/pagination';
 import { OrderStatus, OrderStatus as OrderStatusModel } from '../../models/i-order-status-history';
 
@@ -49,7 +50,8 @@ export class AdminOrdersComponent implements OnInit {
 
   constructor(
     private ordersService: AdminOrdersService,
-    private orderStatusHistoryService: OrderStatusHistoryService
+    private orderStatusHistoryService: OrderStatusHistoryService,
+    private notificationService: NotificationService
   ) { }
 
   ngOnInit(): void {
@@ -281,6 +283,19 @@ export class AdminOrdersComponent implements OnInit {
           this.showModal = false;
           this.loadOrders();
           this.isSubmitting = false;
+
+          // Create notification for seller about new order
+          // Note: In a real app, you'd get the seller ID from the order items or customer data
+          const sellerId = 'seller-123'; // This should come from order.sellerId or orderItems[].sellerId
+          const customerName = 'Customer'; // This should come from customer data
+          this.notificationService.createNewOrderNotification(
+            sellerId,
+            response.id,
+            customerName
+          ).subscribe({
+            next: () => console.log('Notification created for new order'),
+            error: (error) => console.error('Error creating notification:', error)
+          });
         },
         error: (error) => {
           console.error('Error creating order:', error);
@@ -438,6 +453,19 @@ export class AdminOrdersComponent implements OnInit {
             // Update the local order object
             order.currentStatus = newStatus;
             this.isSubmitting = false;
+
+            // Create notification for seller about order status change
+            // Note: In a real app, you'd get the seller ID from the order data
+            const sellerId = 'seller-123'; // This should come from order.sellerId or order.supplierId
+            const statusLabel = this.getStatusLabel(newStatus);
+            this.notificationService.createOrderStatusChangeNotification(
+              sellerId,
+              order.id,
+              statusLabel
+            ).subscribe({
+              next: () => console.log('Notification created for order status change'),
+              error: (error) => console.error('Error creating notification:', error)
+            });
           },
           error: (historyError) => {
             console.error('Error creating status history:', historyError);

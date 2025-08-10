@@ -5,6 +5,8 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { IProduct, ProductApprovalStatus, ShippingTypes } from '../models/i-product';
 import { environment } from '../../environment/environment';
 import { ISupplier } from '../models/i-supplier';
+import { NotificationService } from './notification.service';
+import { Auth } from './auth';
 
 @Injectable({
   providedIn: 'root'
@@ -22,7 +24,7 @@ export class ProductService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public loading$ = this.loadingSubject.asObservable();
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private notificationService: NotificationService, private auth: Auth) { }
 
   // Get all products from API
   getProducts(): Observable<IProduct[]> {
@@ -52,6 +54,25 @@ export class ProductService {
   // Get all products (alias for compatibility)
   getAll(): Observable<IProduct[]> {
     return this.getProducts();
+  }
+
+  // Get all products for sellers (including non-approved)
+  getAllForSeller(): Observable<IProduct[]> {
+    this.loadingSubject.next(true);
+
+    return this.http.get<IProduct[]>(`${this._baseUrl}`).pipe(
+      map(products => products.map(product => this.processProductImage(product))),
+      tap(products => {
+        this.productsCache = products;
+        this.lastFetchTime = Date.now();
+        this.loadingSubject.next(false);
+      }),
+      catchError(error => {
+        console.error('Error fetching products for seller:', error);
+        this.loadingSubject.next(false);
+        return throwError(() => new Error('Failed to fetch products'));
+      })
+    );
   }
 
   // Get product by ID from API
@@ -179,12 +200,54 @@ export class ProductService {
   }
 
   // Add new product via API
-  add(product: IProduct): Observable<IProduct> {
-    return this.http.post<IProduct>(`${this._baseUrl}`, product).pipe(
+  add(product: IProduct, images?: File[]): Observable<IProduct> {
+    let requestData: any;
+
+    if (images && images.length > 0) {
+      // Use FormData for image uploads
+      const formData = new FormData();
+      formData.append('Name', product.name);
+      formData.append('Description', product.description);
+      formData.append('PricePerPiece', product.pricePerPiece.toString());
+      if (product.pricePer50Piece) {
+        formData.append('PricePer50Piece', product.pricePer50Piece.toString());
+      }
+      if (product.pricePer100Piece) {
+        formData.append('PricePer100Piece', product.pricePer100Piece.toString());
+      }
+      formData.append('NoINStock', product.noINStock.toString());
+      formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
+      formData.append('ApprovalStatus', product.approvalStatus.toString());
+      formData.append('Shipping', product.shipping.toString());
+      formData.append('SubCategoryId', product.subCategoryId);
+      if (product.warrantyNMonths) {
+        formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
+      }
+
+      // Add images
+      images.forEach((image) => {
+        formData.append('Images', image);
+      });
+
+      requestData = formData;
+    } else {
+      // Use JSON for products without images
+      requestData = product;
+    }
+
+    return this.http.post<IProduct>(`${this._baseUrl}`, requestData).pipe(
       map(newProduct => this.processProductImage(newProduct)),
       tap(newProduct => {
         // Update cache
         this.productsCache.push(newProduct);
+        // Notify admin about new product submission
+        const currentSellerId = this.auth.getCurrentUser()?.UserId;
+        if (currentSellerId && newProduct.name) {
+          this.notificationService.createNewProductNotification(currentSellerId, newProduct.name).subscribe({
+            next: () => {},
+            error: () => {}
+          });
+        }
       }),
       catchError(error => {
         console.error('Error creating product:', error);
@@ -194,8 +257,43 @@ export class ProductService {
   }
 
   // Update product via API
-  update(product: IProduct): Observable<IProduct> {
-    return this.http.put<IProduct>(`${this._baseUrl}/${product.id}`, product).pipe(
+  update(product: IProduct, images?: File[]): Observable<IProduct> {
+    let requestData: any;
+
+    if (images && images.length > 0) {
+      // Use FormData for image uploads
+      const formData = new FormData();
+      formData.append('Id', product.id);
+      formData.append('Name', product.name);
+      formData.append('Description', product.description);
+      formData.append('PricePerPiece', product.pricePerPiece.toString());
+      if (product.pricePer50Piece) {
+        formData.append('PricePer50Piece', product.pricePer50Piece.toString());
+      }
+      if (product.pricePer100Piece) {
+        formData.append('PricePer100Piece', product.pricePer100Piece.toString());
+      }
+      formData.append('NoINStock', product.noINStock.toString());
+      formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
+      formData.append('ApprovalStatus', product.approvalStatus.toString());
+      formData.append('Shipping', product.shipping.toString());
+      formData.append('SubCategoryId', product.subCategoryId);
+      if (product.warrantyNMonths) {
+        formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
+      }
+
+      // Add images
+      images.forEach((image) => {
+        formData.append('Images', image);
+      });
+
+      requestData = formData;
+    } else {
+      // Use JSON for products without images
+      requestData = product;
+    }
+
+    return this.http.put<IProduct>(`${this._baseUrl}/${product.id}`, requestData).pipe(
       map(updatedProduct => this.processProductImage(updatedProduct)),
       tap(updatedProduct => {
         // Update cache

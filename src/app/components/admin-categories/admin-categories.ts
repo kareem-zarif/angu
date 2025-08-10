@@ -27,13 +27,13 @@ export class AdminCategoriesComponent implements OnInit {
   
   // Search properties
   searchTerm = '';
-  searchField = 'all'; // 'all', 'name', 'description', 'status'
+  searchField = 'all'; // 'all', 'name', 'description'
   
   // Validation properties
   formErrors: { [key: string]: string } = {};
   isSubmitting = false;
 
-  constructor(private categoriesService: AdminCategoriesService) {}
+  constructor(private adminCategoriesService: AdminCategoriesService) {}
 
   ngOnInit(): void {
     this.loadCategories();
@@ -41,10 +41,37 @@ export class AdminCategoriesComponent implements OnInit {
 
   loadCategories() {
     this.loading = true;
-    this.categoriesService.getCategories().subscribe(res => {
+    this.adminCategoriesService.getCategories().subscribe(res => {
       this.categories = res;
-      this.applyFilters();
-      this.loading = false;
+      // Load subcategories count for each category
+      this.loadSubcategoriesCount();
+    });
+  }
+
+  loadSubcategoriesCount(): void {
+    // Fetch all subcategories once and count them locally for better performance
+    this.adminCategoriesService.getAllSubCategories().subscribe({
+      next: (subcategories) => {
+        // Count subcategories for each category
+        this.categories.forEach(category => {
+          category.subcategoriesCount = subcategories.filter(
+            sub => sub.categoryName === category.name
+          ).length;
+        });
+        // Update filters and finish loading
+        this.applyFilters();
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading subcategories count:', error);
+        // Set default count of 0 if there's an error
+        this.categories.forEach(category => {
+          category.subcategoriesCount = 0;
+        });
+        // Update filters and finish loading even on error
+        this.applyFilters();
+        this.loading = false;
+      }
     });
   }
 
@@ -60,14 +87,11 @@ export class AdminCategoriesComponent implements OnInit {
           return category.name.toLowerCase().includes(searchLower);
         case 'description':
           return category.description.toLowerCase().includes(searchLower);
-        case 'status':
-          return category.status.toLowerCase().includes(searchLower);
         case 'all':
         default:
           return (
             category.name.toLowerCase().includes(searchLower) ||
-            category.description.toLowerCase().includes(searchLower) ||
-            category.status.toLowerCase().includes(searchLower)
+            category.description.toLowerCase().includes(searchLower)
           );
       }
     });
@@ -145,13 +169,6 @@ export class AdminCategoriesComponent implements OnInit {
       this.formErrors['description'] = 'Description cannot exceed 500 characters';
     }
 
-    // Status validation
-    if (!this.form.status) {
-      this.formErrors['status'] = 'Status is required';
-    } else if (!['Active', 'Inactive'].includes(this.form.status)) {
-      this.formErrors['status'] = 'Status must be either Active or Inactive';
-    }
-
     return Object.keys(this.formErrors).length === 0;
   }
 
@@ -168,9 +185,8 @@ export class AdminCategoriesComponent implements OnInit {
         id: this.editCategory.id,
         name: this.form.name!.trim(),
         description: this.form.description!.trim(),
-        status: this.form.status as 'Active' | 'Inactive',
       };
-      this.categoriesService.updateCategory(updateDto).subscribe({
+      this.adminCategoriesService.updateCategory(updateDto).subscribe({
         next: () => {
           this.showModal = false;
           this.loadCategories();
@@ -187,9 +203,8 @@ export class AdminCategoriesComponent implements OnInit {
       const createDto: CategoryCreateDto = {
         name: this.form.name!.trim(),
         description: this.form.description!.trim(),
-        status: this.form.status as 'Active' | 'Inactive',
       };
-      this.categoriesService.createCategory(createDto).subscribe({
+      this.adminCategoriesService.createCategory(createDto).subscribe({
         next: () => {
           this.showModal = false;
           this.loadCategories();
@@ -206,7 +221,7 @@ export class AdminCategoriesComponent implements OnInit {
 
   deleteCategory(category: Category) {
     if (confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
-      this.categoriesService.deleteCategory(category.id).subscribe({
+      this.adminCategoriesService.deleteCategory(category.id).subscribe({
         next: () => {
           this.loadCategories();
         },

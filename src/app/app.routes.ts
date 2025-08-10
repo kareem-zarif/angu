@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { WishlistComponent } from './components/wishlist/wishlist';
 import { OrdersComponent } from './components/orders/orders';
 import { AccountManagement } from './components/account-management/account-management';
 import { CheckoutComponent } from './components/checkout/checkout';
@@ -13,12 +12,14 @@ import { ProductList } from './components/product/product-list/product-list';
 import { ProductDetails } from './components/product/product-details/product-details';
 import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
+import { WishlistComponent } from './components/wishlist/wishlist';
 import { Recommendation } from './components/recommendation/recommendation';
 import { SellerProfile } from './components/seller-profile/seller-profile';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
 import { SuccessComponent } from './components/payment/success/success';
 import { SellerProfileEdit } from './components/seller-profile-edit/seller-profile-edit';
+
 
 export const routes: Routes = [
   // Default route
@@ -29,8 +30,11 @@ export const routes: Routes = [
   { path: 'register-selection', component: RegisterSelection },
   { path: 'register', component: Register },
   { path: 'recommendation', component: Recommendation },
+
+  { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
   { path: 'seller-profile', component: SellerProfile },
   { path: 'seller-profile-edit', component: SellerProfileEdit },
+
 
   // Main content routes
   { path: 'products', component: ProductList },
@@ -86,6 +90,11 @@ export const routes: Routes = [
         path: 'categories',
         loadComponent: () => import('./components/admin-categories/admin-categories')
           .then(m => m.AdminCategoriesComponent)
+      },
+      {
+        path: 'subcategories',
+        loadComponent: () => import('./components/admin-subcategories/admin-subcategories')
+          .then(m => m.AdminSubCategoriesComponent)
       }
     ]
   },
