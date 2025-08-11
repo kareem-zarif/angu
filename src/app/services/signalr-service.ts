@@ -10,7 +10,7 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class SignalrService {
   private hubConnection!: signalR.HubConnection;
-  private baseUrl = 'https://localhost:7253'; // ✅ URL مباشر بدل environment
+  private baseUrl = `${environment}`; 
 
   private messagesSource = new BehaviorSubject<MessageReadDto[]>([]);
   public messages$ = this.messagesSource.asObservable();
