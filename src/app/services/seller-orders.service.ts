@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of, BehaviorSubject, tap } from 'rxjs';
-import { OrdersService, OrderResDto } from './orders-service';
+import { OrdersService } from './orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from './order-status-history.service';
 import { IOrder } from '../models/i-order';
 import { environment } from '../../environment/environment';
@@ -143,10 +143,10 @@ export class SellerOrdersService {
     return this.orderStatusHistoryService.createOrderStatusHistory(statusHistoryDto).pipe(
       tap(() => {
         // Send notification to admin about order status change
-        this.notifyAdmin('order_status_changed', 'Order Status Updated', 
-          `Order #${orderUpdate.orderId} status changed to ${orderUpdate.status}`, 
-          '/admin/orders', { 
-            orderId: orderUpdate.orderId, 
+        this.notifyAdmin('order_status_changed', 'Order Status Updated',
+          `Order #${orderUpdate.orderId} status changed to ${orderUpdate.status}`,
+          '/admin/orders', {
+            orderId: orderUpdate.orderId,
             newStatus: orderUpdate.status,
             trackingNumber: orderUpdate.trackingNumber,
             notes: orderUpdate.notes
@@ -286,10 +286,10 @@ export class SellerOrdersService {
     }).pipe(
       tap(() => {
         // Send specific notification for shipping
-        this.notifyAdmin('order_shipped', 'Order Shipped', 
-          `Order #${orderId} has been shipped${trackingNumber ? ` with tracking #${trackingNumber}` : ''}`, 
-          '/admin/orders', { 
-            orderId, 
+        this.notifyAdmin('order_shipped', 'Order Shipped',
+          `Order #${orderId} has been shipped${trackingNumber ? ` with tracking #${trackingNumber}` : ''}`,
+          '/admin/orders', {
+            orderId,
             trackingNumber,
             status: 'Shipped'
           });
@@ -305,10 +305,10 @@ export class SellerOrdersService {
     }).pipe(
       tap(() => {
         // Send specific notification for delivery
-        this.notifyAdmin('order_delivered', 'Order Delivered', 
-          `Order #${orderId} has been delivered successfully`, 
-          '/admin/orders', { 
-            orderId, 
+        this.notifyAdmin('order_delivered', 'Order Delivered',
+          `Order #${orderId} has been delivered successfully`,
+          '/admin/orders', {
+            orderId,
             status: 'Delivered'
           });
       })
@@ -324,10 +324,10 @@ export class SellerOrdersService {
     }).pipe(
       tap(() => {
         // Send specific notification for cancellation
-        this.notifyAdmin('order_cancelled', 'Order Cancelled', 
-          `Order #${orderId} has been cancelled. Reason: ${reason}`, 
-          '/admin/orders', { 
-            orderId, 
+        this.notifyAdmin('order_cancelled', 'Order Cancelled',
+          `Order #${orderId} has been cancelled. Reason: ${reason}`,
+          '/admin/orders', {
+            orderId,
             status: 'Cancelled',
             reason
           });
@@ -375,7 +375,7 @@ export class SellerOrdersService {
 
 
   // Private method to create and emit notifications for admin
-  private notifyAdmin(type: SellerOrderNotification['type'], title: string, message: string, 
+  private notifyAdmin(type: SellerOrderNotification['type'], title: string, message: string,
                      actionUrl: string, metadata?: any): void {
     const notification: SellerOrderNotification = {
       id: `seller-order-${Date.now()}-${Math.random()}`,
@@ -391,7 +391,7 @@ export class SellerOrdersService {
 
     // Send to unified notification service
     this.unifiedNotificationService.addSellerNotification(notification);
-    
+
     console.log('Seller order notification sent to admin:', notification);
   }
 
@@ -403,8 +403,8 @@ export class SellerOrdersService {
   // Method to mark notification as read
   markNotificationAsRead(notificationId: string): void {
     const currentNotifications = this.adminNotificationsSubject.value;
-    const updatedNotifications = currentNotifications.map(notification => 
-      notification.id === notificationId 
+    const updatedNotifications = currentNotifications.map(notification =>
+      notification.id === notificationId
         ? { ...notification, isRead: true }
         : notification
     );
@@ -415,5 +415,5 @@ export class SellerOrdersService {
   clearAdminNotifications(): void {
     this.adminNotificationsSubject.next([]);
   }
-} 
+}
 

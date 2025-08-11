@@ -51,7 +51,7 @@ export class Header implements OnInit, OnDestroy {
     private router: Router,
     private cartService: CartService,
     private wishlistService: WishlistService,
-    private http: HttpClient
+    private http: HttpClient,
     private unifiedNotificationService: UnifiedNotificationService
   ) { }
 

@@ -1,8 +1,9 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Chart, ChartConfiguration, ChartType } from 'chart.js';
 import { AdminDashboardService, DashboardStats, RecentActivity, ChartData, ProductStats, OrderStats, SupplierStats } from '../../services/admin-dashboard.service';
+import { Chart, ChartType } from 'chart.js'; // Add this import
+
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -12,7 +13,7 @@ import { AdminDashboardService, DashboardStats, RecentActivity, ChartData, Produ
   styleUrls: ['./admin-dashboard.css']
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit {
-  
+
   @ViewChild('productChartCanvas', { static: false }) productChartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('orderChartCanvas', { static: false }) orderChartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('revenueChartCanvas', { static: false }) revenueChartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -77,7 +78,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit
 
   loadDashboardData(): void {
     this.isLoading = true;
-    
+
     // Load dashboard stats
     this.adminDashboardService.getDashboardStats().subscribe({
       next: (stats) => {
@@ -395,4 +396,4 @@ export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit
   refreshData(): void {
     this.loadDashboardData();
   }
-} 
+}

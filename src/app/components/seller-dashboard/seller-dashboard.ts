@@ -1,18 +1,20 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Chart, ChartConfiguration, ChartType } from 'chart.js';
 import { SellerDashboardService, SellerDashboardStats, SellerNotification, ChartData, ProductStats, OrderStats, RevenueStats } from '../../services/seller-dashboard.service';
+import { FormsModule } from '@angular/forms';
+import { Chart, ChartType } from 'chart.js';
+
 
 @Component({
   selector: 'app-seller-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule,FormsModule],
   templateUrl: './seller-dashboard.html',
   styleUrl: './seller-dashboard.css'
 })
 export class SellerDashboardComponent implements OnInit, OnDestroy, AfterViewInit {
-  
+
   @ViewChild('productChartCanvas', { static: false }) productChartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('orderChartCanvas', { static: false }) orderChartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('revenueChartCanvas', { static: false }) revenueChartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -78,7 +80,7 @@ export class SellerDashboardComponent implements OnInit, OnDestroy, AfterViewIni
 
   loadDashboardData() {
     this.isLoading = true;
-    
+
     // Load dashboard stats
     this.sellerDashboardService.getDashboardStats().subscribe({
       next: (stats) => {
@@ -411,4 +413,4 @@ export class SellerDashboardComponent implements OnInit, OnDestroy, AfterViewIni
   refreshData(): void {
     this.loadDashboardData();
   }
-} 
+}
