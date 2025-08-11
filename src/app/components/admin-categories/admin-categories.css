@@ -1,0 +1,4 @@
+/* Cursor pointer for all clickable elements */
+button, a, .clickable, .btn, .action-btn, .edit-btn, .delete-btn, .search-btn, .clear-btn, .pagination-btn {
+  cursor: pointer;
+} 

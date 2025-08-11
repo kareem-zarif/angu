@@ -1,0 +1,41 @@
+/* Cart specific styles */
+.container {
+  max-width: 1200px;
+}
+
+/* Quantity input styles */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Button styles */
+.checkout-btn {
+  background-color: #483C21;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.checkout-btn:hover {
+  background-color: #362d19;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cart-item-image {
+    margin-bottom: 1rem;
+    margin-right: 0;
+  }
+
+
+}
