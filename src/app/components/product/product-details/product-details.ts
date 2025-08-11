@@ -12,11 +12,12 @@ import { Rating } from '../../rating/rating/rating';
 import { TranslateModule } from '@ngx-translate/core';
 import { SubCategoryService } from '../../../services/sub-category.service';
 import { Auth } from '../../../services/auth';
+import { AddReviewComponent } from '../../add-review/add-review';
 
 @Component({
   selector: 'app-product-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, Rating, FormsModule, TranslateModule],
+  imports: [CommonModule, RouterModule, Rating, FormsModule, TranslateModule,AddReviewComponent],
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })

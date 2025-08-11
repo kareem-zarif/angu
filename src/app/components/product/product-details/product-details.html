@@ -192,5 +192,34 @@
         </div>
       </div>
     </div>
+                  <!-- ADDING REVIEWS ************************************************** -->
+<div class="mt-10 p-6 border-t">
+  <h2 class="text-2xl font-bold mb-6 text-[#483C21]">التقييمات (Reviews)</h2>
+
+  <div *ngIf="product?.reviews?.length; else noReviews">
+    <div *ngFor="let review of product.reviews" class="mb-6 p-4 bg-[#f9f9f9] rounded-lg shadow-sm border border-gray-200">
+      
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-lg font-semibold text-gray-800">
+          <i class="fas fa-user-circle mr-2 text-[#483C21]"></i>
+          {{ review.customerName }}
+        </h3>
+        <div class="flex items-center">
+          <app-rating [rating]="review.rating"></app-rating>
+          <span class="ml-2 text-sm font-medium text-gray-600">({{ review.rating }}/5)</span>
+        </div>
+      </div>
+
+      <p class="text-gray-700 italic">"{{ review.comment }}"</p>
+    </div>
+  </div>
+
+  <ng-template #noReviews>
+    <p class="text-gray-500 text-center italic">لا توجد تقييمات لهذا المنتج بعد.</p>
+  </ng-template>
+</div>
+<app-add-review *ngIf="product?.id" [productId]="product.id"></app-add-review>
+
+     <!-- ****************************** -->
   </div>
 </div>
