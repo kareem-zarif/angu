@@ -1,7 +1,21 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, map } from 'rxjs';
+import { Observable, tap, catchError, map, BehaviorSubject } from 'rxjs';
 import { IProduct, ProductCreateDto, ProductUpdateDto } from '../models/i-product';
+import { LocalStorageNotificationService } from './local-storage-notification.service';
+
+export interface AdminNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'product_created' | 'product_approved' | 'product_rejected' | 'product_deleted' | 'product_updated';
+  recipientType: 'seller';
+  recipientId: string;
+  isRead: boolean;
+  timestamp: Date;
+  actionUrl: string;
+  metadata?: any;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +24,14 @@ export class AdminProductsService {
   private apiUrl = 'https://localhost:7253/api/Product';
   private _imageBaseUrl = 'https://localhost:7253';
 
-  constructor(private http: HttpClient) { }
+  // Notification subjects for real-time updates
+  private sellerNotificationsSubject = new BehaviorSubject<AdminNotification[]>([]);
+  public sellerNotifications$ = this.sellerNotificationsSubject.asObservable();
+
+  constructor(
+    private http: HttpClient,
+    private localNotificationService: LocalStorageNotificationService
+  ) { }
 
   // Get all products - matches GET /api/Product
   getAllProducts(): Observable<IProduct[]> {
@@ -76,7 +97,13 @@ export class AdminProductsService {
     console.log('Admin Create - API URL:', this.apiUrl);
 
     return this.http.post<IProduct>(this.apiUrl, formData).pipe(
-      tap(response => console.log('Admin Create - Success response:', response)),
+      tap(response => {
+        console.log('Admin Create - Success response:', response);
+        // Send notification to seller about new product creation
+        this.notifySeller('product_created', 'New Product Created', 
+          `Admin has created a new product: ${productData.name}`, 
+          'seller-123', '/seller/products', { productName: productData.name });
+      }),
       catchError(error => {
         console.error('Admin Create - HTTP Error:', error);
         throw error;
@@ -123,7 +150,27 @@ export class AdminProductsService {
     console.log('Admin Update - API URL:', this.apiUrl);
 
     return this.http.put<IProduct>(this.apiUrl, formData).pipe(
-      tap(response => console.log('Admin Update - Success response:', response)),
+      tap(updated => {
+        console.log('Admin Update - Success response:', updated);
+        // Send notification to seller about approval/rejection if status changed
+        const isApproved = updated.approvalStatus === 2; // Approved enum
+        const sellerId = 'seller-123'; // TODO: replace with sellerId from product when available
+        if (sellerId) {
+          if (isApproved) {
+            this.notifySeller('product_approved', 'Product Approved', 
+              `Your product "${updated.name}" has been approved and is now live.`, 
+              sellerId, '/seller/products', { productName: updated.name });
+          } else if (updated.approvalStatus === 3) { // Rejected enum
+            this.notifySeller('product_rejected', 'Product Rejected', 
+              `Your product "${updated.name}" has been rejected. Please review and update.`, 
+              sellerId, '/seller/products', { productName: updated.name });
+          } else {
+            this.notifySeller('product_updated', 'Product Updated', 
+              `Admin has updated your product: ${updated.name}`, 
+              sellerId, '/seller/products', { productName: updated.name });
+          }
+        }
+      }),
       catchError(error => {
         console.error('Admin Update - HTTP Error:', error);
         throw error;
@@ -135,7 +182,16 @@ export class AdminProductsService {
   deleteProduct(id: string): Observable<IProduct> {
     console.log('Admin Delete - API URL:', `${this.apiUrl}/${id}`);
     return this.http.delete<IProduct>(`${this.apiUrl}/${id}`).pipe(
-      tap(response => console.log('Admin Delete - Success response:', response)),
+      tap(response => {
+        console.log('Admin Delete - Success response:', response);
+        // Send notification to seller about product deletion
+        const sellerId = 'seller-123'; // TODO: replace with sellerId from product when available
+        if (sellerId) {
+          this.notifySeller('product_deleted', 'Product Deleted', 
+            `Admin has deleted your product: ${response.name || 'Unknown Product'}`, 
+            sellerId, '/seller/products', { productName: response.name });
+        }
+      }),
       catchError(error => {
         console.error('Admin Delete - HTTP Error:', error);
         throw error;
@@ -165,5 +221,48 @@ export class AdminProductsService {
     });
 
     return product;
+  }
+
+  // Private method to create and emit notifications
+  private notifySeller(type: AdminNotification['type'], title: string, message: string, 
+                      recipientId: string, actionUrl: string, metadata?: any): void {
+    // Create notification using local storage service
+    this.localNotificationService.createNotification({
+      title,
+      message,
+      type: type as any, // Cast to match the service interface
+      recipientType: 'seller',
+      recipientId,
+      isRead: false,
+      actionUrl,
+      metadata
+    });
+    
+    console.log('Admin notification sent to seller via local storage:', { title, message, recipientId });
+  }
+
+  // Method to get seller notifications (for seller components to subscribe to)
+  getSellerNotifications(): Observable<AdminNotification[]> {
+    return this.sellerNotifications$;
+  }
+
+  // Method to mark notification as read
+  markNotificationAsRead(notificationId: string): void {
+    const currentNotifications = this.sellerNotificationsSubject.value;
+    const updatedNotifications = currentNotifications.map(notification => 
+      notification.id === notificationId 
+        ? { ...notification, isRead: true }
+        : notification
+    );
+    this.sellerNotificationsSubject.next(updatedNotifications);
+  }
+
+  // Method to clear all notifications for a seller
+  clearSellerNotifications(sellerId: string): void {
+    const currentNotifications = this.sellerNotificationsSubject.value;
+    const filteredNotifications = currentNotifications.filter(
+      notification => notification.recipientId !== sellerId
+    );
+    this.sellerNotificationsSubject.next(filteredNotifications);
   }
 } 

@@ -1,10 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, of } from 'rxjs';
-import { OrdersService } from './orders-service';
+import { Observable, forkJoin, map, of, BehaviorSubject, tap } from 'rxjs';
+import { OrdersService, OrderResDto } from './orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from './order-status-history.service';
 import { IOrder } from '../models/i-order';
 import { environment } from '../../environment/environment';
+import { UnifiedNotificationService } from './unified-notification.service';
+
+export interface SellerOrderNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'order_status_changed' | 'order_shipped' | 'order_delivered' | 'order_cancelled';
+  recipientType: 'admin';
+  recipientId?: string;
+  isRead: boolean;
+  timestamp: Date;
+  actionUrl: string;
+  metadata?: any;
+}
 
 export interface SellerOrderStats {
   totalOrders: number;
@@ -40,10 +54,15 @@ export interface SellerOrderUpdateDto {
 export class SellerOrdersService {
   private apiUrl = `${environment.apiUrl}/Order`;
 
+  // Notification subject for admin
+  private adminNotificationsSubject = new BehaviorSubject<SellerOrderNotification[]>([]);
+  public adminNotifications$ = this.adminNotificationsSubject.asObservable();
+
   constructor(
     private http: HttpClient,
     private ordersService: OrdersService,
-    private orderStatusHistoryService: OrderStatusHistoryService
+    private orderStatusHistoryService: OrderStatusHistoryService,
+    private unifiedNotificationService: UnifiedNotificationService
   ) {}
 
   // Get all seller orders with status history
@@ -122,6 +141,17 @@ export class SellerOrdersService {
     };
 
     return this.orderStatusHistoryService.createOrderStatusHistory(statusHistoryDto).pipe(
+      tap(() => {
+        // Send notification to admin about order status change
+        this.notifyAdmin('order_status_changed', 'Order Status Updated', 
+          `Order #${orderUpdate.orderId} status changed to ${orderUpdate.status}`, 
+          '/admin/orders', { 
+            orderId: orderUpdate.orderId, 
+            newStatus: orderUpdate.status,
+            trackingNumber: orderUpdate.trackingNumber,
+            notes: orderUpdate.notes
+          });
+      }),
       map(() => {
         // Return a mock IOrder since we don't have the full order data
         return {
@@ -253,7 +283,18 @@ export class SellerOrdersService {
       orderId,
       status: 'Shipped',
       trackingNumber
-    });
+    }).pipe(
+      tap(() => {
+        // Send specific notification for shipping
+        this.notifyAdmin('order_shipped', 'Order Shipped', 
+          `Order #${orderId} has been shipped${trackingNumber ? ` with tracking #${trackingNumber}` : ''}`, 
+          '/admin/orders', { 
+            orderId, 
+            trackingNumber,
+            status: 'Shipped'
+          });
+      })
+    );
   }
 
   // Mark order as delivered
@@ -261,7 +302,17 @@ export class SellerOrdersService {
     return this.updateOrderStatus({
       orderId,
       status: 'Delivered'
-    });
+    }).pipe(
+      tap(() => {
+        // Send specific notification for delivery
+        this.notifyAdmin('order_delivered', 'Order Delivered', 
+          `Order #${orderId} has been delivered successfully`, 
+          '/admin/orders', { 
+            orderId, 
+            status: 'Delivered'
+          });
+      })
+    );
   }
 
   // Cancel order
@@ -270,7 +321,18 @@ export class SellerOrdersService {
       orderId,
       status: 'Cancelled',
       notes: reason
-    });
+    }).pipe(
+      tap(() => {
+        // Send specific notification for cancellation
+        this.notifyAdmin('order_cancelled', 'Order Cancelled', 
+          `Order #${orderId} has been cancelled. Reason: ${reason}`, 
+          '/admin/orders', { 
+            orderId, 
+            status: 'Cancelled',
+            reason
+          });
+      })
+    );
   }
 
   // Helper methods
@@ -310,4 +372,48 @@ export class SellerOrdersService {
     }
     return 'Pending';
   }
-}
+
+
+  // Private method to create and emit notifications for admin
+  private notifyAdmin(type: SellerOrderNotification['type'], title: string, message: string, 
+                     actionUrl: string, metadata?: any): void {
+    const notification: SellerOrderNotification = {
+      id: `seller-order-${Date.now()}-${Math.random()}`,
+      title,
+      message,
+      type,
+      recipientType: 'admin',
+      isRead: false,
+      timestamp: new Date(),
+      actionUrl,
+      metadata
+    };
+
+    // Send to unified notification service
+    this.unifiedNotificationService.addSellerNotification(notification);
+    
+    console.log('Seller order notification sent to admin:', notification);
+  }
+
+  // Method to get admin notifications (for admin components to subscribe to)
+  getAdminNotifications(): Observable<SellerOrderNotification[]> {
+    return this.adminNotifications$;
+  }
+
+  // Method to mark notification as read
+  markNotificationAsRead(notificationId: string): void {
+    const currentNotifications = this.adminNotificationsSubject.value;
+    const updatedNotifications = currentNotifications.map(notification => 
+      notification.id === notificationId 
+        ? { ...notification, isRead: true }
+        : notification
+    );
+    this.adminNotificationsSubject.next(updatedNotifications);
+  }
+
+  // Method to clear all admin notifications
+  clearAdminNotifications(): void {
+    this.adminNotificationsSubject.next([]);
+  }
+} 
+

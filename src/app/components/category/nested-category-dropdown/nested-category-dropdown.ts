@@ -62,10 +62,10 @@ export class NestedCategoryDropdown implements OnInit {
 
               // Group subcategories by category ID
               this.subCategoriesByCategory = subCategories.reduce((acc, subCat) => {
-                if (!acc[subCat.categoryId]) {
-                  acc[subCat.categoryId] = [];
+                if (!acc[subCat.categoryName]) {
+                  acc[subCat.categoryName] = [];
                 }
-                acc[subCat.categoryId].push(subCat);
+                acc[subCat.categoryName].push(subCat);
                 return acc;
               }, {} as { [key: string]: ISubCategory[] });
 
@@ -98,14 +98,14 @@ export class NestedCategoryDropdown implements OnInit {
 
     this.subCategoryService.getAll().subscribe({
       next: (subCategories) => {
-        // Group subcategories by category ID
+        // Group subcategories by category name
         this.subCategoriesByCategory = subCategories.reduce((acc, subCat) => {
-          if (!acc[subCat.categoryId]) {
-            acc[subCat.categoryId] = [];
+          if (!acc[subCat.categoryName]) {
+            acc[subCat.categoryName] = [];
           }
           // Only add if not already present
-          if (!acc[subCat.categoryId].find(sc => sc.id === subCat.id)) {
-            acc[subCat.categoryId].push(subCat);
+          if (!acc[subCat.categoryName].find(sc => sc.id === subCat.id)) {
+            acc[subCat.categoryName].push(subCat);
           }
           return acc;
         }, {} as { [key: string]: ISubCategory[] });

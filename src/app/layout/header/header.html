@@ -88,6 +88,55 @@
         Orders
       </a>
 
+      <!-- Notifications -->
+      <div class="relative">
+        <button
+          (click)="toggleNotifications()"
+          class="cursor-pointer hover:text-orange-500 transition-colors duration-200 relative"
+        >
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.83 2.97A.75.75 0 015.5 2.25h13a.75.75 0 01.67.72l-.5 5a.75.75 0 01-.67.78H5.5a.75.75 0 01-.67-.72l-.5-5z"></path>
+          </svg>
+          <span
+            *ngIf="notificationCount > 0"
+            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+          >
+            {{ notificationCount > 9 ? '9+' : notificationCount }}
+          </span>
+        </button>
+
+        <!-- Notifications Dropdown -->
+        <div
+          *ngIf="showNotifications"
+          class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+        >
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+              <button (click)="markAllAsRead()" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
+            </div>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              <div 
+                *ngFor="let notification of notifications" 
+                class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                [class.bg-blue-50]="!notification.isRead"
+                (click)="onNotificationClick(notification)"
+              >
+                <span class="text-lg" [class]="getNotificationColorClass(notification.type)">
+                  {{ getNotificationIcon(notification.type) }}
+                </span>
+                <div class="flex-1">
+                  <div class="font-medium text-gray-800">{{ notification.title }}</div>
+                  <div class="text-sm text-gray-500">{{ notification.message }}</div>
+                  <div class="text-xs text-gray-400 mt-1">{{ formatTime(notification.timestamp) }}</div>
+                </div>
+                <div *ngIf="!notification.isRead" class="w-2 h-2 bg-blue-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- /// -->
       <div class="flex-none">
         <div class="dropdown dropdown-end mr-3">
@@ -107,7 +156,7 @@
 
               <div class="cart-items max-h-60 overflow-y-auto">
                 <div *ngFor="let item of cartItems" class="flex items-center gap-2 p-2 hover:bg-gray-50 border-b">
-                  <img [src]="item.Product.productPicsPathes?.[0]" alt="Product Image"
+                  <img [src]="item.Product.productPicsPathes[0]" alt="Product Image"
                     class="w-10 h-10 object-cover rounded">
                   <div class="flex-1 min-w-0">
                     <p class="text-sm font-medium truncate">{{item.Product.name}}</p>

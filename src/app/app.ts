@@ -13,6 +13,7 @@ import { Chatbot } from './components/chatbot/chatbot';
 // import { HttpClient } from '@microsoft/signalr';
 
 
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -26,8 +27,8 @@ export class App {
 
   constructor(private router: Router) {}
 
-  isAdminRoute(): boolean {
-    return this.router.url.startsWith('/admin');
+  shouldHideMainHeader(): boolean {
+    return this.router.url.startsWith('/admin') || this.router.url.startsWith('/seller');
   }
 }
 

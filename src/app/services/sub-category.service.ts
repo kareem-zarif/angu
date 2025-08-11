@@ -10,8 +10,8 @@ import { ISubCategory } from '../models/i-sub-category';
 export class SubCategoryService {
   private _baseUrl = 'https://localhost:7253/api/SubCategory';
 
-  // Cache for subcategories by category ID
-  private subCategoriesCache: { [categoryId: string]: ISubCategory[] } = {};
+  // Cache for subcategories by category name
+  private subCategoriesCache: { [categoryName: string]: ISubCategory[] } = {};
   private allSubCategoriesCache: ISubCategory[] = [];
 
   constructor(private http: HttpClient) { }
@@ -29,10 +29,10 @@ export class SubCategoryService {
 
         // Also populate category-specific cache
         subCategories.forEach(sc => {
-          if (!this.subCategoriesCache[sc.categoryId]) {
-            this.subCategoriesCache[sc.categoryId] = [];
+          if (!this.subCategoriesCache[sc.categoryName]) {
+            this.subCategoriesCache[sc.categoryName] = [];
           }
-          this.subCategoriesCache[sc.categoryId].push(sc);
+          this.subCategoriesCache[sc.categoryName].push(sc);
         });
 
         return subCategories;
@@ -65,19 +65,19 @@ export class SubCategoryService {
     );
   }
 
-  // Get subcategories by category ID - simplified to use cache when possible
-  getByCategoryId(categoryId: string): Observable<ISubCategory[]> {
+  // Get subcategories by category name - simplified to use cache when possible
+  getByCategoryName(categoryName: string): Observable<ISubCategory[]> {
     // Check if we have this category's subcategories cached
-    if (this.subCategoriesCache[categoryId]) {
-      return of(this.subCategoriesCache[categoryId]);
+    if (this.subCategoriesCache[categoryName]) {
+      return of(this.subCategoriesCache[categoryName]);
     }
 
     // If all subcategories are cached, filter them
     if (this.allSubCategoriesCache.length > 0) {
       const filteredSubCategories = this.allSubCategoriesCache.filter(
-        sc => sc.categoryId === categoryId
+        sc => sc.categoryName === categoryName
       );
-      this.subCategoriesCache[categoryId] = filteredSubCategories;
+      this.subCategoriesCache[categoryName] = filteredSubCategories;
       return of(filteredSubCategories);
     }
 
@@ -85,9 +85,9 @@ export class SubCategoryService {
     return this.getAll().pipe(
       map(allSubCategories => {
         const filteredSubCategories = allSubCategories.filter(
-          sc => sc.categoryId === categoryId
+          sc => sc.categoryName === categoryName
         );
-        this.subCategoriesCache[categoryId] = filteredSubCategories;
+        this.subCategoriesCache[categoryName] = filteredSubCategories;
         return filteredSubCategories;
       })
     );
@@ -99,10 +99,10 @@ export class SubCategoryService {
       map(newSubCategory => {
         // Update caches
         this.allSubCategoriesCache.push(newSubCategory);
-        if (!this.subCategoriesCache[newSubCategory.categoryId]) {
-          this.subCategoriesCache[newSubCategory.categoryId] = [];
+        if (!this.subCategoriesCache[newSubCategory.categoryName]) {
+          this.subCategoriesCache[newSubCategory.categoryName] = [];
         }
-        this.subCategoriesCache[newSubCategory.categoryId].push(newSubCategory);
+        this.subCategoriesCache[newSubCategory.categoryName].push(newSubCategory);
         return newSubCategory;
       }),
       catchError(error => {
@@ -119,30 +119,30 @@ export class SubCategoryService {
         // Update all subcategories cache
         const allIndex = this.allSubCategoriesCache.findIndex(sc => sc.id === updatedSubCategory.id);
         if (allIndex !== -1) {
-          const oldCategoryId = this.allSubCategoriesCache[allIndex].categoryId;
+          const oldCategoryName = this.allSubCategoriesCache[allIndex].categoryName;
           this.allSubCategoriesCache[allIndex] = updatedSubCategory;
 
           // Handle category change
-          if (oldCategoryId !== updatedSubCategory.categoryId) {
+          if (oldCategoryName !== updatedSubCategory.categoryName) {
             // Remove from old category cache
-            if (this.subCategoriesCache[oldCategoryId]) {
-              this.subCategoriesCache[oldCategoryId] = this.subCategoriesCache[oldCategoryId].filter(
+            if (this.subCategoriesCache[oldCategoryName]) {
+              this.subCategoriesCache[oldCategoryName] = this.subCategoriesCache[oldCategoryName].filter(
                 sc => sc.id !== updatedSubCategory.id
               );
             }
 
             // Add to new category cache
-            if (!this.subCategoriesCache[updatedSubCategory.categoryId]) {
-              this.subCategoriesCache[updatedSubCategory.categoryId] = [];
+            if (!this.subCategoriesCache[updatedSubCategory.categoryName]) {
+              this.subCategoriesCache[updatedSubCategory.categoryName] = [];
             }
-            this.subCategoriesCache[updatedSubCategory.categoryId].push(updatedSubCategory);
+            this.subCategoriesCache[updatedSubCategory.categoryName].push(updatedSubCategory);
           } else {
             // Update in same category cache
-            const categoryIndex = this.subCategoriesCache[updatedSubCategory.categoryId]?.findIndex(
+            const categoryIndex = this.subCategoriesCache[updatedSubCategory.categoryName]?.findIndex(
               sc => sc.id === updatedSubCategory.id
             );
             if (categoryIndex !== undefined && categoryIndex !== -1) {
-              this.subCategoriesCache[updatedSubCategory.categoryId][categoryIndex] = updatedSubCategory;
+              this.subCategoriesCache[updatedSubCategory.categoryName][categoryIndex] = updatedSubCategory;
             }
           }
         }
@@ -160,15 +160,15 @@ export class SubCategoryService {
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this._baseUrl}/${id}`).pipe(
       map(() => {
-        // Find the subcategory to get its category ID before removing
+        // Find the subcategory to get its category name before removing
         const subCategory = this.allSubCategoriesCache.find(sc => sc.id === id);
 
         // Update all subcategories cache
         this.allSubCategoriesCache = this.allSubCategoriesCache.filter(sc => sc.id !== id);
 
         // Update category-specific cache if we found the subcategory
-        if (subCategory && this.subCategoriesCache[subCategory.categoryId]) {
-          this.subCategoriesCache[subCategory.categoryId] = this.subCategoriesCache[subCategory.categoryId].filter(
+        if (subCategory && this.subCategoriesCache[subCategory.categoryName]) {
+          this.subCategoriesCache[subCategory.categoryName] = this.subCategoriesCache[subCategory.categoryName].filter(
             sc => sc.id !== id
           );
         }

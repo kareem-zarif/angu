@@ -1,10 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SellerOrdersService, SellerOrderStats } from '../../services/seller-orders.service';
+import { SellerOrdersService } from '../../services/seller-orders.service';
 import { IOrder } from '../../models/i-order';
+import { OrderStatusHistoryService } from '../../services/order-status-history.service';
+import { NotificationService } from '../../services/notification.service';
+import { Auth } from '../../services/auth';
 import { PaginationComponent } from '../shared/pagination/pagination';
-import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from '../../services/order-status-history.service';
+import { OrderStatus } from '../../models/i-order-status-history';
 
 @Component({
   selector: 'app-seller-orders',
@@ -16,7 +19,7 @@ import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from
 export class SellerOrdersComponent implements OnInit {
   orders: IOrder[] = [];
   filteredOrders: IOrder[] = [];
-  orderStats: SellerOrderStats = {
+  orderStats: any = {
     totalOrders: 0,
     pendingOrders: 0,
     processingOrders: 0,
@@ -38,10 +41,10 @@ export class SellerOrdersComponent implements OnInit {
   showDetailsModal = false;
   showStatusHistoryModal = false;
   selectedOrder: IOrder | null = null;
-  selectedOrderHistory: OrderStatusHistoryResDto[] = [];
+  selectedOrderHistory: any[] = [];
   
   // Add property to store status history for each order
-  orderStatusHistory: { [orderId: string]: OrderStatusHistoryResDto[] } = {};
+  orderStatusHistory: { [orderId: string]: any[] } = {};
 
   // Pagination properties
   currentPage = 1;
@@ -49,9 +52,21 @@ export class SellerOrdersComponent implements OnInit {
   totalItems = 0;
   totalPages = 1;
 
+  // Order status options
+  orderStatuses = [
+    { value: OrderStatus.Pending, label: 'Pending' },
+    { value: OrderStatus.Confirmed, label: 'Confirmed' },
+    { value: OrderStatus.Shipped, label: 'Shipped' },
+    { value: OrderStatus.Deliverd, label: 'Delivered' },
+    { value: OrderStatus.Cancelled, label: 'Cancelled' },
+    { value: OrderStatus.Returned, label: 'Returned' }
+  ];
+
   constructor(
     private sellerOrdersService: SellerOrdersService,
-    private orderStatusHistoryService: OrderStatusHistoryService
+    private orderStatusHistoryService: OrderStatusHistoryService,
+    private notificationService: NotificationService,
+    private auth: Auth
   ) {}
 
   ngOnInit() {
@@ -61,38 +76,41 @@ export class SellerOrdersComponent implements OnInit {
 
   loadOrders(): void {
     this.isLoading = true;
-    this.sellerOrdersService.getSellerOrders().subscribe({
-      next: (orders) => {
-        this.orders = orders;
-        
-        // Load status history for each order
-        this.orders.forEach(order => {
-          this.loadOrderStatusHistory(order.id);
-        });
-        
-        this.applyFilters();
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading orders:', error);
-        this.isLoading = false;
-        // Show error message to user
-        alert('Failed to load orders. Please try again later.');
-      }
-    });
+    
+    this.sellerOrdersService.getSellerOrders()
+      .subscribe({
+        next: (orders) => {
+          this.orders = orders;
+          
+          // Load status history for each order
+          if (orders.length > 0) {
+            orders.forEach(order => {
+              this.loadOrderStatusHistory(order.id);
+            });
+          }
+          
+          this.applyFilters();
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading orders:', error);
+          this.isLoading = false;
+          this.orders = [];
+          this.filteredOrders = [];
+        }
+      });
   }
 
   loadOrderStats(): void {
-    this.sellerOrdersService.getSellerOrderStats().subscribe({
-      next: (stats) => {
-        this.orderStats = stats;
-      },
-      error: (error) => {
-        console.error('Error loading order stats:', error);
-        // Show error message to user
-        alert('Failed to load order statistics. Please try again later.');
-      }
-    });
+    this.sellerOrdersService.getSellerOrderStats()
+      .subscribe({
+        next: (stats) => {
+          this.orderStats = stats;
+        },
+        error: (error) => {
+          console.error('Error loading order stats:', error);
+        }
+      });
   }
 
   applyFilters() {
@@ -192,40 +210,54 @@ export class SellerOrdersComponent implements OnInit {
       status: newStatus
     };
     
-    this.sellerOrdersService.updateOrderStatus(updateDto).subscribe({
-      next: () => {
-        // Update the local status history immediately
-        if (!this.orderStatusHistory[orderId]) {
-          this.orderStatusHistory[orderId] = [];
+    this.sellerOrdersService.updateOrderStatus(updateDto)
+      .subscribe({
+        next: () => {
+          // Update the local status history immediately
+          if (!this.orderStatusHistory[orderId]) {
+            this.orderStatusHistory[orderId] = [];
+          }
+          
+          // Add new status to history
+          this.orderStatusHistory[orderId].push({
+            id: '',
+            orderStatus: orderStatus,
+            modifiedOn: new Date(),
+            orderId: orderId
+          });
+          
+          // Reapply filters to update the display
+          this.applyFilters();
+          this.isSubmitting = false;
+          alert('Order status updated successfully!');
+
+          // Create notification for admin about order status change
+          const currentSellerId = this.auth.getCurrentUser()?.UserId;
+          if (currentSellerId) {
+            this.notificationService.createOrderStatusChangeNotification(
+              currentSellerId,
+              orderId,
+              newStatus
+            ).subscribe({
+              next: () => console.log('Notification created for order status change'),
+              error: (error) => console.error('Error creating notification:', error)
+            });
+          }
+        },
+        error: (error) => {
+          console.error('Error updating order status:', error);
+          this.isSubmitting = false;
+          alert('Failed to update order status. Please try again.');
         }
-        
-        // Add new status to history
-        this.orderStatusHistory[orderId].push({
-          id: '',
-          orderStatus: orderStatus,
-          modifiedOn: new Date(),
-          orderId: orderId
-        });
-        
-        // Reapply filters to update the display
-        this.applyFilters();
-        this.isSubmitting = false;
-        alert('Order status updated successfully!');
-      },
-      error: (error) => {
-        console.error('Error updating order status:', error);
-        this.isSubmitting = false;
-        alert('Failed to update order status. Please try again.');
-      }
-    });
+      });
   }
 
   // Method to load status history for an order (without showing modal)
-  loadOrderStatusHistory(orderId: string) {
+  loadOrderStatusHistory(orderId: string): void {
     console.log(`Attempting to load status history for order: ${orderId}`);
     this.orderStatusHistoryService.getOrderStatusHistoriesByOrderId(orderId).subscribe({
       next: (history) => {
-        this.orderStatusHistory[orderId] = history;
+        this.orderStatusHistory[orderId] = history || [];
         console.log(`Status history loaded for order ${orderId}:`, history);
       },
       error: (error) => {
@@ -236,6 +268,7 @@ export class SellerOrdersComponent implements OnInit {
     });
   }
 
+  // Method to show status history modal for an order
   showOrderStatusHistory(orderId: string): void {
     console.log(`Attempting to load status history for order: ${orderId}`);
     this.orderStatusHistoryService.getOrderStatusHistoriesByOrderId(orderId).subscribe({
@@ -253,6 +286,12 @@ export class SellerOrdersComponent implements OnInit {
     });
   }
 
+  // Method to get status history for an order
+  getOrderStatusHistory(orderId: string): any[] {
+    return this.orderStatusHistory[orderId] || [];
+  }
+
+  // Method to close status history modal
   closeStatusHistoryModal(): void {
     this.showStatusHistoryModal = false;
     this.selectedOrderHistory = [];

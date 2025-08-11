@@ -1,9 +1,29 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminProductsService } from '../../services/admin-products-service';
+import { ProductService } from '../../services/product-service';
+import { CategoryService } from '../../services/category.service';
+import { SubCategoryService } from '../../services/sub-category.service';
+import { Auth } from '../../services/auth';
 import { IProduct, ProductApprovalStatus, ShippingTypes } from '../../models/i-product';
+import { ICategory } from '../../models/i-category';
+import { ISubCategory } from '../../models/i-sub-category';
 import { PaginationComponent } from '../shared/pagination/pagination';
+import { Observable } from 'rxjs';
+import { LocalStorageNotificationService } from '../../services/local-storage-notification.service';
+
+export interface SellerProductNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'product_created' | 'product_updated' | 'product_deleted' | 'low_stock_alert';
+  recipientType: 'admin';
+  recipientId?: string;
+  isRead: boolean;
+  timestamp: Date;
+  actionUrl: string;
+  metadata?: any;
+}
 
 @Component({
   selector: 'app-seller-products',
@@ -41,27 +61,69 @@ export class SellerProductsComponent implements OnInit {
   // Form properties
   form: Partial<IProduct> = {};
   formErrors: Record<string, string> = {};
+  selectedImages: File[] = [];
 
-  constructor(private productService: AdminProductsService) {}
+  // Category and subcategory properties
+  categories: ICategory[] = [];
+  subCategories: ISubCategory[] = [];
+  selectedCategoryId: string = '';
+
+  // No longer needed - using LocalStorageNotificationService instead
+  // private adminNotificationsSubject = new BehaviorSubject<SellerProductNotification[]>([]);
+  // public adminNotifications$ = this.adminNotificationsSubject.asObservable();
+
+  constructor(
+    private productService: ProductService,
+    private categoryService: CategoryService,
+    private subCategoryService: SubCategoryService,
+    private auth: Auth,
+    private localNotificationService: LocalStorageNotificationService
+  ) {}
 
   ngOnInit() {
     this.loadProducts();
+    this.loadCategories();
+    this.loadSubcategories();
   }
 
   loadProducts(): void {
     this.isLoading = true;
     this.error = null;
 
-    this.productService.getAllProducts().subscribe({
+    this.productService.getAllForSeller().subscribe({
       next: (products) => {
         this.products = products;
         this.applyFilters();
         this.isLoading = false;
+
+        // Check for low stock products and send notifications
+        this.checkLowStockProducts();
       },
       error: (error) => {
         console.error('Error loading products:', error);
         this.error = 'Failed to load products. Please try again later.';
         this.isLoading = false;
+      }
+    });
+  }
+
+  // Check for low stock products and send notifications
+  private checkLowStockProducts() {
+    const currentSellerId = this.auth.getCurrentUser()?.UserId;
+    if (!currentSellerId) return;
+
+    const lowStockThreshold = 10; // Products with 10 or fewer items are considered low stock
+    
+    this.products.forEach(product => {
+      if (product.noINStock <= lowStockThreshold && product.noINStock > 0) {
+        // Send low stock notification to admin
+        this.notifyAdmin('low_stock_alert', 'Low Stock Alert', 
+          `Product "${product.name}" is running low on stock (${product.noINStock} remaining)`, 
+          '/admin/products', { 
+            productName: product.name, 
+            currentStock: product.noINStock,
+            sellerId: currentSellerId 
+          });
       }
     });
   }
@@ -151,13 +213,19 @@ export class SellerProductsComponent implements OnInit {
       name: '',
       description: '',
       pricePerPiece: 0,
+      pricePer50Piece: undefined,
+      pricePer100Piece: undefined,
       noINStock: 0,
       minNumToFactoryOrder: 1,
       approvalStatus: ProductApprovalStatus.Pending,
       shipping: ShippingTypes.Free,
       subCategoryId: '',
-      productPicsPathes: []
+      productPicsPathes: [],
+      warrantyNMonths: undefined
     };
+    this.selectedImages = [];
+    this.selectedCategoryId = '';
+    this.subCategories = [];
     this.formErrors = {};
     this.showAddModal = true;
   }
@@ -167,7 +235,36 @@ export class SellerProductsComponent implements OnInit {
     this.form = { ...product };
     // Sellers cannot change approval status, so we don't include it in the form
     delete this.form.approvalStatus;
+    this.selectedImages = [];
     this.formErrors = {};
+    
+    // Find the category for this product's subcategory
+    if (product.subCategoryId) {
+      this.subCategoryService.getById(product.subCategoryId).subscribe({
+        next: (subCategory) => {
+          // Find the category by name
+          const category = this.categories.find(c => c.name === subCategory.categoryName);
+          if (category) {
+            this.selectedCategoryId = category.id;
+            // Load subcategories for the selected category
+            this.subCategoryService.getByCategoryName(subCategory.categoryName).subscribe({
+              next: (subCategories) => {
+                this.subCategories = subCategories;
+                // Ensure the form subcategory ID is preserved
+                this.form.subCategoryId = product.subCategoryId;
+              },
+              error: (error) => {
+                console.error('Error loading subcategories for edit:', error);
+              }
+            });
+          }
+        },
+        error: (error) => {
+          console.error('Error loading subcategory for edit:', error);
+        }
+      });
+    }
+    
     this.showEditModal = true;
   }
 
@@ -196,12 +293,24 @@ export class SellerProductsComponent implements OnInit {
       this.formErrors['pricePerPiece'] = 'Price must be greater than 0';
     }
 
+    if (this.form.pricePer50Piece !== undefined && this.form.pricePer50Piece !== null && this.form.pricePer50Piece <= 0) {
+      this.formErrors['pricePer50Piece'] = 'Price per 50 pieces must be greater than 0';
+    }
+
+    if (this.form.pricePer100Piece !== undefined && this.form.pricePer100Piece !== null && this.form.pricePer100Piece <= 0) {
+      this.formErrors['pricePer100Piece'] = 'Price per 100 pieces must be greater than 0';
+    }
+
     if (this.form.noINStock === undefined || this.form.noINStock < 0) {
       this.formErrors['noINStock'] = 'Stock quantity must be 0 or greater';
     }
 
     if (!this.form.subCategoryId) {
       this.formErrors['subCategoryId'] = 'Subcategory is required';
+    }
+
+    if (this.form.warrantyNMonths !== undefined && this.form.warrantyNMonths !== null && this.form.warrantyNMonths < 0) {
+      this.formErrors['warrantyNMonths'] = 'Warranty months must be 0 or greater';
     }
 
     return Object.keys(this.formErrors).length === 0;
@@ -216,18 +325,27 @@ export class SellerProductsComponent implements OnInit {
 
     if (this.selectedProduct) {
       // Update existing product - preserve original approval status
+      const cleanedFormData = this.cleanFormData(this.form);
       const updateData: IProduct = {
         ...this.selectedProduct,
-        ...this.form,
+        ...cleanedFormData,
         approvalStatus: this.selectedProduct.approvalStatus // Keep original approval status
       };
 
-      this.productService.updateProduct(updateData).subscribe({
+      this.productService.update(updateData, this.selectedImages).subscribe({
         next: () => {
           this.loadProducts();
           this.showEditModal = false;
           this.isSubmitting = false;
           alert('Product updated successfully!');
+          
+          // Notify admin about product update
+          this.notifyAdmin('product_updated', 'Product Updated', 
+            `Product "${updateData.name}" has been updated by seller`, 
+            '/admin/products', { 
+              productName: updateData.name,
+              sellerId: this.auth.getCurrentUser()?.UserId 
+            });
         },
         error: (error) => {
           console.error('Error updating product:', error);
@@ -237,17 +355,31 @@ export class SellerProductsComponent implements OnInit {
       });
     } else {
       // Create new product
+      const cleanedFormData = this.cleanFormData(this.form);
       const createData: IProduct = {
-        ...this.form as IProduct,
-        id: ''
+        ...cleanedFormData as IProduct,
+        id: '',
+        productPicsPathes: []
       };
 
-      this.productService.createProduct(createData).subscribe({
+      this.productService.add(createData, this.selectedImages).subscribe({
         next: () => {
           this.loadProducts();
           this.showAddModal = false;
           this.isSubmitting = false;
+          this.selectedImages = [];
           alert('Product created successfully!');
+          
+          // Create notification for admin about new product
+          const currentSellerId = this.auth.getCurrentUser()?.UserId;
+          if (currentSellerId && this.form.name) {
+            this.notifyAdmin('product_created', 'New Product Pending Review', 
+              `New product "${this.form.name}" has been submitted for approval.`, 
+              '/admin/products', { 
+                productName: this.form.name,
+                sellerId: currentSellerId 
+              });
+          }
         },
         error: (error) => {
           console.error('Error creating product:', error);
@@ -263,12 +395,22 @@ export class SellerProductsComponent implements OnInit {
 
     this.isSubmitting = true;
 
-    this.productService.deleteProduct(this.selectedProduct.id).subscribe({
+    this.productService.delete(this.selectedProduct.id).subscribe({
       next: () => {
         this.loadProducts();
         this.showDeleteModal = false;
         this.isSubmitting = false;
         alert('Product deleted successfully!');
+        
+        // Notify admin about product deletion
+        if (this.selectedProduct) {
+          this.notifyAdmin('product_deleted', 'Product Deleted', 
+            `Product "${this.selectedProduct.name}" has been deleted by seller`, 
+            '/admin/products', { 
+              productName: this.selectedProduct.name,
+              sellerId: this.auth.getCurrentUser()?.UserId 
+            });
+        }
       },
       error: (error) => {
         console.error('Error deleting product:', error);
@@ -281,6 +423,93 @@ export class SellerProductsComponent implements OnInit {
   clearError(field: string) {
     if (this.formErrors[field]) {
       delete this.formErrors[field];
+    }
+  }
+
+  // Helper method to check if a field has an error
+  hasError(field: string): boolean {
+    return !!this.formErrors[field];
+  }
+
+  // Helper method to convert string to number or undefined
+  convertToNumber(value: string): number | undefined {
+    if (value === '' || value === null || value === undefined) {
+      return undefined;
+    }
+    const num = Number(value);
+    return isNaN(num) ? undefined : num;
+  }
+
+  onImageSelected(event: any) {
+    const files = event.target.files;
+    if (files) {
+      this.selectedImages = Array.from(files);
+    }
+  }
+
+  removeImage(index: number) {
+    this.selectedImages.splice(index, 1);
+  }
+
+  getImagePreview(file: File): string {
+    return URL.createObjectURL(file);
+  }
+
+  loadCategories() {
+    this.categoryService.getAll().subscribe({
+      next: (categories) => {
+        this.categories = categories;
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+      }
+    });
+  }
+
+  loadSubcategories() {
+    this.subCategoryService.getAll().subscribe({
+      next: (subcategories) => {
+        this.subCategories = subcategories;
+      },
+      error: (error) => {
+        console.error('Error loading subcategories:', error);
+      }
+    });
+  }
+
+  onCategoryChange() {
+    // Clear subcategory selection when category changes (except when editing and the subcategory belongs to the new category)
+    const currentSubCategoryId = this.form.subCategoryId;
+    this.subCategories = [];
+    
+    if (this.selectedCategoryId) {
+      // Get the category name from the selected category ID
+      const selectedCategory = this.categories.find(c => c.id === this.selectedCategoryId);
+      if (selectedCategory) {
+        this.subCategoryService.getByCategoryName(selectedCategory.name).subscribe({
+          next: (subCategories) => {
+            this.subCategories = subCategories;
+            
+            // If we're editing and the current subcategory doesn't belong to the new category, clear it
+            if (this.selectedProduct && currentSubCategoryId) {
+              const subCategoryExists = subCategories.some(sc => sc.id === currentSubCategoryId);
+              if (!subCategoryExists) {
+                this.form.subCategoryId = '';
+              }
+            } else if (!this.selectedProduct) {
+              // If adding new product, always clear subcategory when category changes
+              this.form.subCategoryId = '';
+            }
+          },
+          error: (error) => {
+            console.error('Error loading subcategories:', error);
+            this.form.subCategoryId = '';
+          }
+        });
+      }
+    } else {
+      // If no category is selected, clear subcategory
+      this.form.subCategoryId = '';
     }
   }
 
@@ -319,6 +548,65 @@ export class SellerProductsComponent implements OnInit {
     }).format(amount);
   }
 
+  formatBulkPricing(product: IProduct): string {
+    const prices: string[] = [];
+    
+    if (product.pricePer50Piece && product.pricePer50Piece > 0) {
+      prices.push(`${this.formatCurrency(product.pricePer50Piece)} (50)`);
+    }
+    
+    if (product.pricePer100Piece && product.pricePer100Piece > 0) {
+      prices.push(`${this.formatCurrency(product.pricePer100Piece)} (100)`);
+    }
+    
+    return prices.length > 0 ? prices.join(', ') : 'N/A';
+  }
+
+  hasBulkPricing(product: IProduct): boolean {
+    return (product.pricePer50Piece !== undefined && product.pricePer50Piece > 0) || 
+           (product.pricePer100Piece !== undefined && product.pricePer100Piece > 0);
+  }
+
+  getCategoryName(subCategoryId: string): string {
+    const subcategory = this.subCategories.find(sub => sub.id === subCategoryId);
+    if (subcategory) {
+      return subcategory.categoryName;
+    }
+    return 'Unknown Category';
+  }
+
+  private cleanFormData(formData: Partial<IProduct>): Partial<IProduct> {
+    const cleaned = { ...formData };
+    
+    // Convert 0 values to undefined for optional numeric fields
+    if (cleaned.pricePer50Piece === 0) {
+      cleaned.pricePer50Piece = undefined;
+    }
+    
+    if (cleaned.pricePer100Piece === 0) {
+      cleaned.pricePer100Piece = undefined;
+    }
+    
+    if (cleaned.warrantyNMonths === 0) {
+      cleaned.warrantyNMonths = undefined;
+    }
+    
+    // Ensure numeric fields are properly typed
+    if (cleaned.pricePerPiece !== undefined) {
+      cleaned.pricePerPiece = Number(cleaned.pricePerPiece);
+    }
+    
+    if (cleaned.noINStock !== undefined) {
+      cleaned.noINStock = Number(cleaned.noINStock);
+    }
+    
+    if (cleaned.minNumToFactoryOrder !== undefined) {
+      cleaned.minNumToFactoryOrder = Number(cleaned.minNumToFactoryOrder);
+    }
+    
+    return cleaned;
+  }
+
   getStockStatus(product: IProduct): string {
     if (product.noINStock <= 0) return 'Out of Stock';
     if (product.noINStock <= 10) return 'Low Stock';
@@ -330,4 +618,34 @@ export class SellerProductsComponent implements OnInit {
     if (product.noINStock <= 10) return 'bg-yellow-100 text-yellow-800';
     return 'bg-green-100 text-green-800';
   }
+
+  // Private method to create and emit notifications for admin
+  private notifyAdmin(type: SellerProductNotification['type'], title: string, message: string, 
+                     actionUrl: string, metadata?: any): void {
+    // Create notification using local storage service
+    this.localNotificationService.createNotification({
+      title,
+      message,
+      type: type as any, // Cast to match the service interface
+      recipientType: 'admin',
+      isRead: false,
+      actionUrl,
+      metadata
+    });
+    
+    console.log('Seller product notification sent to admin via local storage:', { title, message });
+  }
+
+  // These methods are no longer needed - use LocalStorageNotificationService instead
+  // getAdminNotifications(): Observable<SellerProductNotification[]> {
+  //   return this.localNotificationService.getAdminNotifications();
+  // }
+
+  // markNotificationAsRead(notificationId: string): void {
+  //   this.localNotificationService.markAsRead(notificationId);
+  // }
+
+  // clearAdminNotifications(): void {
+  //   this.localNotificationService.clearNotifications('admin');
+  // }
 } 
