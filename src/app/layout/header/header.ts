@@ -6,6 +6,8 @@ import { Auth, User } from '../../services/auth';
 import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlistService';
 import { ICartItem } from '../../models/i-cart-item';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
 
 interface Language {
@@ -16,7 +18,7 @@ interface Language {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, CommonModule],
+  imports: [RouterLink, CommonModule,FormsModule],
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
@@ -33,6 +35,9 @@ export class Header implements OnInit, OnDestroy {
   // Language settings
   selectedLang: Language = { code: 'en', label: 'Eng' };
 
+  searchQuery: string = '';
+  searchSuggestions: string[] = [];
+
   // Notification state
   notifications: any[] = [];
   notificationCount: number = 0;
@@ -46,6 +51,7 @@ export class Header implements OnInit, OnDestroy {
     private router: Router,
     private cartService: CartService,
     private wishlistService: WishlistService,
+    private http: HttpClient
     private unifiedNotificationService: UnifiedNotificationService
   ) { }
 
@@ -149,6 +155,38 @@ export class Header implements OnInit, OnDestroy {
       }
     }
   }
+
+  // Search methods
+  onSearchInput(): void {
+    if (this.searchQuery.length < 2) {
+      this.searchSuggestions = [];
+      return;
+    }
+
+    this.http.get<string[]>(`api/product/search?q=${encodeURIComponent(this.searchQuery)}`)
+      .subscribe({
+        next: (suggestions) => {
+          this.searchSuggestions = suggestions;
+        },
+        error: (error) => {
+          console.error('Search error:', error);
+          this.searchSuggestions = [];
+        }
+      });
+  }
+
+  selectSuggestion(suggestion: string): void {
+    this.searchQuery = suggestion;
+    this.searchSuggestions = [];
+    this.performSearch();
+  }
+
+  performSearch(): void {
+    if (this.searchQuery) {
+      this.router.navigate(['/products'], { queryParams: { q: this.searchQuery } });
+    }
+  }
+
 
   // Notification methods
   toggleNotifications(): void {

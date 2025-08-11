@@ -17,6 +17,9 @@ import { Recommendation } from './components/recommendation/recommendation';
 import { SellerProfile } from './components/seller-profile/seller-profile';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
+import { SignalrChat } from './components/signalr-chat/signalr-chat';
+import { Chatbot } from './components/chatbot/chatbot';
+import { PaymentCancel } from './components/payment/payment-cancel/payment-cancel';
 import { SuccessComponent } from './components/payment/success/success';
 import { SellerProfileEdit } from './components/seller-profile-edit/seller-profile-edit';
 
@@ -51,9 +54,12 @@ export const routes: Routes = [
 
   // Payment Routes
   { path: 'payment', component: PaymentComponent },
-  { path: 'success', component: SuccessComponent },
+  { path: 'paymentCancel', component: PaymentCancel },
 
-
+  //signalr routes
+    { path: 'signalr', component: SignalrChat },
+//chatbot routes
+    { path: 'chatbot', component: Chatbot },
   // Admin routes
   {
     path: 'admin',

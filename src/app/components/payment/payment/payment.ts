@@ -21,7 +21,8 @@ export class PaymentComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
+    private router:Router
   ) {
     this.paymentForm = this.createForm();
   }
@@ -97,11 +98,22 @@ export class PaymentComponent implements OnInit, OnDestroy {
   private handlePaymentSuccess(checkout: Checkout): void {
     this.setLoadingState(false);
     this.setSuccess('Redirecting to payment page...');
-    
+
     // Small delay to show success message before redirect
-    setTimeout(() => {
-      this.paymentService.redirectToPayment(checkout.redirectionUrl);
-    }, 1500);
+    // setTimeout(() => {
+    //   this.paymentService.redirectToPayment(checkout.redirectionUrl);
+    // }, 1);
+    if (checkout.redirectionUrl) {
+      // For Stripe or external payment methods, redirect to the payment page
+      setTimeout(() => {
+        this.paymentService.redirectToPayment(checkout.redirectionUrl);
+      }, 1);
+    } else {
+      // For non-Stripe payments (e.g., cash-on-delivery), redirect to orders page
+      setTimeout(() => {
+        this.router.navigate(['/orders']);
+      }, 1);
+    }
   }
 
   /**

@@ -357,11 +357,11 @@ export class SellerOrdersService {
       this.getOrderStatus(order),
       order.createdOn ? new Date(order.createdOn).toLocaleDateString() : 'N/A'
     ]);
-    
+
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => `"${cell}"`).join(','))
       .join('\n');
-    
+
     return csvContent;
   }
 
@@ -372,6 +372,7 @@ export class SellerOrdersService {
     }
     return 'Pending';
   }
+
 
   // Private method to create and emit notifications for admin
   private notifyAdmin(type: SellerOrderNotification['type'], title: string, message: string, 
@@ -415,3 +416,4 @@ export class SellerOrdersService {
     this.adminNotificationsSubject.next([]);
   }
 } 
+

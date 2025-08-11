@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CheckoutService } from '../../services/checkout-service';
 
 @Component({
@@ -41,7 +41,10 @@ export class CheckoutComponent implements OnInit {
   showDeliveryInstructions = false;
   showAddMobileCash = false;
 
-  constructor(private checkoutService: CheckoutService) {}
+  constructor(
+    private checkoutService: CheckoutService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
     this.loadCheckoutData();
@@ -88,6 +91,7 @@ export class CheckoutComponent implements OnInit {
         response => {
           console.log('Order placed successfully:', response);
           // Navigate to confirmation page
+          this.router.navigate(['/orders']);
         },
         error => {
           console.error('Error placing order:', error);
@@ -109,4 +113,4 @@ export class CheckoutComponent implements OnInit {
   calculateTotal(): number {
     return this.orderSummary.items + this.orderSummary.shipping - this.orderSummary.freeDeliveryDiscount;
   }
-} 
+}

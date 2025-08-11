@@ -24,7 +24,9 @@
       <div class="border-l border-gray-300 h-8 mx-2"></div>
 
       <input type="text" placeholder="What are you looking for?"
-        class="flex-grow px-4 py-2 text-sm text-gray-700 outline-none bg-transparent" />
+        class="flex-grow px-4 py-2 text-sm text-gray-700 outline-none bg-transparent" [(ngModel)]="searchQuery"
+        (input)="onSearchInput()"
+        (keydown.enter)="performSearch()" />
 
       <button
         class="bg-orange-500 px-6 py-2 text-white font-semibold rounded-r-full hover:bg-orange-600 transition-colors duration-200">
@@ -32,6 +34,17 @@
       </button>
     </div>
 
+    <!-- Autocomplete suggestions -->
+      <div *ngIf="searchSuggestions.length > 0" class="absolute top-full left-0 right-0 bg-white shadow-md rounded-b-md z-10">
+        <ul class="max-h-60 overflow-y-auto">
+          <li *ngFor="let suggestion of searchSuggestions"
+              class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+              (click)="selectSuggestion(suggestion)">
+            {{ suggestion }}
+          </li>
+        </ul>
+      </div>
+      
     <!-- اليمين: اللغة، الحساب، القلوب، الطلبات، عربة التسوق -->
     <div class="flex items-center gap-6 text-white text-sm font-semibold">
       <div class="dropdown dropdown-end">
@@ -164,7 +177,6 @@
             </div>
           </div>
         </div>
-        <!-- سسسسسسسس -->
 
         <div class="dropdown dropdown-end">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
