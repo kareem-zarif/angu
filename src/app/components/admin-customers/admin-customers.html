@@ -49,7 +49,7 @@
       </div>
     </div>
   </div>
-  
+
   <div class="overflow-x-auto rounded shadow bg-white">
     <table class="min-w-full text-sm">
       <thead>
@@ -66,7 +66,7 @@
           <td style="text-align: center;" class="px-3 py-2">{{ i + 1 }}</td>
           <td style="text-align: center;" class="px-3 py-2">{{ getFullName(customer) }}</td>
           <td style="text-align: center;" class="px-3 py-2">
-            <span *ngIf="customer.phone; else noPhone">{{ customer.phone }}</span>
+            <span *ngIf="customer.PhoneNumber; else noPhone">{{ customer.PhoneNumber }}</span>
             <ng-template #noPhone>
               <span class="text-red-500 text-xs">No phone data</span>
             </ng-template>
@@ -117,49 +117,49 @@
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="showModal = false">&times;</button>
       <h3 class="text-lg font-bold mb-4">{{ editCustomer ? 'Edit Customer' : 'Add Customer' }}</h3>
-      
+
       <!-- General Error Message -->
       <div *ngIf="formErrors['general']" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
         {{ formErrors['general'] }}
       </div>
-      
+
       <form (ngSubmit)="saveCustomer()" #customerForm="ngForm">
         <div class="mb-3">
           <label class="block mb-1 font-medium">First Name *</label>
-          <input 
-            class="border rounded px-3 py-1 w-full" 
+          <input
+            class="border rounded px-3 py-1 w-full"
             [ngClass]="{'border-red-500': formErrors['firstName']}"
-            [(ngModel)]="form.firstName" 
-            name="firstName" 
-            required 
+            [(ngModel)]="form.firstName"
+            name="firstName"
+            required
             (input)="clearError('firstName')"
             [disabled]="isSubmitting"
           />
           <div *ngIf="formErrors['firstName']" class="text-red-500 text-sm mt-1">{{ formErrors['firstName'] }}</div>
         </div>
-        
+
         <div class="mb-3">
           <label class="block mb-1 font-medium">Last Name *</label>
-          <input 
-            class="border rounded px-3 py-1 w-full" 
+          <input
+            class="border rounded px-3 py-1 w-full"
             [ngClass]="{'border-red-500': formErrors['lastName']}"
-            [(ngModel)]="form.lastName" 
-            name="lastName" 
-            required 
+            [(ngModel)]="form.lastName"
+            name="lastName"
+            required
             (input)="clearError('lastName')"
             [disabled]="isSubmitting"
           />
           <div *ngIf="formErrors['lastName']" class="text-red-500 text-sm mt-1">{{ formErrors['lastName'] }}</div>
         </div>
-        
+
         <div class="mb-3">
           <label class="block mb-1 font-medium">Phone Number *</label>
-          <input 
-            class="border rounded px-3 py-1 w-full" 
+          <input
+            class="border rounded px-3 py-1 w-full"
             [ngClass]="{'border-red-500': formErrors['phone']}"
-            [(ngModel)]="form.phone" 
-            name="phone" 
-            required 
+            [(ngModel)]="form.PhoneNumber"
+            name="phone"
+            required
             placeholder="e.g., 01012345678"
             (input)="clearError('phone')"
             [disabled]="isSubmitting"
@@ -167,18 +167,18 @@
           <div *ngIf="formErrors['phone']" class="text-red-500 text-sm mt-1">{{ formErrors['phone'] }}</div>
           <div class="text-gray-500 text-xs mt-1">Must start with 010, 011, 012, or 15 and be 11-13 digits</div>
         </div>
-        
+
         <div class="flex justify-end gap-2 mt-4">
-          <button 
-            type="button" 
-            class="px-4 py-2 rounded bg-gray-200" 
+          <button
+            type="button"
+            class="px-4 py-2 rounded bg-gray-200"
             (click)="showModal = false"
             [disabled]="isSubmitting"
           >
             Cancel
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             class="px-4 py-2 rounded bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             [disabled]="isSubmitting"
           >
@@ -194,7 +194,7 @@
   <div *ngIf="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl" (click)="closeDetails()">&times;</button>
-      
+
       <div *ngIf="selectedCustomer" class="space-y-6">
         <!-- Customer Basic Info -->
         <div class="border-b pb-4">
@@ -206,7 +206,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600">Phone Number</label>
-              <p class="text-lg">{{ selectedCustomer.phone || 'N/A' }}</p>
+              <p class="text-lg">{{ selectedCustomer.PhoneNumber || 'N/A' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600">Customer ID</label>
@@ -371,8 +371,8 @@
       </div>
 
       <div class="flex justify-end mt-6">
-        <button 
-          class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300" 
+        <button
+          class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
           (click)="closeDetails()"
         >
           Close
@@ -380,4 +380,4 @@
       </div>
     </div>
   </div>
-</div> 
+</div>

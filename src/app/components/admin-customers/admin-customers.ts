@@ -19,17 +19,17 @@ export class AdminCustomersComponent implements OnInit {
   showModal = false;
   editCustomer: Customer | null = null;
   form: Partial<Customer> = {};
-  
+
   // Pagination properties
   currentPage = 1;
   itemsPerPage = 10;
   totalItems = 0;
   totalPages = 1;
-  
+
   // Search properties
   searchTerm = '';
   searchField = 'all'; // 'all', 'name', 'phone'
-  
+
   // Validation properties
   formErrors: { [key: string]: string } = {};
   isSubmitting = false;
@@ -39,7 +39,7 @@ export class AdminCustomersComponent implements OnInit {
   selectedCustomer: Customer | null = null;
   detailsLoading = false;
 
-  constructor(private customersService: AdminCustomersService, private notificationService: NotificationService) {}
+  constructor(private customersService: AdminCustomersService, private notificationService: NotificationService) { }
 
   ngOnInit(): void {
     this.loadCustomers();
@@ -65,27 +65,27 @@ export class AdminCustomersComponent implements OnInit {
     // Apply search filter
     this.filteredCustomers = this.customers.filter(customer => {
       if (!this.searchTerm) return true;
-      
+
       const searchLower = this.searchTerm.toLowerCase();
-      
+
       switch (this.searchField) {
         case 'name':
           return this.getFullName(customer).toLowerCase().includes(searchLower);
         case 'phone':
-          return customer.phone.toLowerCase().includes(searchLower);
+          return customer.PhoneNumber.toLowerCase().includes(searchLower);
         case 'all':
         default:
           return (
             this.getFullName(customer).toLowerCase().includes(searchLower) ||
-            customer.phone.toLowerCase().includes(searchLower)
+            customer.PhoneNumber.toLowerCase().includes(searchLower)
           );
       }
     });
-    
+
     // Update pagination
     this.totalItems = this.filteredCustomers.length;
     this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-    
+
     // Reset to first page if current page is out of bounds
     if (this.currentPage > this.totalPages && this.totalPages > 0) {
       this.currentPage = 1;
@@ -166,11 +166,11 @@ export class AdminCustomersComponent implements OnInit {
     }
 
     // Phone validation
-    if (!this.form.phone || this.form.phone.trim() === '') {
+    if (!this.form.PhoneNumber || this.form.PhoneNumber.trim() === '') {
       this.formErrors['phone'] = 'Phone number is required';
     } else {
       const phoneRegex = /^(010|011|012|15)\d{8,10}$/;
-      if (!phoneRegex.test(this.form.phone.trim())) {
+      if (!phoneRegex.test(this.form.PhoneNumber.trim())) {
         this.formErrors['phone'] = 'Phone number must start with 010, 011, 012, or 15 and be between 11 and 13 digits';
       }
     }
@@ -191,7 +191,7 @@ export class AdminCustomersComponent implements OnInit {
         id: this.editCustomer.id,
         firstName: this.form.firstName!.trim(),
         lastName: this.form.lastName!.trim(),
-        phone: this.form.phone!.trim(),
+        phone: this.form.PhoneNumber!.trim(),
       };
       console.log('Updating customer with data:', updateDto);
       this.customersService.updateCustomer(updateDto).subscribe({
@@ -213,7 +213,7 @@ export class AdminCustomersComponent implements OnInit {
       const createDto: CustomerCreateDto = {
         firstName: this.form.firstName!.trim(),
         lastName: this.form.lastName!.trim(),
-        phone: this.form.phone!.trim(),
+        phone: this.form.PhoneNumber!.trim(),
       };
       console.log('Creating customer with data:', createDto);
       this.customersService.createCustomer(createDto).subscribe({
@@ -266,4 +266,4 @@ export class AdminCustomersComponent implements OnInit {
   getFullName(customer: Customer): string {
     return `${customer.firstName} ${customer.lastName}`;
   }
-} 
+}

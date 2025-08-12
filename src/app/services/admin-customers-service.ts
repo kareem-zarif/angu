@@ -6,7 +6,7 @@ export interface Customer {
   id: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  PhoneNumber: string;
   ordersCount: number;
   orders: any[];
   paymentMethods: any[];
@@ -50,7 +50,7 @@ export class AdminCustomersService {
     formData.append('firstName', customer.firstName);
     formData.append('lastName', customer.lastName);
     formData.append('phone', customer.phone);
-    
+
     return this.http.post<Customer>(this.apiUrl, formData);
   }
 
@@ -61,4 +61,4 @@ export class AdminCustomersService {
   deleteCustomer(id: string): Observable<Customer> {
     return this.http.delete<Customer>(`${this.apiUrl}/${id}`);
   }
-} 
+}
