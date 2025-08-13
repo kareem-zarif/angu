@@ -53,9 +53,10 @@ export const routes: Routes = [
   { path: 'paymentCancel', component: PaymentCancel },
 
   //signalr routes
-    { path: 'signalr', component: SignalrChat },
-//chatbot routes
-    { path: 'chatbot', component: Chatbot },
+  { path: 'signalr', component: SignalrChat },
+  { path: 'chat/:supplierId', component: SignalrChat },
+  //chatbot routes
+  { path: 'chatbot', component: Chatbot },
   // Admin routes
   {
     path: 'admin',

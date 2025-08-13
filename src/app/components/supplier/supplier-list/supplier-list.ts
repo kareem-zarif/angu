@@ -67,11 +67,11 @@ export class SupplierList implements OnInit, OnDestroy {
     private cartService: CartService,
     private wishlistService: WishlistService,
     private router: Router,
-    private _auth:Auth
+    private _auth: Auth
   ) { }
 
   ngOnInit(): void {
-    this.currentUserId=this._auth.getCurrentUser()?.UserId;
+    this.currentUserId = this._auth.getCurrentUser()?.UserId;
     // Load subcategory mapping
     this.loadSubCategoryMapping();
 
@@ -215,7 +215,7 @@ export class SupplierList implements OnInit, OnDestroy {
   // Add product to cart (for sample request)
   requestSample(product: IProduct, event: Event): void {
     event.stopPropagation(); // Prevent event bubbling
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     this.showToast(`تمت إضافة ${product.name} إلى السلة`);
   }
 
@@ -249,7 +249,7 @@ export class SupplierList implements OnInit, OnDestroy {
 
   // Add product to cart
   addToCart(product: IProduct): void {
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     // Show toast or notification here
   }
 
@@ -309,4 +309,10 @@ export class SupplierList implements OnInit, OnDestroy {
         return 'No Shipping Info';
     }
   }
+
+  navigateToChat(supplierId: string, event?: Event): void {
+    if (event) event.stopPropagation(); 
+    this.router.navigate(['/chat', supplierId]);
+  }
+
 }
