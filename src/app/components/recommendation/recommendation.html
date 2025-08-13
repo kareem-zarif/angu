@@ -1,0 +1,10 @@
+<h2 class="text-xl font-bold mb-4">منتجات مقترحة لك</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div *ngFor="let product of recommendations" class="p-4 shadow rounded-lg bg-white">
+    <img [src]="product.imageUrl || 'https://via.placeholder.com/150'" alt="{{product.name}}" class="w-full h-40 object-cover rounded mb-2">
+    <h3 class="font-semibold text-lg">{{ product.name }}</h3>
+    <p class="text-sm text-gray-600">{{ product.description }}</p>
+    <p class="text-blue-600 font-bold mt-2">{{ product.price | currency:'USD' }}</p>
+  </div>
+</div>
