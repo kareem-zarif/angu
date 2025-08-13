@@ -6,7 +6,6 @@ import { AdminLayoutComponent } from './layout/admin/admin-layout';
 import { AdminOrdersComponent } from './components/admin-orders/admin-orders';
 import { AboutUs } from './components/about-us/about-us';
 import { RegisterSelection } from './components/register-selection/register-selection';
-import { Register } from './components/register/register';
 import { Login } from './components/login/login';
 import { ProductList } from './components/product/product-list/product-list';
 import { ProductDetails } from './components/product/product-details/product-details';
@@ -14,14 +13,13 @@ import { Cart } from './components/cart/cart';
 import { SupplierList } from './components/supplier/supplier-list/supplier-list';
 import { WishlistComponent } from './components/wishlist/wishlist';
 import { Recommendation } from './components/recommendation/recommendation';
-import { SellerProfile } from './components/seller-profile/seller-profile';
 import { SellerLayoutComponent } from './layout/seller/seller-layout';
 import { PaymentComponent } from './components/payment/payment/payment';
 import { SignalrChat } from './components/signalr-chat/signalr-chat';
 import { Chatbot } from './components/chatbot/chatbot';
 import { PaymentCancel } from './components/payment/payment-cancel/payment-cancel';
+import { RegisterComponent } from './components/register/register';
 
-import { SellerProfileEdit } from './components/seller-profile-edit/seller-profile-edit';
 
 
 export const routes: Routes = [
@@ -30,13 +28,11 @@ export const routes: Routes = [
 
   // Auth routes
   { path: 'login', component: Login },
+  { path: 'register', component: RegisterComponent },
   { path: 'register-selection', component: RegisterSelection },
-  { path: 'register', component: Register },
   { path: 'recommendation', component: Recommendation },
 
   { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
-  { path: 'seller-profile', component: SellerProfile },
-  { path: 'seller-profile-edit', component: SellerProfileEdit },
 
 
   // Main content routes

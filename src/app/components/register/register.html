@@ -1,138 +1,110 @@
-<!-- register.component.html -->
-<div class="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 relative">
-  <!-- Floating Shapes Background -->
-  <div class="floating-shapes">
-    <div class="shape w-32 h-32 bg-purple-300 rounded-full"></div>
-    <div class="shape w-24 h-24 bg-pink-300 rounded-full"></div>
-    <div class="shape w-28 h-28 bg-blue-300 rounded-full"></div>
-  </div>
+<div class="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+  <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+    <div class="floating-shapes">
+      <div class="shape"></div>
+      <div class="shape"></div>
+      <div class="shape"></div>
+    </div>
 
-  <div class="min-h-screen flex items-center justify-center px-4 py-8">
-    <div class="form-container rounded-2xl p-8 w-full max-w-md">
-      <!-- Role Badge -->
-      <div class="text-center mb-6">
-        <div class="role-badge"
-             [ngClass]="selectedRole === 'Seller' ? 'seller-badge' : 'customer-badge'">
-          <span>{{ selectedRole === 'Seller' ? '🏪' : '🛒' }}</span>
-          <span>تسجيل كـ {{ selectedRole === 'Seller' ? 'بائع' : 'عميل' }}</span>
-        </div>
-      </div>
-
-      <!-- Error Message -->
-      <div *ngIf="errorMessage" class="error-message show">
-        {{ errorMessage }}
-        <button *ngIf="errorMessage.includes('مستخدم بالفعل')"
-                (click)="goToLogin()"
-                class="block mt-2 text-sm underline hover:no-underline">
-          الذهاب لتسجيل الدخول
-        </button>
-      </div>
-
-      <!-- Success Message -->
-      <div *ngIf="successMessage" class="success-message">
-        {{ successMessage }}
-      </div>
-
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-6">
-        <div class="input-group">
-          <input
-            type="text"
-            id="firstName"
-            formControlName="firstName"
-            class="input-field"
-            [class.border-red-500]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
-            placeholder=" "
-            required
-          >
-          <label for="firstName" class="input-label">الاسم الأول</label>
-          <div *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
-               class="text-red-500 text-sm mt-1">
-            {{ getFieldError('firstName') }}
-          </div>
+    <div class="form-container relative px-4 py-10 bg-white mx-8 md:mx-0 shadow rounded-3xl sm:p-10">
+      <div class="max-w-md mx-auto">
+        <div class="flex items-center space-x-5">
+          <h1 class="text-2xl font-semibold">Register as {{ selectedRole }}</h1>
+          <span [class]="'role-badge ' + (selectedRole === 'Customer' ? 'customer-badge' : 'seller-badge')">
+            {{ selectedRole }}
+          </span>
         </div>
 
-        <div class="input-group">
-          <input
-            type="text"
-            id="lastName"
-            formControlName="lastName"
-            class="input-field"
-            [class.border-red-500]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
-            placeholder=" "
-            required
-          >
-          <label for="lastName" class="input-label">الاسم الأخير</label>
-          <div *ngIf="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
-               class="text-red-500 text-sm mt-1">
-            {{ getFieldError('lastName') }}
-          </div>
-        </div>
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="divide-y divide-gray-200">
+          <div class="py-8 text-base leading-6 space-y-4">
+            <!-- Basic Info Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="input-group">
+                <input type="text" formControlName="firstName" class="input-field" [class.invalid]="registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.touched || registerForm.get('firstName')?.dirty)" placeholder=" ">
+                <label class="input-label">First Name</label>
+                <div class="error-text" *ngIf="registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.touched || registerForm.get('firstName')?.dirty)">
+                  <span *ngIf="registerForm.get('firstName')?.errors?.['required']">First name is required</span>
+                  <span *ngIf="registerForm.get('firstName')?.errors?.['minlength']">Minimum 2 characters</span>
+                </div>
+              </div>
 
-        <div class="input-group">
-          <input
-            type="email"
-            id="email"
-            formControlName="email"
-            class="input-field"
-            [class.border-red-500]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
-            placeholder=" "
-            required
-          >
-          <label for="email" class="input-label">البريد الإلكتروني</label>
-          <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
-               class="text-red-500 text-sm mt-1">
-            {{ getFieldError('email') }}
-          </div>
-        </div>
-
-        <div class="input-group">
-          <input
-            type="password"
-            id="password"
-            formControlName="password"
-            class="input-field"
-            [class.border-red-500]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
-            placeholder=" "
-            required
-          >
-          <label for="password" class="input-label">كلمة المرور</label>
-          <div class="password-requirements">
-            <div class="flex justify-between items-center">
-              <span>يجب أن تحتوي كلمة المرور على رقم واحد على الأقل وحرف صغير وطول لا يقل عن 8 أحرف</span>
-              <span *ngIf="registerForm.get('password')?.value"
-                    [class]="getPasswordStrengthColor()"
-                    class="font-semibold text-xs">
-                {{ getPasswordStrength() }}
-              </span>
+              <div class="input-group">
+                <input type="text" formControlName="lastName" class="input-field" [class.invalid]="registerForm.get('lastName')?.invalid && (registerForm.get('lastName')?.touched || registerForm.get('lastName')?.dirty)" placeholder=" ">
+                <label class="input-label">Last Name</label>
+                <div class="error-text" *ngIf="registerForm.get('lastName')?.invalid && (registerForm.get('lastName')?.touched || registerForm.get('lastName')?.dirty)">
+                  <span *ngIf="registerForm.get('lastName')?.errors?.['required']">Last name is required</span>
+                  <span *ngIf="registerForm.get('lastName')?.errors?.['minlength']">Minimum 3 characters</span>
+                </div>
+              </div>
             </div>
+
+            <div class="input-group">
+              <input type="email" formControlName="email" class="input-field" [class.invalid]="registerForm.get('email')?.invalid && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)" placeholder=" ">
+              <label class="input-label">Email</label>
+              <div class="error-text" *ngIf="registerForm.get('email')?.invalid && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)">
+                <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required</span>
+                <span *ngIf="registerForm.get('email')?.errors?.['email']">Invalid email format</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <input type="password" formControlName="password" class="input-field" [class.invalid]="registerForm.get('password')?.invalid && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)" placeholder=" ">
+              <label class="input-label">Password</label>
+              <div class="error-text" *ngIf="registerForm.get('password')?.invalid && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)">
+                <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Minimum 8 characters</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['pattern']">Must include uppercase, lowercase, number, and special character</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <input type="text" formControlName="phoneNumber" class="input-field" [class.invalid]="registerForm.get('phoneNumber')?.invalid && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)" placeholder=" ">
+              <label class="input-label">Phone Number</label>
+              <div class="error-text" *ngIf="registerForm.get('phoneNumber')?.invalid && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)">
+                <span *ngIf="registerForm.get('phoneNumber')?.errors?.['required']">Phone number is required for suppliers</span>
+              </div>
+            </div>
+
+            <!-- Supplier Specific Fields -->
+            <ng-container *ngIf="selectedRole === 'Supplier'">
+              <div class="input-group">
+                <input type="text" formControlName="companyName" class="input-field" [class.invalid]="registerForm.get('companyName')?.invalid && (registerForm.get('companyName')?.touched || registerForm.get('companyName')?.dirty)" placeholder=" ">
+                <label class="input-label">Factory Name</label>
+                <div class="error-text" *ngIf="registerForm.get('companyName')?.invalid && (registerForm.get('companyName')?.touched || registerForm.get('companyName')?.dirty)">
+                  <span *ngIf="registerForm.get('companyName')?.errors?.['required']">Factory name is required</span>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <textarea formControlName="companyDescription" class="input-field h-24" [class.invalid]="registerForm.get('companyDescription')?.invalid && (registerForm.get('companyDescription')?.touched || registerForm.get('companyDescription')?.dirty)" placeholder=" "></textarea>
+                <label class="input-label">Factory Description</label>
+                <div class="error-text" *ngIf="registerForm.get('companyDescription')?.invalid && (registerForm.get('companyDescription')?.touched || registerForm.get('companyDescription')?.dirty)">
+                  <span *ngIf="registerForm.get('companyDescription')?.errors?.['required']">Factory description is required</span>
+                </div>
+              </div>
+
+              <div class="input-group">
+                <input type="text" formControlName="BankAccountName" class="input-field"  placeholder=" ">
+                <label class="input-label">Bank Name</label>
+              </div>
+
+              <div class="input-group">
+                <input type="text" formControlName="BankAccountNumber" class="input-field" placeholder=" ">
+                <label class="input-label">Bank Account Number</label>
+              </div>
+            </ng-container>
           </div>
-          <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
-               class="text-red-500 text-sm mt-1">
-            {{ getFieldError('password') }}
+
+          <div class="pt-4">
+            <button type="submit" [disabled]="registerForm.invalid || isLoading" class="submit-btn w-full">
+              {{ isLoading ? 'Registering...' : 'Register' }}
+            </button>
           </div>
+        </form>
+
+        <div *ngIf="errorMessage" class="error-message show mt-4">
+          {{ errorMessage }}
         </div>
-
-        <button
-          type="submit"
-          class="submit-btn w-full"
-          [disabled]="registerForm.invalid || isSubmitting">
-          {{ isSubmitting ? 'جاري الإنشاء...' : 'إنشاء الحساب' }}
-        </button>
-      </form>
-
-      <div class="text-center mt-6">
-        <p class="text-gray-600">
-          لديك حساب بالفعل؟
-          <a routerLink="/login" class="text-purple-600 hover:text-purple-800 font-semibold underline">
-            تسجيل الدخول
-          </a>
-        </p>
-      </div>
-
-      <div class="text-center mt-4">
-        <a routerLink="/register-selection" class="text-sm text-gray-500 hover:text-gray-700">
-          ← العودة لاختيار نوع الحساب
-        </a>
       </div>
     </div>
   </div>

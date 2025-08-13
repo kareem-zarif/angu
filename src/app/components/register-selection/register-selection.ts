@@ -12,7 +12,7 @@ export class RegisterSelection {
 
   constructor(private router: Router) {}
 
-  navigateToRegister(role: 'Customer' | 'Seller') {
+  navigateToRegister(role: 'Customer' | 'Supplier') {
     console.log(`Navigating to register with role: ${role}`);
     this.router.navigate(['/register'], { queryParams: { role } });
   }

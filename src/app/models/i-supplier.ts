@@ -6,7 +6,7 @@ export interface ISupplier {
   lastName: string;
   factoryName: string;
   description: string;
-  phone: string;
+  phoneNumber: string;
   city: string;
   state: string;
   products?: IProduct[];

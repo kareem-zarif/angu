@@ -6,6 +6,8 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { WishlistService } from './wishlistService';
 import { CartService } from './cart.service';
 import { OrdersService } from './orders-service';
+import { ISupplierRegister } from '../models/isupplier-register';
+import { ICustomerRegister } from '../models/icustomer-register';
 
 export interface User {
   UserId: string;
@@ -21,19 +23,12 @@ export interface LoginDto {
   password: string;
 }
 
-export interface RegisterDto {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  requestedRole: string;
-}
 
 @Injectable({
   providedIn: 'root'
 })
 export class Auth {
-  baseUrl =`${environment.apiUrl}/Account`;
+  baseUrl = `${environment.apiUrl}/Account`;
   private currentUserSource = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSource.asObservable();
 
@@ -41,88 +36,81 @@ export class Auth {
 
   constructor(
     private http: HttpClient,
-     private wishlistService: WishlistService,
-      private cartService: CartService,
-    private ordersService:OrdersService
+    private wishlistService: WishlistService,
+    private cartService: CartService,
+    private ordersService: OrdersService
   ) {
     // تحميل المستخدم من localStorage عند بدء التطبيق
     this.loadCurrentUserFromStorage();
   }
 
-  register(values: RegisterDto): Observable<User> {
-    return this.http.post<User>(`${this.baseUrl}/register`, values).pipe(
-      map((user: User) => {
-        if (user && user.token) {
+  registerCustomer(payload: ICustomerRegister): Observable<any> {
+    // backend expects /register/customer
+    return this.http.post(`${this.baseUrl}/register/customer`, payload);
+  }
+ registerSupplier(payload: ISupplierRegister): Observable<any> {
+    return this.http.post(`${this.baseUrl}/register/supplier`, payload);
+  }
+
+
+  login(values: LoginDto): Observable<User> {
+    this.cartService.clearCache(); // Clear cache before login
+    return this.http.post<User>(`${this.baseUrl}/login`, values).pipe(
+      map((response: any) => {
+        if (response && response.token) {
+          const user: User = {
+            UserId: response.UserId,
+            email: response.email,
+            displayName: response.displayName,
+            token: response.token,
+            isAuthenticated: true,
+            roles: []
+          };
           this.setCurrentUser(user);
           return user;
         }
         throw new Error('Invalid response from server');
       }),
+      exhaustMap((user: User) => {
+        const customerId = user.UserId;
+        if (!customerId) return of(user);
+
+        return this.wishlistService.ensureWishlistExists(customerId).pipe(
+          tap(wishlist => {
+            console.log('✅ Wishlist ensured or created:', wishlist.id);
+          }),
+          switchMap((wishlist) =>
+            this.wishlistService.syncLocalWishlistWithApi(customerId, wishlist.id).pipe(
+              tap(() => console.log('✅ Local wishlist synced with server'))
+            )
+          ),
+          switchMap(() =>
+            this.cartService.ensureCartExists(customerId, true).pipe( // Force refresh
+              tap(cart => {
+                console.log('🛒 Cart ensured or created:', cart.id);
+              }),
+              switchMap(() =>
+                this.cartService.syncLocalCartWithApi(customerId).pipe(
+                  tap(() => console.log('🛒 Local cart synced with server'))
+                )
+              )
+            )
+          ), switchMap(() =>
+            this.ordersService.getOrders().pipe(
+              tap(orders => console.log('✅ Orders loaded:', orders.length)),
+              map(() => user)
+            )
+          ),
+          map(() => user),
+          catchError(err => {
+            console.error('❌ Error with wishlist/cart/orders:', err);
+            return of(user);
+          })
+        );
+      }),
       catchError(this.handleError)
     );
   }
-  httpOptions = {
-    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
-  };
-
-  login(values: LoginDto): Observable<User> {
-  this.cartService.clearCache(); // Clear cache before login
-  return this.http.post<User>(`${this.baseUrl}/login`, values, this.httpOptions).pipe(
-    map((response: any) => {
-      if (response && response.token) {
-        const user: User = {
-          UserId: response.UserId,
-          email: response.email,
-          displayName: response.displayName,
-          token: response.token,
-          isAuthenticated: true,
-          roles: []
-        };
-        this.setCurrentUser(user);
-        return user;
-      }
-      throw new Error('Invalid response from server');
-    }),
-    exhaustMap((user: User) => {
-      const customerId = user.UserId;
-      if (!customerId) return of(user);
-
-      return this.wishlistService.ensureWishlistExists(customerId).pipe(
-        tap(wishlist => {
-          console.log('✅ Wishlist ensured or created:', wishlist.id);
-        }),
-        switchMap((wishlist) =>
-          this.wishlistService.syncLocalWishlistWithApi(customerId, wishlist.id).pipe(
-            tap(() => console.log('✅ Local wishlist synced with server'))
-          )
-        ),
-        switchMap(() =>
-          this.cartService.ensureCartExists(customerId, true).pipe( // Force refresh
-            tap(cart => {
-              console.log('🛒 Cart ensured or created:', cart.id);
-            }),
-            switchMap(() =>
-              this.cartService.syncLocalCartWithApi(customerId).pipe(
-                tap(() => console.log('🛒 Local cart synced with server'))
-              )
-            )
-          )
-        ),switchMap(() =>
-          this.ordersService.getOrders().pipe(
-            tap(orders => console.log('✅ Orders loaded:', orders.length)),
-            map(() => user)
-          )
-        ),
-        map(() => user),
-        catchError(err => {
-          console.error('❌ Error with wishlist/cart/orders:', err);
-          return of(user);
-        })
-      );
-    }),
-    catchError(this.handleError)
-  );
-}
 
 
 
