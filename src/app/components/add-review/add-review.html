@@ -1,0 +1,37 @@
+<form 
+  [formGroup]="reviewForm" 
+  (ngSubmit)="submitReview()" 
+  class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4 w-full"
+>
+  <!-- Rating -->
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+    <input 
+      type="number" 
+      formControlName="rating" 
+      min="1" 
+      max="5"
+      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+    >
+  </div>
+
+  <!-- Comment -->
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+    <textarea 
+      formControlName="comment" 
+      rows="3"
+      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+    ></textarea>
+  </div>
+
+  <!-- Submit -->
+  <div class="text-right">
+    <button 
+      type="submit" 
+      class="bg-yellow-400 hover:bg-yellow-500 text-white px-5 py-2 rounded-lg shadow-sm text-sm font-medium"
+    >
+      Submit Review
+    </button>
+  </div>
+</form>
