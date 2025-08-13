@@ -48,7 +48,7 @@ export class Auth {
     // backend expects /register/customer
     return this.http.post(`${this.baseUrl}/register/customer`, payload);
   }
- registerSupplier(payload: ISupplierRegister): Observable<any> {
+  registerSupplier(payload: ISupplierRegister): Observable<any> {
     return this.http.post(`${this.baseUrl}/register/supplier`, payload);
   }
 
@@ -256,6 +256,18 @@ export class Auth {
 
     console.error('Auth Service Error:', error);
     return throwError(() => new Error(errorMessage));
+  }
+
+  getToken(): string {
+    const currentUser = this.currentUserSource.value;
+    return currentUser?.token || '';
+  };
+
+  getUserId(): string | null {
+    return this.currentUserSource.value?.UserId ?? null;
+  }
+  getRoles(): string[] {
+    return this.currentUserSource.value?.roles ?? [];
   }
 
   // تنظيف الموارد عند تدمير الخدمة

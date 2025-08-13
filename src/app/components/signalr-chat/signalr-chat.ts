@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { SignalrService } from '../../services/signalr-service';
 import { MessageCreateDto, MessageReadDto } from '../../models/i-message';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,7 @@ export class SignalrChat implements OnInit {
   messages: MessageReadDto[] = [];
   supplier: ISupplier | null = null;
   quantity: number = 100;
+  @ViewChild('chatContainer') private chatContainer!: ElementRef;
 
   constructor(
     private chatService: SignalrService,
@@ -30,21 +31,29 @@ export class SignalrChat implements OnInit {
     private http: HttpClient
   ) {}
 
-  ngOnInit(): void {
-    this.auth.currentUser$.subscribe(user => {
-      if (user && user.roles.includes('Customer')) {
-        this.senderType = 'Customer';
-        this.senderId = user.UserId;
-        this.receiverId = this.route.snapshot.paramMap.get('supplierId') || '';
-        this.loadSupplier();
-        this.joinGroup();
-      }
-    });
-    this.chatService.startConnection();
-    this.chatService.messages$.subscribe(msgs => {
-      this.messages = msgs.map(m => ({ ...m, senderType: (m.senderType ?? '').trim().toLowerCase() }));
-    });
-  }
+ ngOnInit(): void {
+  this.auth.currentUser$.subscribe(user => {
+    if (user && user.roles.includes('Customer')) {
+      this.senderType = 'Customer';
+      this.senderId = user.UserId;
+      this.receiverId = this.route.snapshot.paramMap.get('supplierId') || '';
+      this.loadSupplier();
+
+      // Start connection first, then join group
+      this.chatService.startConnection()
+        .then(() => this.joinGroup())
+        .catch(err => console.error('SignalR connection failed:', err));
+    }
+  });
+
+  this.chatService.messages$.subscribe(msgs => {
+    this.messages = msgs.map(m => ({
+      ...m,
+      senderType: (m.senderType ?? '').trim().toLowerCase()
+    }));
+  });
+}
+
 
   loadSupplier(): void {
     if (this.receiverId) {
@@ -54,7 +63,7 @@ export class SignalrChat implements OnInit {
     }
   }
 
-  joinGroup(): void {
+  joinGroup() {
     if (this.senderId && this.receiverId) {
       this.chatService.joinGroup(this.senderId, this.receiverId)
         .then(() => console.log('✅ Joined group'))
@@ -63,20 +72,22 @@ export class SignalrChat implements OnInit {
   }
 
   sendMessage(): void {
-    if (!this.messageBody.trim() || !this.senderId || !this.receiverId) {
-      alert('❌ Please fill all fields');
-      return;
+    const trimmedBody = (this.messageBody || '').trim();
+   if (!trimmedBody || !this.senderId || !this.receiverId) {
+    alert('❌ Please fill all fields');
+    return;
     }
+
     const sendto = this.senderType === 'Customer' ? 'Supplier' : 'Customer';
     const message: MessageCreateDto = {
-      body: `Quantity: ${this.quantity}\n${this.messageBody}`,
+      body: `Quantity: ${this.quantity}\n${trimmedBody}`,
       customerId: this.senderType === 'Customer' ? this.senderId : this.receiverId,
       supplierId: this.senderType === 'Supplier' ? this.senderId : this.receiverId,
       senderType: this.senderType,
       Sendto: sendto
     };
     this.chatService.sendMessage(message).subscribe({
-      next: () => this.messageBody = '',
+      next: () => this.messageBody = '', //to clear the message after successful Sending previous message
       error: err => console.error('❌ Error sending message:', err)
     });
   }
@@ -102,4 +113,13 @@ export class SignalrChat implements OnInit {
   onQuestionClick(question: string): void {
     this.messageBody += (this.messageBody ? '\n' : '') + question;
   }
+
+  ngAfterViewChecked() {
+    this.scrollToBottom();
+  }
+
+  private scrollToBottom(): void {
+    this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
+  }
+
 }
