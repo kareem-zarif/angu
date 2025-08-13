@@ -1,0 +1,62 @@
+/* Seller Sidebar Styles */
+.seller-sidebar {
+  height: 100%;
+  width: 16rem;
+  background-color: #1e3a8a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+}
+
+.seller-sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1rem;
+}
+
+.seller-sidebar-item {
+  display: block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.seller-sidebar-item:hover {
+  background-color: #1e40af;
+}
+
+.seller-sidebar-item.active {
+  background-color: #1e40af;
+}
+
+.seller-sidebar-item-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.seller-sidebar-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.seller-logout-section {
+  padding: 1rem;
+  border-top: 1px solid #1d4ed8;
+}
+
+.seller-logout-button {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  color: #fca5a5;
+  transition: all 0.2s ease;
+}
+
+.seller-logout-button:hover {
+  color: #fecaca;
+  background-color: #991b1b;
+} 
