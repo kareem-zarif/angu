@@ -1,0 +1,24 @@
+/* Seller Layout Styles */
+.seller-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.seller-main {
+  flex: 1;
+  display: flex;
+}
+
+.seller-content {
+  flex: 1;
+  background-color: #f3f4f6;
+  padding: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .seller-content {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+} 
