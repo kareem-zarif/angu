@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { Observable, of, throwError, BehaviorSubject, forkJoin } from 'rxjs';
+import { catchError, map, tap, switchMap } from 'rxjs/operators';
 import { IProduct, ProductApprovalStatus, ShippingTypes } from '../models/i-product';
 import { environment } from '../../environment/environment';
 import { ISupplier } from '../models/i-supplier';
 import { NotificationService } from './notification.service';
 import { Auth } from './auth';
+import { ProductSupplierService, ProductSupplierCreateDto } from './product-supplier.service';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +25,12 @@ export class ProductService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   public loading$ = this.loadingSubject.asObservable();
 
-  constructor(private http: HttpClient, private notificationService: NotificationService, private auth: Auth) { }
+  constructor(
+    private http: HttpClient, 
+    private notificationService: NotificationService, 
+    private auth: Auth,
+    private productSupplierService: ProductSupplierService
+  ) { }
 
   // Get all products from API
   getProducts(): Observable<IProduct[]> {
@@ -60,8 +66,38 @@ export class ProductService {
   getAllForSeller(): Observable<IProduct[]> {
     this.loadingSubject.next(true);
 
-    return this.http.get<IProduct[]>(`${this._baseUrl}`).pipe(
-      map(products => products.map(product => this.processProductImage(product))),
+    const currentSellerId = this.auth.getCurrentUser()?.UserId;
+    if (!currentSellerId) {
+      this.loadingSubject.next(false);
+      return of([]);
+    }
+
+    // First get the ProductSupplier relationships for this seller
+    return this.productSupplierService.getProductsBySupplier(currentSellerId).pipe(
+      switchMap(productSuppliers => {
+        if (productSuppliers.length === 0) {
+          this.loadingSubject.next(false);
+          return of([]);
+        }
+
+        // Get the actual product details for each product ID
+        const productIds = productSuppliers.map(ps => ps.productId);
+        const productRequests = productIds.map(id => 
+          this.http.get<IProduct>(`${this._baseUrl}/${id}`).pipe(
+            catchError(error => {
+              console.error(`Error fetching product ${id}:`, error);
+              return of(null);
+            })
+          )
+        );
+
+        return forkJoin(productRequests).pipe(
+          map(products => {
+            const validProducts = products.filter(p => p !== null) as IProduct[];
+            return validProducts.map(product => this.processProductImage(product));
+          })
+        );
+      }),
       tap(products => {
         this.productsCache = products;
         this.lastFetchTime = Date.now();
@@ -232,10 +268,29 @@ export class ProductService {
       requestData = formData;
     } else {
       // Use JSON for products without images
-      requestData = product;
+      requestData = { ...product };
     }
 
+    console.log('Sending create request to:', `${this._baseUrl}`);
+    console.log('Request data:', requestData);
+
     return this.http.post<IProduct>(`${this._baseUrl}`, requestData).pipe(
+      switchMap(newProduct => {
+        // After creating the product, create the ProductSupplier relationship
+        const currentSellerId = this.auth.getCurrentUser()?.UserId;
+        if (currentSellerId && newProduct.id) {
+          const productSupplierData: ProductSupplierCreateDto = {
+            productId: newProduct.id,
+            supplierId: currentSellerId
+          };
+          
+          return this.productSupplierService.create(productSupplierData).pipe(
+            map(() => newProduct) // Return the product after creating the relationship
+          );
+        } else {
+          return of(newProduct); // Return the product if no seller ID
+        }
+      }),
       map(newProduct => this.processProductImage(newProduct)),
       tap(newProduct => {
         // Update cache
@@ -260,6 +315,8 @@ export class ProductService {
   update(product: IProduct, images?: File[]): Observable<IProduct> {
     let requestData: any;
 
+    console.log('ProductService.update called with:', { product, images });
+
     if (images && images.length > 0) {
       // Use FormData for image uploads
       const formData = new FormData();
@@ -282,20 +339,40 @@ export class ProductService {
         formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
       }
 
+      // Add supplier ID to associate product with seller
+      const currentSellerId = this.auth.getCurrentUser()?.UserId;
+      if (currentSellerId) {
+        formData.append('SupplierId', currentSellerId);
+      }
+
       // Add images
       images.forEach((image) => {
         formData.append('Images', image);
       });
 
       requestData = formData;
+      console.log('Using FormData for update with images');
     } else {
       // Use JSON for products without images
-      requestData = product;
+      requestData = { ...product };
+      // Add supplier ID to associate product with seller
+      const currentSellerId = this.auth.getCurrentUser()?.UserId;
+      if (currentSellerId) {
+        requestData.supplierId = currentSellerId;
+      }
+      console.log('Using JSON for update without images');
     }
 
+    console.log('Sending update request to:', `${this._baseUrl}/${product.id}`);
+    console.log('Request data:', requestData);
+
     return this.http.put<IProduct>(`${this._baseUrl}/${product.id}`, requestData).pipe(
-      map(updatedProduct => this.processProductImage(updatedProduct)),
+      map(updatedProduct => {
+        console.log('Product update response received:', updatedProduct);
+        return this.processProductImage(updatedProduct);
+      }),
       tap(updatedProduct => {
+        console.log('Product update successful, updating cache');
         // Update cache
         const index = this.productsCache.findIndex(p => p.id === updatedProduct.id);
         if (index !== -1) {
@@ -304,23 +381,79 @@ export class ProductService {
       }),
       catchError(error => {
         console.error(`Error updating product with ID ${product.id}:`, error);
-        return throwError(() => new Error('Failed to update product'));
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          error: error.error,
+          message: error.message,
+          url: error.url
+        });
+        
+        // Return a more detailed error
+        let errorMessage = 'Failed to update product';
+        if (error.status === 400) {
+          errorMessage = 'Bad request - invalid data provided';
+        } else if (error.status === 401) {
+          errorMessage = 'Unauthorized - please login again';
+        } else if (error.status === 403) {
+          errorMessage = 'Forbidden - insufficient permissions';
+        } else if (error.status === 404) {
+          errorMessage = 'Product not found';
+        } else if (error.status === 500) {
+          errorMessage = 'Internal server error';
+        }
+        
+        return throwError(() => new Error(errorMessage));
       })
     );
   }
 
   // Delete product via API
   delete(id: string): Observable<void> {
-    return this.http.delete<void>(`${this._baseUrl}/${id}`).pipe(
-      tap(() => {
-        // Update cache
-        this.productsCache = this.productsCache.filter(p => p.id !== id);
-      }),
-      catchError(error => {
-        console.error(`Error deleting product with ID ${id}:`, error);
-        return throwError(() => new Error('Failed to delete product'));
-      })
-    );
+    const currentSellerId = this.auth.getCurrentUser()?.UserId;
+    
+    if (currentSellerId) {
+      // First get the ProductSupplier relationships for this product and seller
+      return this.productSupplierService.getProductsBySupplier(currentSellerId).pipe(
+        switchMap(productSuppliers => {
+          // Find the ProductSupplier relationship for this product
+          const productSupplier = productSuppliers.find(ps => ps.productId === id);
+          
+          if (productSupplier) {
+            // Delete the ProductSupplier relationship first
+            return this.productSupplierService.delete(productSupplier.id).pipe(
+              switchMap(() => {
+                // Then delete the product
+                return this.http.delete<void>(`${this._baseUrl}/${id}`);
+              })
+            );
+          } else {
+            // If no relationship found, just delete the product
+            return this.http.delete<void>(`${this._baseUrl}/${id}`);
+          }
+        }),
+        tap(() => {
+          // Update cache
+          this.productsCache = this.productsCache.filter(p => p.id !== id);
+        }),
+        catchError(error => {
+          console.error(`Error deleting product with ID ${id}:`, error);
+          return throwError(() => new Error('Failed to delete product'));
+        })
+      );
+    } else {
+      // If no seller ID, just delete the product
+      return this.http.delete<void>(`${this._baseUrl}/${id}`).pipe(
+        tap(() => {
+          // Update cache
+          this.productsCache = this.productsCache.filter(p => p.id !== id);
+        }),
+        catchError(error => {
+          console.error(`Error deleting product with ID ${id}:`, error);
+          return throwError(() => new Error('Failed to delete product'));
+        })
+      );
+    }
   }
 
   // Process multiple products' images and filter for approved products only

@@ -68,6 +68,31 @@ export class SellerHeaderComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.currentSellerId = this.auth.getCurrentUser()?.UserId || '';
+    
+    // Get seller name from auth service
+    const sellerName = this.auth.getSellerName();
+    if (sellerName) {
+      this.userName = sellerName;
+      this.userInitials = this.getInitials(sellerName);
+    }
+    
+    // Subscribe to auth changes to update seller name
+    this.subscription.add(
+      this.auth.currentUser$.subscribe(user => {
+        if (user) {
+          this.currentSellerId = user.UserId;
+          if (user.sellerName) {
+            this.userName = user.sellerName;
+            this.userInitials = this.getInitials(user.sellerName);
+          }
+        } else {
+          this.currentSellerId = '';
+          this.userName = 'Guest';
+          this.userInitials = 'G';
+        }
+      })
+    );
+    
     this.loadDashboardData();
     this.loadHeaderStats();
     // Periodically refresh stats to keep navbar numbers in sync
@@ -262,6 +287,15 @@ export class SellerHeaderComponent implements OnInit, OnDestroy {
       return `${hours} hours ago`;
     } else {
       return `${days} days ago`;
+    }
+  }
+
+  private getInitials(name: string): string {
+    const names = name.split(' ');
+    if (names.length === 1) {
+      return name.charAt(0).toUpperCase();
+    } else {
+      return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
     }
   }
 } 

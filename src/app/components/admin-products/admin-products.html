@@ -233,7 +233,7 @@
               <div class="text-sm">
                 <span class="font-medium text-gray-900">Suppliers:</span>
                 <div class="text-gray-600">
-                  <span *ngFor="let supplier of product.supplierNames; let last = last">
+                  <span *ngFor="let supplier of getSupplierNames(product); let last = last">
                     {{ supplier }}{{ !last ? ', ' : '' }}
                   </span>
                 </div>
@@ -643,7 +643,7 @@
           <div class="border-b border-gray-200 pb-4">
             <h4 class="text-md font-medium text-gray-900 mb-3">Suppliers</h4>
             <div class="space-y-2">
-              <div *ngFor="let supplier of selectedProduct.supplierNames" class="text-sm text-gray-900">
+              <div *ngFor="let supplier of getSupplierNames(selectedProduct)" class="text-sm text-gray-900">
                 {{ supplier }}
               </div>
             </div>

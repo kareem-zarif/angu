@@ -10,6 +10,7 @@ import { AdminProductsService, AdminNotification } from '../../services/admin-pr
 import { ProductApprovalStatus } from '../../models/i-product';
 import { LocalStorageNotificationService, LocalNotification, NotificationType } from '../../services/local-storage-notification.service';
 import { AdminSuppliersService, AdminSupplierNotification } from '../../services/admin-suppliers.service';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-admin-header',
@@ -54,10 +55,31 @@ export class AdminHeaderComponent implements OnInit, OnDestroy {
     private localNotificationService: LocalStorageNotificationService,
     private adminOrdersService: AdminOrdersService,
     private adminProductsService: AdminProductsService,
-    private adminSuppliersService: AdminSuppliersService
+    private adminSuppliersService: AdminSuppliersService,
+    private auth: Auth
   ) {}
 
   ngOnInit(): void {
+    // Get admin name from auth service
+    const adminName = this.auth.getSellerName() || this.auth.getCurrentUser()?.displayName;
+    if (adminName) {
+      this.adminUser.name = adminName;
+    }
+    
+    // Subscribe to auth changes to update admin name
+    this.subscription.add(
+      this.auth.currentUser$.subscribe(user => {
+        if (user) {
+          const name = user.sellerName || user.displayName;
+          if (name) {
+            this.adminUser.name = name;
+          }
+        } else {
+          this.adminUser.name = 'Guest';
+        }
+      })
+    );
+    
     this.loadHeaderStats();
     // Periodically refresh stats to keep navbar numbers in sync
     this.refreshSubscription = interval(30000).subscribe(() => this.loadHeaderStats());
