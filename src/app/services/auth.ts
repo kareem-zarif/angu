@@ -152,7 +152,7 @@ export class Auth {
       localStorage.setItem('user', JSON.stringify(user));
       this.currentUserSource.next(user);
 
-      console.log('User set successfully:', { UserId: user.UserId, email: user.email, roles: user.roles });
+      console.log('User set successfully:', { UserId: user.UserId, email: user.email, roles: user.roles, token: user.token });
     } catch (error) {
       console.error('Error setting current user:', error);
       this.logout();
