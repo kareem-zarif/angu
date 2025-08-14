@@ -47,15 +47,23 @@ export class AdminSuppliersComponent implements OnInit {
 
   loadSuppliers() {
     this.loading = true;
-    this.service.getAll().subscribe({
+    console.log('Loading suppliers...');
+    
+    // Clear existing data first
+    this.suppliers = [];
+    this.filteredSuppliers = [];
+    
+    this.service.getAllWithProductCounts().subscribe({
       next: (data) => {
+        console.log('Loaded suppliers with product counts:', data);
         this.suppliers = data;
         this.applyFilters();
         this.loading = false;
+        console.log(`Successfully loaded ${this.suppliers.length} suppliers`);
       },
       error: (error) => {
         console.error('Error loading suppliers:', error);
-        alert('Failed to load suppliers');
+        this.notificationService.showError('Failed to load suppliers');
         this.loading = false;
       }
     });
@@ -229,12 +237,70 @@ export class AdminSuppliersComponent implements OnInit {
   }
 
   deleteSupplier(id: string) {
-    if (confirm('Are you sure you want to delete this supplier?')) {
+    // Find the supplier to check if they have products
+    const supplier = this.suppliers.find(s => s.id === id);
+    if (!supplier) {
+      this.notificationService.showError('Supplier not found.');
+      return;
+    }
+
+    const productCount = this.getProductSuppliersCount(supplier);
+    let confirmMessage = 'Are you sure you want to delete this supplier?';
+    
+    if (productCount > 0) {
+      confirmMessage = `WARNING: This supplier has ${productCount} product(s). Deleting them will also remove all associated products. Are you sure you want to continue?`;
+    }
+
+    if (confirm(confirmMessage)) {
+      // Set loading state
+      this.loading = true;
+      console.log(`Starting deletion of supplier: ${supplier.factoryName} (ID: ${id})`);
+      
       this.service.delete(id).subscribe({
-        next: () => this.loadSuppliers(),
+        next: (response) => {
+          console.log('Supplier deletion response:', response);
+          
+          // Remove the supplier from the local array immediately
+          this.suppliers = this.suppliers.filter(s => s.id !== id);
+          
+          // Apply filters to update the display
+          this.applyFilters();
+          
+          // Show success message
+          this.notificationService.showSuccess(`Supplier "${supplier.factoryName}" deleted successfully!`);
+          
+          // Force a fresh reload from the server to ensure data consistency
+          setTimeout(() => {
+            this.loadSuppliers();
+          }, 500);
+        },
         error: (error) => {
           console.error('Error deleting supplier:', error);
-          alert('Failed to delete supplier');
+          this.loading = false;
+          
+          // Provide more specific error messages
+          let errorMessage = 'Failed to delete supplier. Please try again.';
+          
+          if (error.status === 400) {
+            errorMessage = 'Cannot delete supplier: Invalid request.';
+          } else if (error.status === 401) {
+            errorMessage = 'Unauthorized: Please login again.';
+          } else if (error.status === 403) {
+            errorMessage = 'Access denied: You may not have permission to delete suppliers.';
+          } else if (error.status === 404) {
+            errorMessage = 'Supplier not found. It may have been deleted already.';
+          } else if (error.status === 409) {
+            errorMessage = 'Cannot delete supplier: They have active products or orders.';
+          } else if (error.status === 500) {
+            errorMessage = 'Server error: Please try again later.';
+          } else if (error.error && error.error.message) {
+            errorMessage = `Error: ${error.error.message}`;
+          } else if (error.message) {
+            errorMessage = `Error: ${error.message}`;
+          }
+          
+          // Show error message
+          this.notificationService.showError(errorMessage);
         }
       });
     }
@@ -247,7 +313,55 @@ export class AdminSuppliersComponent implements OnInit {
   }
 
   getProductSuppliersCount(supplier: SupplierResDto): number {
-    return supplier.productSuppliers?.length || 0;
+    // Ensure productSuppliers exists and has length
+    if (supplier.productSuppliers && Array.isArray(supplier.productSuppliers)) {
+      const count = supplier.productSuppliers.length;
+      console.log(`Supplier ${supplier.factoryName} has ${count} products:`, supplier.productSuppliers);
+      return count;
+    }
+    console.log(`Supplier ${supplier.factoryName} has no productSuppliers or invalid data:`, supplier.productSuppliers);
+    return 0;
+  }
+
+  // Check if supplier can be safely deleted
+  canDeleteSupplier(supplier: SupplierResDto): boolean {
+    const productCount = this.getProductSuppliersCount(supplier);
+    return productCount === 0;
+  }
+
+  // Get delete button tooltip text
+  getDeleteButtonTooltip(supplier: SupplierResDto): string {
+    const productCount = this.getProductSuppliersCount(supplier);
+    if (productCount === 0) {
+      return 'Delete supplier';
+    } else {
+      return `Delete supplier (will also remove ${productCount} product${productCount > 1 ? 's' : ''})`;
+    }
+  }
+
+  // Force refresh data and verify deletion
+  forceRefreshData() {
+    console.log('Force refreshing supplier data...');
+    this.loadSuppliers();
+  }
+
+  // Check if a specific supplier still exists
+  checkSupplierExists(supplierId: string): void {
+    console.log(`Checking if supplier ${supplierId} still exists...`);
+    this.service.getById(supplierId).subscribe({
+      next: (supplier) => {
+        console.log(`Supplier ${supplierId} still exists:`, supplier);
+        this.notificationService.showError('Supplier still exists on server. Refreshing data...');
+        this.loadSuppliers();
+      },
+      error: (error) => {
+        if (error.status === 404) {
+          console.log(`Supplier ${supplierId} successfully deleted from server`);
+        } else {
+          console.error(`Error checking supplier existence:`, error);
+        }
+      }
+    });
   }
 
   getFullName(supplier: SupplierResDto): string {
