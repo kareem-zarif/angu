@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ChangeDetectorRef } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
 import { AddressService } from '../../services/address.service';
 import { IAddress } from '../../models/iaddress';
+import { AddressManagement } from '../../components/address-management/address-management';
 
 interface Language {
   code: string;
@@ -52,6 +53,7 @@ export class Header implements OnInit, OnDestroy {
 
   // Subscriptions management
   private subscriptions: Subscription = new Subscription();
+  @Input() addressManagementComponent?: AddressManagement; // Optional input to access AddressManagement
 
   constructor(
     private authService: Auth,
@@ -60,7 +62,8 @@ export class Header implements OnInit, OnDestroy {
     private wishlistService: WishlistService,
     private http: HttpClient,
     private unifiedNotificationService: UnifiedNotificationService,
-    private addressService: AddressService
+    private addressService: AddressService,
+    private cdr: ChangeDetectorRef // Add ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -69,9 +72,20 @@ export class Header implements OnInit, OnDestroy {
       this.authService.currentUser$.subscribe((user: User | null) => {
         this.currentUser = user;
         if (user?.UserId) {
-          this.loadCurrentAddress();
+          this.updateAddressFromLocalStorage();
         } else {
           this.resetAddressState();
+        }
+      })
+    );
+    
+    // Subscribe to default address changes
+    this.subscriptions.add(
+      this.addressService.defaultAddress$.subscribe((addr: IAddress | null) => {
+        if (addr) {
+          this.setCurrentAddress(addr);
+        } else {
+          this.updateAddressFromLocalStorage();
         }
       })
     );
@@ -111,8 +125,31 @@ export class Header implements OnInit, OnDestroy {
 
     // Load saved language preference
     this.loadSavedLanguage();
-  }
 
+    // Listen for default address changes if AddressManagement is available
+    if (this.addressManagementComponent) {
+      this.subscriptions.add(
+        this.addressManagementComponent.defaultAddressChanged.subscribe((address: IAddress) => {
+          this.setCurrentAddress(address);
+        })
+      );
+    }
+
+  }
+  private updateAddressFromLocalStorage(): void {
+    const defaultAddressKey = `defaultAddress_${this.currentUser?.UserId}`;
+    const savedAddressId = localStorage.getItem(defaultAddressKey);
+    if (savedAddressId && this.currentUser?.UserId) {
+      this.subscriptions.add(
+        this.addressService.getAddress(savedAddressId).subscribe({
+          next: (address: IAddress) => this.setCurrentAddress(address),
+          error: () => this.resetAddressState()
+        })
+      );
+    } else {
+      this.loadCurrentAddress();
+    }
+  }
   // Address management methods
   private resetAddressState(): void {
     this.currentAddress = null;
@@ -128,25 +165,14 @@ export class Header implements OnInit, OnDestroy {
 
     this.isLoadingAddress = true;
     console.log('Loading current address for user:', this.currentUser.UserId);
-    
-    // Get all addresses and use the first one (or most recently created)
+
     this.subscriptions.add(
       this.addressService.getAddresses(this.currentUser.UserId).subscribe({
         next: (addresses: IAddress[]) => {
           console.log('Addresses loaded:', addresses);
           if (addresses && addresses.length > 0) {
-            // Use the first address, or the most recently created one if createdAt exists
-            let selectedAddress = addresses[0];
-            
-            // If addresses have createdAt, use the most recent one
-            if (addresses[0].createdAt) {
-              selectedAddress = addresses.reduce((latest: IAddress, current: IAddress) => {
-                if (!latest.createdAt || !current.createdAt) return latest;
-                return new Date(current.createdAt) > new Date(latest.createdAt) ? current : latest;
-              });
-            }
-            
-            this.setCurrentAddress(selectedAddress);
+            const defaultAddress = addresses.find(addr => addr.IsDefault);
+            this.setCurrentAddress(defaultAddress || addresses[0]);
           } else {
             this.addressDisplay = 'No address set';
           }
@@ -163,32 +189,35 @@ export class Header implements OnInit, OnDestroy {
 
   private setCurrentAddress(address: IAddress): void {
     this.currentAddress = address;
-    this.addressDisplay = this.getAddressDisplay(address);
+    this.addressDisplay = this.getAddressDisplay(this.currentAddress);
+    this.cdr.detectChanges(); // Force change detection
   }
 
   getAddressDisplay(address: IAddress): string {
     if (!address) return 'Select Address';
-    
+
     // Create a more comprehensive address display
     const parts = [];
-    
+
     if (address.street) parts.push(address.street);
     if (address.city) parts.push(address.city);
     if (address.state) parts.push(address.state);
-    
+
     if (parts.length === 0) {
       return 'Invalid Address';
     }
-    
+
     // Return the last two parts (typically city, state) for header display
-    return parts.slice(-2).join(', ');
+    return address.city && address.state
+      ? `${address.city}, ${address.state}`
+      : parts.join(', ').trim();
   }
 
   navigateToAddressManagement(): void {
     if (this.isLoggedIn()) {
       this.router.navigate(['/address-management']);
     } else {
-      this.router.navigate(['/login'], { 
+      this.router.navigate(['/login'], {
         queryParams: { returnUrl: '/address-management' }
       });
     }
@@ -284,8 +313,8 @@ export class Header implements OnInit, OnDestroy {
 
   performSearch(): void {
     if (this.searchQuery.trim()) {
-      this.router.navigate(['/products'], { 
-        queryParams: { q: this.searchQuery.trim() } 
+      this.router.navigate(['/products'], {
+        queryParams: { q: this.searchQuery.trim() }
       });
     }
   }
