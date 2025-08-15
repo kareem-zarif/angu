@@ -45,6 +45,7 @@ export const routes: Routes = [
   { path: 'wishlist', component: WishlistComponent },
   { path: 'orders', component: OrdersComponent },
   { path: 'account-management', component: AccountManagement },
+  { path: 'address-management', loadComponent: () => import('./components/address-management/address-management').then(m => m.AddressManagement) },
   { path: 'cart', component: Cart },
   { path: 'checkout', component: CheckoutComponent },
 
