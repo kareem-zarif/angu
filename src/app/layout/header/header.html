@@ -9,8 +9,13 @@
       </div>
 
       <div class="text-pink-500 flex items-center gap-1">
-        Deliver To Mahmoud:
-        <span class="block text-white font-semibold text-lg"> Bilbeis</span>
+        Deliver To {{ currentUser?.displayName || 'Guest' }}:
+        <button 
+          (click)="navigateToAddressManagement()"
+          class="block text-white font-semibold text-lg hover:text-orange-400 transition-colors duration-200 cursor-pointer"
+        >
+          {{ addressDisplay }}
+        </button>
       </div>
     </div>
 
