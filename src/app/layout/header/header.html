@@ -1,0 +1,274 @@
+<div class="bg-black">
+  <header class="flex items-center justify-between text-white px-6 py-4 font-sans text-sm lg:px-10">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-black font-bold text-sm">
+          B2C
+        </div>
+        <span class="text-orange-500 font-semibold text-lg tracking-wide">Horas</span>
+      </div>
+
+      <div class="text-pink-500 flex items-center gap-1">
+        Deliver To {{ currentUser?.displayName || 'Guest' }}:
+        <button 
+          (click)="navigateToAddressManagement()"
+          class="block text-white font-semibold text-lg hover:text-orange-400 transition-colors duration-200 cursor-pointer"
+        >
+          {{ addressDisplay }}
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center bg-white rounded-full overflow-hidden w-[500px] shadow-md">
+      <select class="px-4 py-2 text-gray-600 outline-none cursor-pointer bg-transparent border-none appearance-none"
+        aria-label="All categories">
+        <option>All</option>
+        <option>ٍSpcial</option>
+      </select>
+
+      <div class="border-l border-gray-300 h-8 mx-2"></div>
+
+      <input type="text" placeholder="What are you looking for?"
+        class="flex-grow px-4 py-2 text-sm text-gray-700 outline-none bg-transparent" [(ngModel)]="searchQuery"
+        (input)="onSearchInput()"
+        (keydown.enter)="performSearch()" />
+
+      <button
+        class="bg-orange-500 px-6 py-2 text-white font-semibold rounded-r-full hover:bg-orange-600 transition-colors duration-200">
+        Search
+      </button>
+    </div>
+
+    <!-- Autocomplete suggestions -->
+      <div *ngIf="searchSuggestions.length > 0" class="absolute top-full left-0 right-0 bg-white shadow-md rounded-b-md z-10">
+        <ul class="max-h-60 overflow-y-auto">
+          <li *ngFor="let suggestion of searchSuggestions"
+              class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+              (click)="selectSuggestion(suggestion)">
+            {{ suggestion }}
+          </li>
+        </ul>
+      </div>
+      
+    <!-- اليمين: اللغة، الحساب، القلوب، الطلبات، عربة التسوق -->
+    <div class="flex items-center gap-6 text-white text-sm font-semibold">
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button"
+          class="cursor-pointer select-none flex items-center gap-1 hover:text-orange-500 transition-colors duration-200">
+          {{ selectedLang.label }}
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+            aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+
+        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-[1] text-neutral-800">
+          <li><a (click)="changeLang('en', 'Eng')">🇺🇸 English</a></li>
+          <li><a (click)="changeLang('fr', 'Fr')">🇫🇷 French</a></li>
+          <li><a (click)="changeLang('ar', 'عربي')">🇸🇦 Arabic</a></li>
+        </ul>
+      </div>
+
+      <div class="cursor-pointer select-none hover:text-orange-500 transition-colors duration-200">
+        Hello , Mahmoud Yassin
+        <br />
+        <span class="font-normal text-gray-400 underline">Account & Lists</span>
+      </div>
+
+      <a routerLink="/wishlist"
+        class="cursor-pointer hover:text-orange-500 relative transition-colors duration-200 inline-block">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          class="w-8 h-8">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+        </svg>
+
+        <span
+          class="absolute top-3 right-0 text-[7px] bg-purple-600 text-white rounded-full px-1.5 py-0.5 -translate-x-1/2 translate-y-1/2">
+         {{wishlistCount}}
+        </span>
+      </a>
+
+      <a routerLink="/orders" class="cursor-pointer hover:text-orange-500 transition-colors duration-200 font-semibold">
+        Orders
+      </a>
+
+      <!-- Notifications -->
+      <div class="relative">
+        <button
+          (click)="toggleNotifications()"
+          class="cursor-pointer hover:text-orange-500 transition-colors duration-200 relative"
+        >
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.83 2.97A.75.75 0 015.5 2.25h13a.75.75 0 01.67.72l-.5 5a.75.75 0 01-.67.78H5.5a.75.75 0 01-.67-.72l-.5-5z"></path>
+          </svg>
+          <span
+            *ngIf="notificationCount > 0"
+            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+          >
+            {{ notificationCount > 9 ? '9+' : notificationCount }}
+          </span>
+        </button>
+
+        <!-- Notifications Dropdown -->
+        <div
+          *ngIf="showNotifications"
+          class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+        >
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+              <button (click)="markAllAsRead()" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
+            </div>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              <div 
+                *ngFor="let notification of notifications" 
+                class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                [class.bg-blue-50]="!notification.isRead"
+                (click)="onNotificationClick(notification)"
+              >
+                <span class="text-lg" [class]="getNotificationColorClass(notification.type)">
+                  {{ getNotificationIcon(notification.type) }}
+                </span>
+                <div class="flex-1">
+                  <div class="font-medium text-gray-800">{{ notification.title }}</div>
+                  <div class="text-sm text-gray-500">{{ notification.message }}</div>
+                  <div class="text-xs text-gray-400 mt-1">{{ formatTime(notification.timestamp) }}</div>
+                </div>
+                <div *ngIf="!notification.isRead" class="w-2 h-2 bg-blue-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- /// -->
+      <div class="flex-none">
+        <div class="dropdown dropdown-end mr-3">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+            <div class="indicator">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span class="badge badge-sm indicator-item">{{cartCount}}</span>
+            </div>
+          </div>
+          <div tabindex="0" class="card card-compact dropdown-content bg-base-100 z-1 mt-3 w-52 shadow">
+            <div class="card-body text-gray-700">
+              <span class="text-lg font-bold">{{cartCount}} Items</span>
+
+              <div class="cart-items max-h-60 overflow-y-auto">
+                <div *ngFor="let item of cartItems" class="flex items-center gap-2 p-2 hover:bg-gray-50 border-b">
+                  <img [src]="item.Product.productPicsPathes[0]" alt="Product Image"
+                    class="w-10 h-10 object-cover rounded">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">{{item.Product.name}}</p>
+                    <p class="text-xs text-gray-500">{{item.quantity}} × {{item.Product.pricePerPiece}} EGP</p>
+                  </div>
+                </div>
+
+                <div *ngIf="cartItems.length === 0" class="p-4 text-center text-gray-500">
+                  Your cart is empty
+                </div>
+              </div>
+
+              <div class="card-actions pt-3">
+                 <span class="text-lg font-bold text-[#483C21]">{{ cartTotal | number:'1.2-2' }} EGP</span>
+                <a routerLink="cart" class="btn btn-primary  btn-block">View Cart</a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+            <div class="w-10 rounded-full">
+              <img alt="User Name" src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp" />
+            </div>
+          </div>
+          <ul tabindex="0"
+            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow text-neutral-800">
+            <!-- If user is not logged in -->
+            <ng-container *ngIf="!isLoggedIn()">
+              <li>
+                <a (click)="navigateToRegister()"> Register </a>
+              </li>
+              <li>
+                <a (click)="navigateToLogin()"> Login </a>
+              </li>
+            </ng-container>
+
+            <!-- If user is logged in -->
+            <ng-container *ngIf="isLoggedIn()">
+              <li>
+                <a class="justify-between" routerLink="/profile">
+                  Profile
+                  <span class="badge">New</span>
+                </a>
+              </li>
+              <li><a routerLink="/settings">Settings</a></li>
+              <li *ngIf="currentUser?.roles?.includes('Seller')">
+                <a routerLink="/seller-dashboard">Seller Dashboard</a>
+              </li>
+              <li *ngIf="currentUser?.roles?.includes('Admin')">
+                <a routerLink="/admin-dashboard">Management Dashboard</a>
+              </li>
+              <li><a (click)="logout()">Logout</a></li>
+            </ng-container>
+          </ul>
+        </div>
+        <!-- /// -->
+
+        <!-- /// -->
+      </div>
+      <!-- ///// -->
+    </div>
+
+  </header>
+</div>
+
+<!-- second header -->
+
+<nav class="bg-gray-800 text-white py-2">
+  <div class="flex justify-around items-center">
+    <div class="text-center">
+      <a routerLink="/discounts" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
+        All Discounts
+      </a>
+      <span class="block text-xs text-orange-500">Special Offers</span>
+    </div>
+    <div class="text-center">
+      <a routerLink="/deals" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
+        Today Deals
+      </a>
+      <span class="block text-xs text-orange-500">Daily Discounts</span>
+    </div>
+    <div class="text-center">
+      <a routerLink="/products" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
+        Products
+      </a>
+      <span class="block text-xs text-orange-500">Our Catalog</span>
+    </div>
+    <div class="text-center">
+      <a routerLink="suppliers" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
+        Suppliers
+      </a>
+      <span class="block text-xs text-orange-500">Vendor List</span>
+    </div>
+    <div class="text-center">
+      <a routerLink="about-us" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
+        About Us
+      </a>
+      <span class="block text-xs text-orange-500">Our Story</span>
+    </div>
+    <div class="text-center">
+      <a routerLink="/join" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
+        Become a Supplier
+      </a>
+      <span class="block text-xs text-orange-500">Join Us</span>
+    </div>
+  </div>
+</nav>
