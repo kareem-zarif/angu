@@ -1,0 +1,123 @@
+<div class="checkout-container">
+  <div class="checkout-content">
+    <!-- Left Section: Delivery and Payment -->
+    <div class="checkout-left">
+      <!-- Delivery Address Section -->
+      <div class="delivery-section">
+        <div class="section-header">
+          <h3>Delivering to:</h3>
+          <button class="change-btn" (click)="changeDeliveryAddress()">Change</button>
+        </div>
+        <div class="delivery-info">
+          <div class="recipient">{{ deliveryAddress.recipient }}</div>
+          <div class="address">{{ deliveryAddress.address }}</div>
+          <a href="#" class="delivery-link" (click)="addDeliveryInstructions()">Add delivery instructions</a>
+        </div>
+        <div *ngIf="showDeliveryInstructions" class="instructions-form">
+          <textarea 
+            [(ngModel)]="deliveryAddress.instructions" 
+            placeholder="Add delivery instructions here..."
+            class="instructions-textarea">
+          </textarea>
+        </div>
+      </div>
+
+      <!-- Payment Method Section -->
+      <div class="payment-section">
+        <h3>Payment method:</h3>
+        
+        <!-- Credit/Debit Cards -->
+        <div class="payment-option">
+          <hr class="section-divider">
+          <div class="payment-header">
+            <span>Your credit and debit cards:</span>
+            <button class="add-btn" (click)="addCreditCard()">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+          <div class="card-info">
+            <i class="fa fa-credit-card card-icon"></i>
+            <a href="#" class="add-link" (click)="addCreditCard()">Add a credit or debit</a>
+            <span class="card-text">> HAKIMM accepts all major credit cards</span>
+          </div>
+        </div>
+
+        <!-- Mobile Cash Options -->
+        <div class="payment-option">
+          <div class="payment-header">
+            <span>Mobile Cash Options:</span>
+          </div>
+          <div class="mobile-cash-options">
+            <div class="mobile-cash-option" *ngFor="let option of mobileCashOptions">
+              <button class="mobile-cash-btn" (click)="addMobileCash(option)">
+                <i class="fa fa-plus"></i>
+              </button>
+              <div class="mobile-cash-info">
+                <div class="mobile-cash-name">{{ option.name }}</div>
+                <div class="mobile-cash-status" [class.added]="option.added">
+                  {{ option.added ? 'Added' : 'Add' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Payment Methods -->
+        <div class="payment-option">
+          <hr class="section-divider">
+          <div class="other-payment">
+            <label class="radio-label">
+              <input 
+                type="radio" 
+                name="paymentMethod" 
+                value="cash-on-delivery"
+                [checked]="selectedPaymentMethod === 'cash-on-delivery'"
+                (change)="selectPaymentMethod('cash-on-delivery')">
+              <span class="radio-text">Cash On Delivery</span>
+            </label>
+            <span class="sample-text">(For Sample Only)</span>
+          </div>
+        </div>
+
+        <!-- Use Payment Method Button -->
+        <button class="use-payment-btn" (click)="usePaymentMethod()">
+          Use this payment method
+        </button>
+      </div>
+    </div>
+
+    <!-- Right Section: Order Summary -->
+    <div class="checkout-right">
+      <button class="use-payment-btn" (click)="usePaymentMethod()">
+        Use this payment method
+      </button>
+      
+      <div class="order-summary">
+        <h3>Order Summary</h3>
+        <div class="cost-breakdown">
+          <div class="cost-item">
+            <span>Items:</span>
+            <span>EGP {{ orderSummary.items.toFixed(2) }}</span>
+          </div>
+          <div class="cost-item">
+            <span>Shipping & handling:</span>
+            <span>EGP {{ orderSummary.shipping.toFixed(2) }}</span>
+          </div>
+          <div class="cost-item">
+            <span>Total:</span>
+            <span>EGP {{ (orderSummary.items + orderSummary.shipping).toFixed(2) }}</span>
+          </div>
+          <div class="cost-item discount">
+            <span>Free Delivery:</span>
+            <span>-EGP {{ orderSummary.freeDeliveryDiscount.toFixed(2) }}</span>
+          </div>
+        </div>
+        
+        <div class="order-total">
+          <span>Order total:</span>
+          <span class="total-amount">EGP {{ calculateTotal().toFixed(2) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 
