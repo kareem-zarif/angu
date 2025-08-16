@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy,ViewChild,ElementRef,AfterViewInit } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -9,7 +9,8 @@ import { ICartItem } from '../../models/i-cart-item';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
-
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 interface Language {
   code: string;
   label: string;
@@ -22,7 +23,7 @@ interface Language {
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
-export class Header implements OnInit, OnDestroy {
+export class Header implements OnInit, OnDestroy,AfterViewInit {
   // User state
   currentUser: User | null = null;
 
@@ -34,9 +35,10 @@ export class Header implements OnInit, OnDestroy {
 
   // Language settings
   selectedLang: Language = { code: 'en', label: 'Eng' };
-
+@ViewChild('searchInput', { static: false }) searchInput!: ElementRef;
   searchQuery: string = '';
   searchSuggestions: string[] = [];
+  private hideTimeout: any;
 
   // Notification state
   notifications: any[] = [];
@@ -45,6 +47,9 @@ export class Header implements OnInit, OnDestroy {
 
   // Subscriptions management
   private subscriptions: Subscription = new Subscription();
+// search
+searchSubject = new Subject<string>();
+showSuggestions = false;
 
   constructor(
     private authService: Auth,
@@ -54,6 +59,9 @@ export class Header implements OnInit, OnDestroy {
     private http: HttpClient,
     private unifiedNotificationService: UnifiedNotificationService
   ) { }
+  ngAfterViewInit() {
+    console.log('searchInput initialized:', this.searchInput); // تتبع
+  }
 
   ngOnInit(): void {
     // Subscribe to user state
@@ -96,6 +104,21 @@ export class Header implements OnInit, OnDestroy {
 
     // Load saved language preference
     this.loadSavedLanguage();
+// search start =>
+     this.subscriptions.add(
+    this.searchSubject
+      .pipe(
+        debounceTime(300), // ينتظر 300ms بعد آخر حرف
+        distinctUntilChanged() // يتأكد إن النص فعلاً اتغير
+      )
+      .subscribe(query => {
+        if (query.length >= 2) {
+          this.getSearchSuggestions(query);
+        } else {
+          this.searchSuggestions = [];
+        }
+      })
+  );
   }
 
   ngOnDestroy(): void {
@@ -157,29 +180,62 @@ export class Header implements OnInit, OnDestroy {
   }
 
   // Search methods
-  onSearchInput(): void {
-    if (this.searchQuery.length < 2) {
-      this.searchSuggestions = [];
-      return;
-    }
-
-    this.http.get<string[]>(`api/product/search?q=${encodeURIComponent(this.searchQuery)}`)
+private getSearchSuggestions(query: string): void {
+    this.http
+      .get<string[]>(`https://localhost:7253/api/product/search?q=${encodeURIComponent(query)}`)
       .subscribe({
-        next: (suggestions) => {
-          this.searchSuggestions = suggestions;
+        next: (data) => {
+          console.log('API Response:', data);
+          this.searchSuggestions = Array.isArray(data) ? data : [];
+          this.showSuggestions = this.searchSuggestions.length > 0;
+          console.log('searchSuggestions length:', this.searchSuggestions.length, 'showSuggestions:', this.showSuggestions);
         },
         error: (error) => {
           console.error('Search error:', error);
           this.searchSuggestions = [];
+          this.showSuggestions = false;
         }
       });
   }
 
-  selectSuggestion(suggestion: string): void {
-    this.searchQuery = suggestion;
-    this.searchSuggestions = [];
-    this.performSearch();
+
+
+
+
+onSearchInput(): void {
+    console.log('onSearchInput triggered, searchQuery:', this.searchQuery);
+    this.showSuggestions = true;
+    console.log('showSuggestions set to true in onSearchInput');
+    this.searchSubject.next(this.searchQuery);
   }
+
+  hideSuggestionsWithDelay() {
+    console.log('Hiding suggestions...');
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout); // إلغاء الـ timeout السابق
+    }
+    this.hideTimeout = setTimeout(() => {
+      this.showSuggestions = false;
+      console.log('showSuggestions set to false after delay');
+    }, 5000); // 2 ثانية
+  }
+
+  onDropdownMouseEnter() {
+    this.showSuggestions = true;
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout); // إلغاء الخفاء لما تدخلي فوق الـ dropdown
+    }
+    console.log('Mouse entered dropdown, showSuggestions set to true');
+}
+
+onDropdownMouseLeave() {
+  console.log('Mouse left dropdown, scheduling hide...');
+  this.hideSuggestionsWithDelay();
+}
+selectSuggestion(suggestion: string) {
+  this.searchQuery = suggestion;
+  this.showSuggestions = false;
+}
 
   performSearch(): void {
     if (this.searchQuery) {
