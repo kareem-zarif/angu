@@ -103,11 +103,14 @@ export class CartService {
   }
 
   calculateItemPrice(item: ICartItem): number {
+    if (!item.Product || item.Product.pricePerPiece == null) {
+      return 0;
+    }
     const q = item.quantity;
     const p = item.Product;
     if (q >= 100 && p.pricePer100Piece) return p.pricePer100Piece * q;
     if (q >= 50 && p.pricePer50Piece) return p.pricePer50Piece * q;
-    return (p.pricePerPiece || 0) * q;
+    return (p?.pricePerPiece || 0) * q;
   }
 
   private updateCart(items: ICartItem[]): void {
@@ -331,29 +334,30 @@ export class CartService {
       });
     }
   }
- private clearCartFromApi(customerId: string): Observable<any> {
-  return this.ensureCartExists(customerId).pipe(
-    switchMap(cart => {
-      if (!cart?.id) {
-        console.error('❌ Invalid cart ID');
-        return of(null); //returns Observable<null>
-        //as return null → returns a plain value, and will break the RxJS stream
-      }
-      // Call the new endpoint to delete all cart items for the cart
-      return this.http.delete(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
-        catchError(err => {
-          console.error('❌ Error clearing cart items from API:', err);
-          return of(null); // Prevent app crash
-        })
-      );
-    })
-  );
-}
+  private clearCartFromApi(customerId: string): Observable<any> {
+    return this.ensureCartExists(customerId).pipe(
+      switchMap(cart => {
+        if (!cart?.id) {
+          console.error('❌ Invalid cart ID');
+          return of(null); //returns Observable<null>
+          //as return null → returns a plain value, and will break the RxJS stream
+        }
+        // Call the new endpoint to delete all cart items for the cart
+        return this.http.delete(`${this._cartItemUrl}/cart/${cart.id}`).pipe(
+          catchError(err => {
+            console.error('❌ Error clearing cart items from API:', err);
+            return of(null); // Prevent app crash
+          })
+        );
+      })
+    );
+  }
 
   private loadCartFromApi(customerId: string): Observable<void> {
     return this.http.get<ICart>(`${this._baseUrl}/byCustomer/${customerId}`).pipe(
       tap((cart) => {
-        this.updateCart(cart.cartItems || []);
+        const validItems = (cart.cartItems || []).filter(i => i?.Product);
+        this.updateCart(validItems);
       }),
       catchError((err) => {
         console.error('Error loading cart from API', err);

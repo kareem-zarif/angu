@@ -1,6 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
-
 import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { loginInterceptor } from './core/interceptors/interceptors/login-interceptor';
@@ -11,7 +10,6 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([loginInterceptor])), //to send token in headers of any http request
-    provideHttpClient(withInterceptors([authInterceptor])), //
+    provideHttpClient(withInterceptors([loginInterceptor, authInterceptor])), //to send token in headers of any http request
   ]
 };
