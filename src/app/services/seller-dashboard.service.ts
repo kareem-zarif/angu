@@ -128,18 +128,18 @@ export class SellerDashboardService {
           pendingProducts: data.products.filter(p => p.approvalStatus === 1).length,
           rejectedProducts: data.products.filter(p => p.approvalStatus === 3).length,
           totalOrders: data.orders.length,
-          pendingOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          pendingOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 1 || status.orderStatus === 2
             )
           ).length,
-          completedOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          completedOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 4
             )
           ).length,
-          cancelledOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          cancelledOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 5
             )
           ).length,
@@ -152,7 +152,7 @@ export class SellerDashboardService {
           monthlyGrowth: this.calculateMonthlyGrowth(data.orders),
           lowStockProducts: data.products.filter(p => p.noINStock < 10).length
         };
-        
+
         this.dashboardStatsSubject.next(stats);
         return stats;
       }),
@@ -212,24 +212,24 @@ export class SellerDashboardService {
       map(data => {
         const monthlyOrders = this.groupOrdersByMonth(data.orders);
         const revenueByMonth = this.groupRevenueByMonth(data.orders);
-        const averageOrderValue = data.orders.length > 0 
-          ? data.orders.reduce((sum, order) => sum + order.totalAmount, 0) / data.orders.length 
+        const averageOrderValue = data.orders.length > 0
+          ? data.orders.reduce((sum, order) => sum + order.totalAmount, 0) / data.orders.length
           : 0;
 
         return {
           totalOrders: data.orders.length,
-          pendingOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          pendingOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 1 || status.orderStatus === 2
             )
           ).length,
-          completedOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          completedOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 4
             )
           ).length,
-          cancelledOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          cancelledOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 5
             )
           ).length,
@@ -294,7 +294,7 @@ export class SellerDashboardService {
               description: `Order placed by ${order.customerName || 'Customer'} - ${order.totalAmount} EGP`,
               time: 'Recently',
               amount: order.totalAmount,
-              status: order.orderStatusHistory?.some(status => status.orderStatus === 4) ? 'completed' : 
+              status: order.orderStatusHistory?.some(status => status.orderStatus === 4) ? 'completed' :
                      order.orderStatusHistory?.some(status => status.orderStatus === 5) ? 'cancelled' : 'pending',
               timestamp: new Date()
             });
@@ -392,7 +392,7 @@ export class SellerDashboardService {
   private calculateMonthlyRevenue(orders: any[]): number {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     return orders
       .filter(order => new Date(order.createdOn || '') >= firstDayOfMonth)
       .reduce((sum, order) => sum + order.totalAmount, 0);
@@ -401,7 +401,7 @@ export class SellerDashboardService {
   private calculateWeeklyRevenue(orders: any[]): number {
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     return orders
       .filter(order => new Date(order.createdOn || '') >= oneWeekAgo)
       .reduce((sum, order) => sum + order.totalAmount, 0);
@@ -415,7 +415,7 @@ export class SellerDashboardService {
   private calculateAverageRating(products: any[]): number {
     const productsWithRating = products.filter(p => p.rating && p.rating > 0);
     if (productsWithRating.length === 0) return 0;
-    
+
     const totalRating = productsWithRating.reduce((sum, product) => sum + product.rating, 0);
     return Math.round((totalRating / productsWithRating.length) * 10) / 10;
   }
@@ -432,60 +432,60 @@ export class SellerDashboardService {
 
   private groupProductsByCategory(products: any[]): { category: string; count: number }[] {
     const categoryMap = new Map<string, number>();
-    
+
     products.forEach(product => {
       const category = product.subCategoryId || 'Unknown';
       categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
     });
-    
+
     return Array.from(categoryMap.entries()).map(([category, count]) => ({ category, count }));
   }
 
   private groupProductsByStatus(products: any[]): { status: string; count: number }[] {
     const statusMap = new Map<string, number>();
-    
+
     products.forEach(product => {
-      const status = product.approvalStatus === 2 ? 'Approved' : 
+      const status = product.approvalStatus === 2 ? 'Approved' :
                     product.approvalStatus === 1 ? 'Pending' : 'Rejected';
       statusMap.set(status, (statusMap.get(status) || 0) + 1);
     });
-    
+
     return Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
   }
 
   private groupOrdersByMonth(orders: any[]): { month: string; count: number }[] {
     const monthMap = new Map<string, number>();
-    
+
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       monthMap.set(month, (monthMap.get(month) || 0) + 1);
     });
-    
+
     return Array.from(monthMap.entries()).map(([month, count]) => ({ month, count }));
   }
 
   private groupRevenueByMonth(orders: any[]): { month: string; revenue: number }[] {
     const monthMap = new Map<string, number>();
-    
+
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       monthMap.set(month, (monthMap.get(month) || 0) + order.totalAmount);
     });
-    
+
     return Array.from(monthMap.entries()).map(([month, revenue]) => ({ month, revenue }));
   }
 
   private groupRevenueByWeek(orders: any[]): { week: string; revenue: number }[] {
     const weekMap = new Map<string, number>();
-    
+
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const week = `Week ${Math.ceil(date.getDate() / 7)} ${date.toLocaleDateString('en-US', { month: 'short' })}`;
       weekMap.set(week, (weekMap.get(week) || 0) + order.totalAmount);
     });
-    
+
     return Array.from(weekMap.entries()).map(([week, revenue]) => ({ week, revenue }));
   }
 
@@ -522,17 +522,17 @@ export class SellerDashboardService {
     }).pipe(
       map(data => {
         const results: any[] = [];
-        
+
         // Search in products
         data.products
           .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))
           .forEach(p => results.push({ type: 'product', item: p }));
-        
+
         // Search in orders
         data.orders
           .filter(o => o.id.includes(query) || o.customerName?.toLowerCase().includes(query.toLowerCase()))
           .forEach(o => results.push({ type: 'order', item: o }));
-        
+
         return results.slice(0, 10);
       })
     );
@@ -557,4 +557,4 @@ export class SellerDashboardService {
   updateSellerProfile(profile: any): Observable<any> {
     return of({}); // Implement if needed
   }
-} 
+}

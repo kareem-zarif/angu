@@ -3,11 +3,11 @@ import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AddressService } from '../../services/address.service';
-import { Auth } from '../../services/auth';
+import { Auth, User } from '../../services/auth';
 import { LocalStorageNotificationService } from '../../services/local-storage-notification.service';
 import { IAddress, IAddressCreate, IAddressUpdate } from '../../models/iaddress';
-import { User } from '../../services/auth';
-import { Subscription } from 'rxjs';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-address-management',
@@ -26,8 +26,10 @@ export class AddressManagement implements OnInit, OnDestroy {
   defaultAddressId: string | null = null;
   isLoading = false;
   formSubmitting = false;
-  private userSubscription: Subscription = new Subscription();
   @Output() defaultAddressChanged = new EventEmitter<IAddress>();
+
+  // destroy$ used to clean subscriptions on destroy
+  private destroy$ = new Subject<void>();
 
   constructor(
     private addressService: AddressService,
@@ -46,21 +48,28 @@ export class AddressManagement implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.userSubscription = this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      if (user?.UserId) {
-        console.log('Current user ID:', user.UserId);
-        this.loadAddresses();
-        this.loadDefaultAddressFromLocalStorage();
-      } else {
-        // Reset list when no user
-        this.addresses = [];
-      }
-    });
+    // الاشتراك في currentUser$ للتعامل مع تغيّر حالة الدخول خلال عمر الكمبوننت
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+        if (user?.UserId) {
+          console.log('Current user ID:', user.UserId);
+          this.loadAddresses();
+          this.loadDefaultAddressFromLocalStorage();
+        } else {
+          // Reset list when no user
+          this.addresses = [];
+          this.defaultAddressId = null;
+          this.removeDefaultAddressFromLocalStorage();
+        }
+      });
   }
 
   ngOnDestroy(): void {
-    this.userSubscription.unsubscribe();
+    // تنظيف كل الاشتراكات
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadAddresses(): void {
@@ -82,7 +91,8 @@ export class AddressManagement implements OnInit, OnDestroy {
         if (defaultAddress && defaultAddress.id) {
           this.defaultAddressId = defaultAddress.id;
           this.saveDefaultAddressToLocalStorage(defaultAddress.id);
-            this.addressService.setDefaultAddress(defaultAddress, { persist: false, saveLocal: true }).catch(() => {});
+          // silent set/notify (catch to avoid unhandled promise)
+          this.addressService.setDefaultAddress(defaultAddress, { persist: false, saveLocal: true }).catch(() => {});
         } else if (this.addresses.length > 0 && this.addresses[0].id) {
           this.setAsDefault(this.addresses[0].id, false); // Set first address as default silently
         }
@@ -98,17 +108,17 @@ export class AddressManagement implements OnInit, OnDestroy {
 
   // Local storage helper methods
   private getDefaultAddressKey(): string {
-    return `defaultAddress_${this.currentUser?.UserId}`;
+    return `defaultAddress_${this.currentUser?.UserId || 'anonymous'}`;
   }
 
   private saveDefaultAddressToLocalStorage(addressId: string): void {
-    if (typeof Storage !== 'undefined') {
+    if (typeof Storage !== 'undefined' && this.currentUser?.UserId) {
       localStorage.setItem(this.getDefaultAddressKey(), addressId);
     }
   }
 
   private loadDefaultAddressFromLocalStorage(): void {
-    if (typeof Storage !== 'undefined') {
+    if (typeof Storage !== 'undefined' && this.currentUser?.UserId) {
       const savedDefault = localStorage.getItem(this.getDefaultAddressKey());
       if (savedDefault) {
         this.defaultAddressId = savedDefault;
@@ -118,7 +128,7 @@ export class AddressManagement implements OnInit, OnDestroy {
   }
 
   private removeDefaultAddressFromLocalStorage(): void {
-    if (typeof Storage !== 'undefined') {
+    if (typeof Storage !== 'undefined' && this.currentUser?.UserId) {
       localStorage.removeItem(this.getDefaultAddressKey());
     }
   }
@@ -236,7 +246,7 @@ export class AddressManagement implements OnInit, OnDestroy {
         // If first address -> set default silently
         if (this.addresses.length === 1 && newAddress.id) {
           this.setAsDefault(newAddress.id, false);
-            this.addressService.setDefaultAddress(newAddress, { persist: true, saveLocal: true }).catch(() => {});
+          this.addressService.setDefaultAddress(newAddress, { persist: true, saveLocal: true }).catch(() => {});
         }
 
         this.cancelForm();
@@ -381,7 +391,6 @@ export class AddressManagement implements OnInit, OnDestroy {
       IsDefault: addr.id === addressId
     }));
 
-
     this.defaultAddressId = addressId;
     this.saveDefaultAddressToLocalStorage(addressId);
 
@@ -395,7 +404,7 @@ export class AddressManagement implements OnInit, OnDestroy {
     const newDefault = this.addresses.find(addr => addr.id === addressId);
     if (newDefault) {
       this.updateBackendDefault(newDefault);
-        this.addressService.setDefaultAddress(newDefault, { persist: true, saveLocal: true }).catch(() => {});
+      this.addressService.setDefaultAddress(newDefault, { persist: true, saveLocal: true }).catch(() => {});
     }
     if (previousDefault && previousDefault.id !== addressId) {
       previousDefault.IsDefault = false;
@@ -423,6 +432,7 @@ export class AddressManagement implements OnInit, OnDestroy {
       error: (error) => console.error(`Error updating IsDefault for address ${address.id}:`, error)
     });
   }
+
   setFirstAddressAsDefault(): void {
     if (this.addresses.length > 0 && this.addresses[0].id) {
       this.setAsDefault(this.addresses[0].id, false);

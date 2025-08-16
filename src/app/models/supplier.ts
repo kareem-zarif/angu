@@ -28,6 +28,7 @@ export interface SupplierResDto {
   state?: string;
   city?: string;
   productSuppliers: ProductSupplierResDto[];
+  
 }
 
 export interface SupplierUpdateDto {
@@ -47,4 +48,4 @@ export interface ProductSupplierResDto {
   description?: string;
   pricePerPiece?: number;
   factoryName?: string;
-} 
+}

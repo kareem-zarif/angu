@@ -40,45 +40,41 @@ export class WishlistService {
     return this.wishlist;
   }
 
-  addToWishlist(product: IProduct, customerId?: string): void {
-    if (!this.wishlist?.id) {
-      this.wishlist = {
-        id: '',
-        customerId: customerId || '',
-        customerName: '',
-        products: []
-      };
-    }
+addToWishlist(product: IProduct, customerId?: string): void {
+  if (!customerId) {
+    console.error('❌ CustomerId is required to add to wishlist.');
+    return;
+  }
 
-    if (!this.wishlist.products.find(p => p.id === product.id)) {
-      this.wishlist.products.push(product);
-      this.updateWishlist();
+  this.ensureWishlistExists(customerId).subscribe({
+    next: (wishlist) => {
+      this.wishlist = wishlist;
 
-      // Sync with API if logged in
-      if (customerId) {
-        console.log(`💡customerId at addToWishlist:${customerId}  // WishListId a: ${this.wishlist.id} , productId : ${product.id}`,);
+      if (!this.wishlist.products.find(p => p.id === product.id)) {
+        this.wishlist.products.push(product);
+        this.updateWishlist();
 
+        // Sync with API
         this.http.post(`${this._productWishlistUrl}`, {
           productId: product.id,
-          wishListId: this.wishlist.id
+          wishListId: this.wishlist!.id   // ✅ هنا هيبقى موجود فعلاً
         }).subscribe({
-          next: (response) => {
-            console.log('✅ Product added to wishlist in API');
-            // ممكن تحدث قائمة المنتجات من السيرفر هنا لو حبيت
-          },
+          next: () => console.log('✅ Product added to wishlist in API'),
           error: err => {
             console.error('❌ Error adding product to wishlist in API:', err);
-            // Rollback محلي
-            if (this.wishlist) {
-              this.wishlist.products = this.wishlist.products.filter(p => p.id !== product.id);
-            }
+            // Rollback
+            this.wishlist!.products = this.wishlist!.products.filter(p => p.id !== product.id);
             this.updateWishlist();
           }
         });
-
       }
+    },
+    error: (err) => {
+      console.error('❌ Error ensuring wishlist exists:', err);
     }
-  }
+  });
+}
+
 
   removeFromWishlist(productId: string): void {
     if (!this.wishlist?.id) return;

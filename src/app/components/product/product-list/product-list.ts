@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router, Params } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ProductService } from '../../../services/product-service';
 import { WishlistService } from '../../../services/wishlistService';
 import { CartService } from '../../../services/cart.service';
@@ -56,6 +57,10 @@ export class ProductList implements OnInit, OnDestroy {
 
   //current user
   currentUserId: string | undefined = undefined;
+
+  // destroy$ used to clean subscriptions (auth, etc.)
+  private destroy$ = new Subject<void>();
+
   constructor(
     private productService: ProductService,
     private subCategoryService: SubCategoryService,
@@ -63,11 +68,20 @@ export class ProductList implements OnInit, OnDestroy {
     private wishlistService: WishlistService,
     private cartService: CartService,
     private router: Router,
-    private _auth:Auth
+    private _auth: Auth
   ) { }
 
   ngOnInit(): void {
-    this.currentUserId=this._auth.getCurrentUser()?.UserId;
+    // Set initial user if available (preserves previous behavior)
+    this.currentUserId = this._auth.getCurrentUser()?.UserId;
+
+    // Subscribe to auth.currentUser$ so we react to login/logout dynamically
+    this._auth.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUserId = user?.UserId;
+      });
+
     // Load subcategory mapping
     this.loadSubCategoryMapping();
 
@@ -83,6 +97,9 @@ export class ProductList implements OnInit, OnDestroy {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
+    // cleanup auth & other subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadSubCategoryMapping(): void {
@@ -278,7 +295,7 @@ export class ProductList implements OnInit, OnDestroy {
 
   addToCart(product: IProduct, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     // Show toast or notification here if needed
   }
 
@@ -287,7 +304,7 @@ export class ProductList implements OnInit, OnDestroy {
     if (this.isInWishlist(product.id)) {
       this.wishlistService.removeFromWishlist(product.id);
     } else {
-      this.wishlistService.addToWishlist(product,this.currentUserId);
+      this.wishlistService.addToWishlist(product, this.currentUserId);
     }
   }
 
@@ -313,7 +330,7 @@ export class ProductList implements OnInit, OnDestroy {
 
   requestSample(product: IProduct, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     // Show toast notification
     this.showToast(`تمت إضافة ${product.name} إلى السلة`);
   }

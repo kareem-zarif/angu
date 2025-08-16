@@ -26,34 +26,23 @@ interface Language {
   styleUrl: './header.css'
 })
 export class Header implements OnInit, OnDestroy {
-  // User state
   currentUser: User | null = null;
-
-  // Cart and wishlist state
-  cartCount: number = 0;
-  cartTotal: number = 0;
+  cartCount = 0;
+  cartTotal = 0;
   cartItems: ICartItem[] = [];
-  wishlistCount: number = 0;
-
-  // Language settings
+  wishlistCount = 0;
   selectedLang: Language = { code: 'en', label: 'Eng' };
-
-  searchQuery: string = '';
+  searchQuery = '';
   searchSuggestions: string[] = [];
-
-  // Notification state
   notifications: any[] = [];
-  notificationCount: number = 0;
-  showNotifications: boolean = false;
-
-  // Address state
+  notificationCount = 0;
+  showNotifications = false;
   currentAddress: IAddress | null = null;
-  addressDisplay: string = 'Select Address';
-  isLoadingAddress: boolean = false;
+  addressDisplay = 'Select Address';
+  isLoadingAddress = false;
 
-  // Subscriptions management
-  private subscriptions: Subscription = new Subscription();
-  @Input() addressManagementComponent?: AddressManagement; // Optional input to access AddressManagement
+  private subscriptions = new Subscription();
+  @Input() addressManagementComponent?: AddressManagement;
 
   constructor(
     private authService: Auth,
@@ -63,11 +52,11 @@ export class Header implements OnInit, OnDestroy {
     private http: HttpClient,
     private unifiedNotificationService: UnifiedNotificationService,
     private addressService: AddressService,
-    private cdr: ChangeDetectorRef // Add ChangeDetectorRef
-  ) { }
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    // Subscribe to user state
+    // Reactive subscription to current user
     this.subscriptions.add(
       this.authService.currentUser$.subscribe((user: User | null) => {
         this.currentUser = user;
@@ -78,8 +67,7 @@ export class Header implements OnInit, OnDestroy {
         }
       })
     );
-    
-    // Subscribe to default address changes
+
     this.subscriptions.add(
       this.addressService.defaultAddress$.subscribe((addr: IAddress | null) => {
         if (addr) {
@@ -90,59 +78,49 @@ export class Header implements OnInit, OnDestroy {
       })
     );
 
-    // Subscribe to cart and wishlist state
     this.subscriptions.add(
-      this.cartService.getCartCount().subscribe((count: number) => {
-        this.cartCount = count;
-      })
+      this.cartService.getCartCount().subscribe(count => this.cartCount = count)
     );
 
     this.subscriptions.add(
-      this.cartService.getCartTotal().subscribe((total: number) => {
-        this.cartTotal = total;
-      })
+      this.cartService.getCartTotal().subscribe(total => this.cartTotal = total)
     );
 
     this.subscriptions.add(
-      this.cartService.getCartItems().subscribe((items: ICartItem[]) => {
-        this.cartItems = items;
-      })
+      this.cartService.getCartItems().subscribe(items => this.cartItems = items)
     );
 
     this.subscriptions.add(
-      this.wishlistService.getWishlistObservable().subscribe((products: any[]) => {
+      this.wishlistService.getWishlistObservable().subscribe(products => {
         this.wishlistCount = products.length;
       })
     );
 
-    // Subscribe to notifications
     this.subscriptions.add(
-      this.unifiedNotificationService.allNotifications$.subscribe((notifications: any[]) => {
+      this.unifiedNotificationService.allNotifications$.subscribe(notifications => {
         this.notifications = notifications;
-        this.notificationCount = notifications.filter((n: any) => !n.isRead).length;
+        this.notificationCount = notifications.filter(n => !n.isRead).length;
       })
     );
 
-    // Load saved language preference
     this.loadSavedLanguage();
 
-    // Listen for default address changes if AddressManagement is available
     if (this.addressManagementComponent) {
       this.subscriptions.add(
-        this.addressManagementComponent.defaultAddressChanged.subscribe((address: IAddress) => {
+        this.addressManagementComponent.defaultAddressChanged.subscribe(address => {
           this.setCurrentAddress(address);
         })
       );
     }
-
   }
+
   private updateAddressFromLocalStorage(): void {
     const defaultAddressKey = `defaultAddress_${this.currentUser?.UserId}`;
     const savedAddressId = localStorage.getItem(defaultAddressKey);
     if (savedAddressId && this.currentUser?.UserId) {
       this.subscriptions.add(
         this.addressService.getAddress(savedAddressId).subscribe({
-          next: (address: IAddress) => this.setCurrentAddress(address),
+          next: address => this.setCurrentAddress(address),
           error: () => this.resetAddressState()
         })
       );
@@ -150,7 +128,7 @@ export class Header implements OnInit, OnDestroy {
       this.loadCurrentAddress();
     }
   }
-  // Address management methods
+
   private resetAddressState(): void {
     this.currentAddress = null;
     this.addressDisplay = 'Select Address';
@@ -162,15 +140,11 @@ export class Header implements OnInit, OnDestroy {
       this.resetAddressState();
       return;
     }
-
     this.isLoadingAddress = true;
-    console.log('Loading current address for user:', this.currentUser.UserId);
-
     this.subscriptions.add(
       this.addressService.getAddresses(this.currentUser.UserId).subscribe({
-        next: (addresses: IAddress[]) => {
-          console.log('Addresses loaded:', addresses);
-          if (addresses && addresses.length > 0) {
+        next: addresses => {
+          if (addresses?.length) {
             const defaultAddress = addresses.find(addr => addr.IsDefault);
             this.setCurrentAddress(defaultAddress || addresses[0]);
           } else {
@@ -178,8 +152,7 @@ export class Header implements OnInit, OnDestroy {
           }
           this.isLoadingAddress = false;
         },
-        error: (error: any) => {
-          console.error('Error loading addresses:', error);
+        error: () => {
           this.addressDisplay = 'Error loading address';
           this.isLoadingAddress = false;
         }
@@ -190,24 +163,16 @@ export class Header implements OnInit, OnDestroy {
   private setCurrentAddress(address: IAddress): void {
     this.currentAddress = address;
     this.addressDisplay = this.getAddressDisplay(this.currentAddress);
-    this.cdr.detectChanges(); // Force change detection
+    this.cdr.detectChanges();
   }
 
   getAddressDisplay(address: IAddress): string {
     if (!address) return 'Select Address';
-
-    // Create a more comprehensive address display
     const parts = [];
-
     if (address.street) parts.push(address.street);
     if (address.city) parts.push(address.city);
     if (address.state) parts.push(address.state);
-
-    if (parts.length === 0) {
-      return 'Invalid Address';
-    }
-
-    // Return the last two parts (typically city, state) for header display
+    if (!parts.length) return 'Invalid Address';
     return address.city && address.state
       ? `${address.city}, ${address.state}`
       : parts.join(', ').trim();
@@ -227,7 +192,6 @@ export class Header implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  // Authentication methods
   isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
   }
@@ -238,7 +202,6 @@ export class Header implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
-  // Navigation methods
   navigateToRegister(): void {
     this.router.navigate(['/register-selection']);
   }
@@ -247,7 +210,6 @@ export class Header implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
-  // Language management methods
   changeLang(code: string, label: string): void {
     this.selectedLang = { code, label };
     localStorage.setItem('selectedLanguage', JSON.stringify(this.selectedLang));
@@ -260,9 +222,7 @@ export class Header implements OnInit, OnDestroy {
       try {
         this.selectedLang = JSON.parse(savedLang);
         this.applyLanguageDirection(this.selectedLang.code);
-      } catch (error) {
-        console.error('Error loading language from storage:', error);
-        // Reset to default if parsing fails
+      } catch {
         this.selectedLang = { code: 'en', label: 'Eng' };
       }
     }
@@ -284,23 +244,16 @@ export class Header implements OnInit, OnDestroy {
     }
   }
 
-  // Search methods
   onSearchInput(): void {
     if (this.searchQuery.length < 2) {
       this.searchSuggestions = [];
       return;
     }
-
     this.subscriptions.add(
       this.http.get<string[]>(`api/product/search?q=${encodeURIComponent(this.searchQuery)}`)
         .subscribe({
-          next: (suggestions: string[]) => {
-            this.searchSuggestions = suggestions || [];
-          },
-          error: (error: any) => {
-            console.error('Search error:', error);
-            this.searchSuggestions = [];
-          }
+          next: suggestions => this.searchSuggestions = suggestions || [],
+          error: () => this.searchSuggestions = []
         })
     );
   }
@@ -319,7 +272,6 @@ export class Header implements OnInit, OnDestroy {
     }
   }
 
-  // Notification methods
   toggleNotifications(): void {
     this.showNotifications = !this.showNotifications;
   }
@@ -335,7 +287,7 @@ export class Header implements OnInit, OnDestroy {
     if (!notification.isRead) {
       this.unifiedNotificationService.markAsRead(notification.id);
     }
-    this.showNotifications = false; // Close notifications panel
+    this.showNotifications = false;
   }
 
   getNotificationIcon(type: string): string {
@@ -393,16 +345,10 @@ export class Header implements OnInit, OnDestroy {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) {
-      return 'Just now';
-    } else if (minutes < 60) {
-      return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-    } else if (hours < 24) {
-      return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-    } else if (days < 30) {
-      return `${days} day${days === 1 ? '' : 's'} ago`;
-    } else {
-      return notificationDate.toLocaleDateString();
-    }
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+    return notificationDate.toLocaleDateString();
   }
 }
