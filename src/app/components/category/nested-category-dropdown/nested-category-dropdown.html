@@ -1,0 +1,70 @@
+<div class="mb-6">
+  <!-- Loading state -->
+  <div *ngIf="loading" class="flex items-center justify-center py-4">
+    <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#483C21]"></div>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error" class="text-red-500 text-sm mb-2">
+    {{ error }}
+    <button (click)="loadData()" class="text-blue-500 hover:underline ml-2">Retry</button>
+  </div>
+
+  <!-- Categories list -->
+  <div *ngIf="!loading && !error && categories.length > 0" class="border border-gray-200 rounded-md overflow-hidden">
+    <!-- All Categories option -->
+    <div (click)="clearSelection($event)" class="p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+      [class.font-medium]="!selectedCategoryId" [style.background-color]="!selectedCategoryId ? '#f8f4f0' : ''"
+      [style.color]="!selectedCategoryId ? '#483C21' : ''">
+      جميع الفئات
+    </div>
+
+    <!-- Categories -->
+    <div *ngFor="let category of categories" class="border-b border-gray-200 last:border-b-0">
+      <!-- Category header - always shows dropdown arrow -->
+      <div (click)="onCategoryContainerClick(category.id)"
+        class="p-3 cursor-pointer hover:bg-gray-50 flex justify-between items-center">
+        <span (click)="onCategoryNameClick(category.id, $event)"
+          [class.font-medium]="selectedCategoryId === category.id"
+          [style.color]="selectedCategoryId === category.id ? '#483C21' : ''">
+          {{ category.name }}
+        </span>
+
+        <!-- Always show dropdown arrow -->
+        <svg class="w-4 h-4 transition-transform duration-200" [class.transform]="expandedCategoryId === category.id"
+          [class.rotate-180]="expandedCategoryId === category.id" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+
+      <!-- Subcategories section - shows loading state while fetching -->
+      <div *ngIf="expandedCategoryId === category.id" class="bg-gray-50 border-t border-gray-200">
+        <!-- Loading indicator -->
+        <div *ngIf="loading" class="p-3 text-center">
+          <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#483C21] mx-auto"></div>
+        </div>
+
+        <!-- Subcategories list -->
+        <ng-container *ngIf="!loading">
+          <div *ngFor="let subCategory of subCategoriesByCategory[category.id]"
+            (click)="onSubCategoryClick(subCategory.id, $event)" class="pr-6 pl-3 py-2 cursor-pointer hover:bg-gray-100"
+            [class.font-medium]="selectedSubCategoryId === subCategory.id"
+            [style.background-color]="selectedSubCategoryId === subCategory.id ? '#f8f4f0' : ''"
+            [style.color]="selectedSubCategoryId === subCategory.id ? '#483C21' : ''">
+            {{ subCategory.name }}
+          </div>
+
+          <!-- Empty state -->
+          <div *ngIf="subCategoriesByCategory[category.id]?.length === 0" class="p-3 text-center text-sm text-gray-500">
+            No subcategories available
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && !error && categories.length === 0" class="text-gray-500 text-center py-4">
+    No categories available
+  </div>
+</div>
