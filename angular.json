@@ -22,9 +22,14 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },{
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "/assets/"
+                }
             ],
             "styles": [
+              "src/custom-theme.scss",
               "src/styles.css"
             ]
           },
@@ -88,5 +93,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "3febe234-c272-49de-84f7-0d9c0d02aa15"
   }
 }
