@@ -1,0 +1,149 @@
+.account-management-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 16px;
+  font-family: Arial, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+.account-management-container h2 {
+  font-size: 1.7rem;
+  font-weight: bold;
+  margin-bottom: 24px;
+}
+
+.account-sections {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.account-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #faf8f4;
+  border: 1px solid #d6d3ce;
+  border-radius: 8px;
+  padding: 18px 22px;
+  min-width: 320px;
+  flex: 1 1 320px;
+  text-decoration: none;
+  color: #222;
+  transition: box-shadow 0.2s, border 0.2s;
+  cursor: pointer;
+}
+
+.account-section:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 1.5px solid #bfa76a;
+  cursor: pointer;
+}
+
+.account-section .icon {
+  width: 38px;
+  height: 38px;
+  background: #e5dfd0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.account-lists {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 24px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+
+.account-list {
+  background: #faf8f4;
+  border: 1px solid #d6d3ce;
+  border-radius: 8px;
+  padding: 18px 22px;
+  min-width: 260px;
+  flex: 1 1 260px;
+}
+
+.account-list strong {
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.account-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.account-list li {
+  margin-bottom: 8px;
+}
+
+.account-list a {
+  color: #222;
+  text-decoration: none;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.account-list a:hover {
+  color: #bfa76a;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .account-sections, .account-lists {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .account-section, .account-list {
+    min-width: unset;
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .account-management-container {
+    padding: 16px 8px;
+  }
+  
+  .account-management-container h2 {
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+  
+  .account-section {
+    min-width: 100%;
+    padding: 12px 16px;
+  }
+  
+  .account-list {
+    min-width: 100%;
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 400px) {
+  .account-management-container {
+    padding: 12px 4px;
+  }
+  
+  .account-section {
+    padding: 10px 12px;
+  }
+  
+  .account-list {
+    padding: 10px 12px;
+  }
+} 
