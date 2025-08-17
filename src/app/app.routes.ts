@@ -103,6 +103,11 @@ export const routes: Routes = [
         path: 'subcategories',
         loadComponent: () => import('./components/admin-subcategories/admin-subcategories')
           .then(m => m.AdminSubCategoriesComponent)
+      },
+      {
+        path: 'admins',
+        loadComponent: () => import('./components/admin-management')
+          .then(m => m.AdminManagementComponent)
       }
     ]
   },
@@ -115,7 +120,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
-        loadComponent: () => import('./components/seller-dashboard/seller-dashboard')
+        loadComponent: () => import('./components/seller-dashboard')
           .then(m => m.SellerDashboardComponent)
       },
       {
@@ -153,6 +158,11 @@ export const routes: Routes = [
         path: 'compliance',
         loadComponent: () => import('./components/seller-compliance/seller-compliance')
           .then(m => m.SellerComplianceComponent)
+      },
+      {
+        path: 'addresses',
+        loadComponent: () => import('./components/seller-address-management/seller-address-management')
+          .then(m => m.SellerAddressManagementComponent)
       }
     ]
   },

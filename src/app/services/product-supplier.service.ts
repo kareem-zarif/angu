@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from '../../environment/environment';
 
 export interface ProductSupplierCreateDto {
@@ -94,10 +94,24 @@ export class ProductSupplierService {
 
   // Get products by supplier ID
   getProductsBySupplier(supplierId: string): Observable<ProductSupplierResDto[]> {
+    console.log('🔍 ProductSupplierService: Getting products for supplier:', supplierId);
+    console.log('🔍 ProductSupplierService: API URL:', this._baseUrl);
+    
     return this.getAll().pipe(
-      map(productSuppliers => 
-        productSuppliers.filter(ps => ps.supplierId === supplierId)
-      )
+      tap(allProductSuppliers => {
+        console.log('📊 ProductSupplierService: Total product-supplier relationships found:', allProductSuppliers.length);
+      }),
+      map(productSuppliers => {
+        const filtered = productSuppliers.filter(ps => ps.supplierId === supplierId);
+        console.log('📋 ProductSupplierService: Filtered relationships for supplier:', filtered.length);
+        return filtered;
+      }),
+      catchError(error => {
+        console.error('❌ ProductSupplierService: Error getting products by supplier:', error);
+        return throwError(() => new Error('Failed to get products by supplier'));
+      })
     );
   }
 }
+
+

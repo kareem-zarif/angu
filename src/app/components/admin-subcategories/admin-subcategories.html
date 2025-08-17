@@ -57,30 +57,30 @@
   </div>
 
   <!-- Subcategories Table -->
-  <div *ngIf="!loading" class="overflow-x-auto rounded shadow bg-white">
-    <table class="min-w-full text-sm">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="px-3 py-2">NO.</th>
-          <th class="px-3 py-2">Name</th>
-          <th class="px-3 py-2">Category</th>
-          <th class="px-3 py-2">Products Count</th>
-          <th class="px-3 py-2">Action</th>
+  <div *ngIf="!loading" class="overflow-x-auto rounded shadow bg-white app-table-card">
+    <table class="app-table">
+      <thead class="app-thead">
+        <tr>
+          <th class="app-th text-left">NO.</th>
+          <th class="app-th text-left">Name</th>
+          <th class="app-th text-left">Category</th>
+          <th class="app-th text-left">Products Count</th>
+          <th class="app-th text-left">Action</th>
         </tr>
       </thead>
-      <tbody>
-        <tr *ngFor="let subCategory of getPaginatedSubCategories(); let i = index" class="border-b">
-          <td style="text-align: center;" class="px-3 py-2">{{ i + 1 }}</td>
-          <td style="text-align: center;" class="px-3 py-2">{{ subCategory.name }}</td>
-          <td style="text-align: center;" class="px-3 py-2">{{ subCategory.categoryName }}</td>
-          <td style="text-align: center;" class="px-3 py-2">
+      <tbody class="app-tbody">
+        <tr *ngFor="let subCategory of getPaginatedSubCategories(); let i = index" class="app-tr-hover">
+          <td class="px-3 py-2">{{ i + 1 }}</td>
+          <td class="px-3 py-2">{{ subCategory.name }}</td>
+          <td class="px-3 py-2">{{ subCategory.categoryName }}</td>
+          <td class="px-3 py-2">
             <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
               {{ getProductCount(subCategory) }} products
             </span>
           </td>
-          <td style="text-align: center; align-items: center; padding: inline 5px;" class="px-3 py-2 flex gap-2">
-            <button class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" (click)="openEdit(subCategory)">Edit</button>
-            <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" (click)="deleteSubCategory(subCategory)">Delete</button>
+          <td class="px-3 py-2 flex gap-2">
+            <button class="btn-soft-green" (click)="openEdit(subCategory)">Edit</button>
+            <button class="btn-soft-red" (click)="deleteSubCategory(subCategory)">Delete</button>
           </td>
         </tr>
         <tr *ngIf="getPaginatedSubCategories().length === 0">
@@ -116,8 +116,8 @@
   </div>
 
   <!-- Add/Edit Modal -->
-  <div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+  <div *ngIf="showModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-bold">{{ editSubCategory ? 'Edit Subcategory' : 'Add New Subcategory' }}</h3>
         <button

@@ -101,6 +101,48 @@
   }
 } */
 
+/* Shared table + action button styles (to unify admin/seller tables with admin-products) */
+@layer components {
+  .app-table-card { @apply bg-white rounded-lg shadow overflow-hidden; }
+  .app-table { @apply min-w-full divide-y divide-gray-200 text-sm; }
+  .app-thead { @apply bg-gray-50; }
+  .app-th { @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider; }
+  .app-tbody { @apply bg-white divide-y divide-gray-200; }
+  .app-tr-hover { @apply hover:bg-gray-50; }
+  .app-td { @apply px-6 py-4; }
+  
+  /* Table cell left padding - applies to all td elements except headers */
+  .app-table td { @apply pl-5; }
+
+  /* Semi-transparent modal backdrop - 50% opacity black overlay */
+  .modal-backdrop-transparent { 
+    @apply fixed inset-0 flex items-center justify-center z-50;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Alternative modal backdrop options with different opacity levels */
+  .modal-backdrop-light { 
+    @apply fixed inset-0 flex items-center justify-center z-50;
+    background-color: rgba(0, 0, 0, 0.25);
+  }
+  .modal-backdrop-medium { 
+    @apply fixed inset-0 flex items-center justify-center z-50;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  .modal-backdrop-dark { 
+    @apply fixed inset-0 flex items-center justify-center z-50;
+    background-color: rgba(0, 0, 0, 0.75);
+  }
+
+  .btn-soft-blue { @apply inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500; }
+  .btn-soft-green { @apply inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500; }
+  .btn-soft-red { @apply inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500; }
+  .btn-soft-yellow { @apply inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500; }
+  .btn-soft-purple { @apply inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-purple-700 bg-purple-100 hover:bg-purple-200 focus:ring-2 focus:ring-purple-500; }
+  .btn-soft-gray { @apply inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-500; }
+  .btn-soft-disabled { @apply opacity-50 cursor-not-allowed; }
+}
+
 /* Form controls */
 /* input,
 select,

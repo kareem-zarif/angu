@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, catchError, of, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environment/environment';
 import { ProductService } from './product-service';
 import { SellerOrdersService } from './seller-orders.service';
@@ -116,12 +117,21 @@ export class SellerDashboardService {
 
   // Get comprehensive dashboard statistics from seller services
   getDashboardStats(): Observable<SellerDashboardStats> {
+    console.log('🔄 SellerDashboardService: Starting to load dashboard stats...');
+    
     return forkJoin({
       products: this.productService.getAllForSeller(),
-      orders: this.sellerOrdersService.getSellerOrders(),
-      orderStats: this.sellerOrdersService.getSellerOrderStats()
+      orders: this.sellerOrdersService.getSellerOrders()
     }).pipe(
+      tap(data => {
+        console.log('📊 SellerDashboardService: Raw data received:', {
+          products: data.products.length,
+          orders: data.orders.length
+        });
+      }),
       map(data => {
+        console.log('🔍 SellerDashboardService: Processing data...');
+        
         const stats: SellerDashboardStats = {
           totalProducts: data.products.length,
           activeProducts: data.products.filter(p => p.approvalStatus === 2).length,
@@ -152,12 +162,16 @@ export class SellerDashboardService {
           monthlyGrowth: this.calculateMonthlyGrowth(data.orders),
           lowStockProducts: data.products.filter(p => p.noINStock < 10).length
         };
+        
+        console.log('📈 SellerDashboardService: Calculated stats:', stats);
 
         this.dashboardStatsSubject.next(stats);
         return stats;
       }),
       catchError(error => {
-        console.error('Error loading seller dashboard stats:', error);
+        console.error('❌ SellerDashboardService: Error loading dashboard stats:', error);
+        console.log('🔄 SellerDashboardService: Returning fallback data...');
+        
         // Return fallback data
         return of({
           totalProducts: 0,
@@ -205,7 +219,37 @@ export class SellerDashboardService {
 
   // Get order statistics with charts data
   getOrderStats(): Observable<OrderStats> {
-    return forkJoin({
+    console.log('🔄 SellerDashboardService: Getting order stats...');
+    
+    return this.sellerOrdersService.getSellerOrders().pipe(
+      tap(orders => {
+        console.log('📊 SellerDashboardService: Orders for order stats:', orders.length);
+      }),
+      map(orders => {
+        console.log('🔍 SellerDashboardService: Calculating order stats...');
+        
+        const monthlyOrders = this.groupOrdersByMonth(orders);
+        const revenueByMonth = this.groupRevenueByMonth(orders);
+        const averageOrderValue = orders.length > 0 
+          ? orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length 
+          : 0;
+
+        const orderStats = {
+          totalOrders: orders.length,
+          pendingOrders: orders.filter(order => 
+            order.orderStatusHistory?.some(status => 
+              status.orderStatus === 1 || status.orderStatus === 2
+            )
+          ).length,
+          completedOrders: orders.filter(order => 
+            order.orderStatusHistory?.some(status => 
+              status.orderStatus === 4
+            )
+          ).length,
+          cancelledOrders: orders.filter(order => 
+            order.orderStatusHistory?.some(status => 
+//from old
+   /* return forkJoin({
       orders: this.sellerOrdersService.getSellerOrders(),
       orderStats: this.sellerOrdersService.getSellerOrderStats()
     }).pipe(
@@ -230,6 +274,7 @@ export class SellerDashboardService {
           ).length,
           cancelledOrders: data.orders.filter(order =>
             order.orderStatusHistory?.some(status =>
+            */
               status.orderStatus === 5
             )
           ).length,
@@ -237,6 +282,23 @@ export class SellerDashboardService {
           revenueByMonth,
           averageOrderValue
         };
+        
+        console.log('📈 SellerDashboardService: Order stats calculated:', orderStats);
+        return orderStats;
+      }),
+      catchError(error => {
+        console.error('❌ SellerDashboardService: Error getting order stats:', error);
+        console.log('🔄 SellerDashboardService: Returning fallback order stats...');
+        
+        return of({
+          totalOrders: 0,
+          pendingOrders: 0,
+          completedOrders: 0,
+          cancelledOrders: 0,
+          monthlyOrders: [],
+          revenueByMonth: [],
+          averageOrderValue: 0
+        });
       })
     );
   }
@@ -255,6 +317,59 @@ export class SellerDashboardService {
           revenueByMonth,
           revenueByWeek
         };
+      })
+    );
+  }
+
+  // Get header statistics for seller header component
+  getHeaderStats(): Observable<SellerHeaderStats> {
+    console.log('🔄 SellerDashboardService: Getting header stats...');
+    
+    return forkJoin({
+      products: this.productService.getAllForSeller(),
+      orders: this.sellerOrdersService.getSellerOrders()
+    }).pipe(
+      tap(data => {
+        console.log('📊 SellerDashboardService: Header stats raw data:', {
+          products: data.products.length,
+          orders: data.orders.length
+        });
+      }),
+      map(data => {
+        // Calculate pending orders
+        const pendingOrders = data.orders.filter(order => 
+          order.orderStatusHistory && order.orderStatusHistory.length > 0 &&
+          order.orderStatusHistory.some(status => 
+            status.orderStatus === 1 || status.orderStatus === 2
+          )
+        ).length;
+        
+        // Calculate total earnings
+        const totalEarnings = data.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        
+        // Calculate monthly growth (placeholder for now)
+        const monthlyGrowth = 12.5; // This would need proper calculation logic
+        
+        const headerStats: SellerHeaderStats = {
+          totalProducts: data.products.length,
+          pendingOrders: pendingOrders,
+          totalEarnings: totalEarnings,
+          monthlyGrowth: monthlyGrowth
+        };
+        
+        console.log('📈 SellerDashboardService: Header stats calculated:', headerStats);
+        return headerStats;
+      }),
+      catchError(error => {
+        console.error('❌ SellerDashboardService: Error getting header stats:', error);
+        console.log('🔄 SellerDashboardService: Returning fallback header stats...');
+        
+        return of({
+          totalProducts: 0,
+          pendingOrders: 0,
+          totalEarnings: 0,
+          monthlyGrowth: 0
+        });
       })
     );
   }
@@ -503,17 +618,7 @@ export class SellerDashboardService {
     }
   }
 
-  // Legacy methods for backward compatibility
-  getHeaderStats(): Observable<SellerHeaderStats> {
-    return this.getDashboardStats().pipe(
-      map(stats => ({
-        totalProducts: stats.totalProducts,
-        pendingOrders: stats.pendingOrders,
-        totalEarnings: stats.totalRevenue,
-        monthlyGrowth: stats.monthlyGrowth
-      }))
-    );
-  }
+
 
   searchGlobal(query: string): Observable<any[]> {
     return forkJoin({

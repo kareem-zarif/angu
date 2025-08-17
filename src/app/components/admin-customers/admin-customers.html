@@ -55,23 +55,23 @@
     </div>
   </div>
 
-  <div class="bg-white rounded-lg shadow overflow-hidden">
+  <div class="bg-white rounded-lg shadow overflow-hidden app-table-card">
     <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead>
-          <tr class="bg-gray-50 border-b border-gray-200">
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO.</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders Count</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+      <table class="app-table">
+        <thead class="app-thead">
+          <tr>
+            <th class="app-th text-left">NO.</th>
+            <th class="app-th text-left">Full Name</th>
+            <th class="app-th text-left">Phone</th>
+            <th class="app-th text-left">Orders Count</th>
+            <th class="app-th text-left">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr *ngFor="let customer of getPaginatedCustomers(); let i = index" class="table-row-hover">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{{ i + 1 }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{{ getFullName(customer) }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+        <tbody class="app-tbody">
+          <tr *ngFor="let customer of getPaginatedCustomers(); let i = index" class="app-tr-hover">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ i + 1 }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getFullName(customer) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               <span *ngIf="customer.PhoneNumber; else noPhone">{{ customer.PhoneNumber }}</span>
               <ng-template #noPhone>
                 <span class="text-red-500 text-xs">No phone data</span>
@@ -81,10 +81,10 @@
               <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold status-badge">{{ customer.ordersCount || 0 }}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <div class="flex gap-2 justify-center">
-                <button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 text-xs action-btn" (click)="openDetails(customer)">View Details</button>
-                <button class="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs action-btn" (click)="openEdit(customer)">Edit</button>
-                <button class="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 text-xs action-btn" (click)="deleteCustomer(customer)">Delete</button>
+              <div class="flex gap-2">
+                <button class="btn-soft-blue" (click)="openDetails(customer)">View</button>
+                <button class="btn-soft-green" (click)="openEdit(customer)">Edit</button>
+                <button class="btn-soft-red" (click)="deleteCustomer(customer)">Delete</button>
               </div>
             </td>
           </tr>
@@ -120,8 +120,8 @@
   </div>
 
   <!-- Modal for Add/Edit -->
-  <div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+  <div *ngIf="showModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="showModal = false">&times;</button>
       <h3 class="text-lg font-bold mb-4">{{ editCustomer ? 'Edit Customer' : 'Add Customer' }}</h3>
 
@@ -198,8 +198,8 @@
   </div>
 
   <!-- Customer Details Modal -->
-  <div *ngIf="showDetailsModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+  <div *ngIf="showDetailsModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl" (click)="closeDetails()">&times;</button>
 
       <div *ngIf="selectedCustomer" class="space-y-6">

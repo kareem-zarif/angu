@@ -2,10 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminOrdersService, Order, OrderCreateDto, OrderUpdateDto, OrderItemCreateDto } from '../../services/admin-orders-service';
+import { AdminCustomersService, Customer } from '../../services/admin-customers-service';
 import { OrderStatusHistoryService, OrderStatusHistoryCreateDto } from '../../services/order-status-history.service';
 import { NotificationService } from '../../services/notification.service';
 import { PaginationComponent } from '../shared/pagination/pagination';
 import { OrderStatus, OrderStatus as OrderStatusModel } from '../../models/i-order-status-history';
+import { forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-admin-orders',
@@ -16,6 +19,7 @@ import { OrderStatus, OrderStatus as OrderStatusModel } from '../../models/i-ord
 export class AdminOrdersComponent implements OnInit {
   orders: Order[] = [];
   filteredOrders: Order[] = [];
+  customers: Customer[] = [];
   loading = false;
 
   showModal = false;
@@ -50,6 +54,7 @@ export class AdminOrdersComponent implements OnInit {
 
   constructor(
     private ordersService: AdminOrdersService,
+    private customersService: AdminCustomersService,
     private orderStatusHistoryService: OrderStatusHistoryService,
     private notificationService: NotificationService
   ) { }
@@ -80,10 +85,22 @@ export class AdminOrdersComponent implements OnInit {
 
   loadOrders() {
     this.loading = true;
-    this.ordersService.getOrders().subscribe({
-      next: (res) => {
-        console.log('Orders loaded:', res);
-        this.orders = res;
+    
+    // Fetch both orders and customers in parallel
+    forkJoin({
+      orders: this.ordersService.getOrders(),
+      customers: this.customersService.getCustomers()
+    }).subscribe({
+      next: (result) => {
+        console.log('Orders loaded:', result.orders);
+        console.log('Customers loaded:', result.customers);
+        
+        this.orders = result.orders;
+        this.customers = result.customers;
+        
+        // Map customer names to orders
+        this.mapCustomerNamesToOrders();
+        
         this.applyFilters();
 
         // Debug: Log order IDs
@@ -98,7 +115,7 @@ export class AdminOrdersComponent implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading orders:', error);
+        console.error('Error loading orders or customers:', error);
         this.loading = false;
       }
     });
@@ -165,6 +182,42 @@ export class AdminOrdersComponent implements OnInit {
     this.searchField = 'all';
     this.currentPage = 1;
     this.applyFilters();
+  }
+
+  // Map customer names to orders based on customerId
+  private mapCustomerNamesToOrders() {
+    this.orders.forEach(order => {
+      if (order.customerId) {
+        const customer = this.customers.find(c => c.id === order.customerId);
+        if (customer) {
+          // Add customerName property to the order
+          (order as any).customerName = `${customer.firstName} ${customer.lastName}`;
+          console.log(`Mapped customer name for order ${order.id}: ${(order as any).customerName}`);
+        } else {
+          console.log(`Customer not found for order ${order.id} with customerId: ${order.customerId}`);
+          (order as any).customerName = 'Customer Not Found';
+        }
+      } else {
+        console.log(`Order ${order.id} has no customerId`);
+        (order as any).customerName = 'No Customer';
+      }
+    });
+  }
+
+  // Helper method to get customer name for an order
+  getCustomerName(order: Order): string {
+    if ((order as any).customerName) {
+      return (order as any).customerName;
+    }
+    
+    if (order.customerId) {
+      const customer = this.customers.find(c => c.id === order.customerId);
+      if (customer) {
+        return `${customer.firstName} ${customer.lastName}`;
+      }
+    }
+    
+    return 'N/A';
   }
 
   openAdd() {
