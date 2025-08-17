@@ -15,7 +15,7 @@
     <div class="products-container">
       <div class="products-wrapper">
         <!-- Title with supplier name if filtering by supplier -->
-        <h2 *ngIf="!supplierFilter" class="text-2xl font-bold text-[#483C21] mb-6">المنتجات</h2>
+        <h2 *ngIf="!supplierFilter" class="text-2xl font-bold text-[#483C21] mb-6">{{ 'PRODUCT_LIST.PRODUCTS_TITLE' | translate }}</h2>
         <h2 *ngIf="supplierFilter" class="text-2xl font-bold text-[#483C21] mb-6">
           منتجات {{ supplierName }}
         </h2>
@@ -67,7 +67,7 @@
               <!-- Sample button -->
               <button class="btn btn-sm w-full mb-3 bg-[#483C21] text-white hover:bg-[#322a19]"
                 (click)="requestSample(product, $event)">
-                اطلب عينة
+              {{ 'PRODUCT_LIST.REQUEST_SAMPLE' | translate }}
               </button>
 
               <!-- Rating -->
@@ -82,7 +82,9 @@
                   <span class="text-sm text-gray-500 line-through">{{ product.pricePerPiece |
                     currency:'EGP':'symbol':'1.0-0' }}</span>
                   <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
-                    {{ (100 - (product.pricePer50Piece / product.pricePerPiece * 100)) | number:'1.0-0' }}% خصم
+                    {{ (100 - (product.pricePer50Piece / product.pricePerPiece * 100)) | number:'1.0-0' }}                  
+                       {{ 'PRODUCT_LIST.DISCOUNT_PERCENT' | translate }}
+
                   </span>
                 </div>
 
@@ -92,18 +94,18 @@
                     }}</span>
                   <button class="bg-[#483C21] text-white px-3 py-1 rounded-md hover:bg-[#322a19] transition-colors"
                     (click)="addToCart(product, $event)">
-                    أضف للسلة
+              {{ 'PRODUCT_LIST.ADD_TO_CART' | translate }}
                   </button>
                 </div>
 
                 <!-- Tier prices -->
                 <div *ngIf="product.pricePer50Piece || product.pricePer100Piece" class="mt-2 text-xs text-gray-600">
                   <div *ngIf="product.pricePer50Piece" class="flex justify-between">
-                    <span>سعر 50 قطعة:</span>
+                    <span>  {{ 'PRODUCT_LIST.PRICE_PER_50' | translate }} </span>
                     <span>{{ product.pricePer50Piece | currency:'EGP':'symbol':'1.0-0' }}</span>
                   </div>
                   <div *ngIf="product.pricePer100Piece" class="flex justify-between">
-                    <span>سعر 100 قطعة:</span>
+                    <span>{{ 'PRODUCT_LIST.PRICE_PER_100' | translate }}  </span>
                     <span>{{ product.pricePer100Piece | currency:'EGP':'symbol':'1.0-0' }}</span>
                   </div>
                 </div>

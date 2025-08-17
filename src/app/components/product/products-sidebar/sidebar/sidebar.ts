@@ -6,11 +6,12 @@ import { CategoryService } from '../../../../services/category.service';
 import { SubCategoryService } from '../../../../services/sub-category.service';
 import { NestedCategoryDropdown } from '../../../category/nested-category-dropdown/nested-category-dropdown';
 import { RouterModule } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, NestedCategoryDropdown, RouterModule],
+  imports: [CommonModule, FormsModule, NestedCategoryDropdown, RouterModule,TranslateModule],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css'
 })

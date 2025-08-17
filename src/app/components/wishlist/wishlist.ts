@@ -5,11 +5,11 @@ import { CommonModule } from '@angular/common';
 import { Rating } from '../rating/rating/rating';
 import { Subscription } from 'rxjs';
 import { IWishlist, WishlistService } from '../../services/wishlistService';
-
+import { TranslateModule } from '@ngx-translate/core';
 @Component({
   selector: 'app-wishlist',
   standalone: true,
-  imports: [RouterModule, CommonModule, Rating],
+  imports: [RouterModule, CommonModule, Rating,TranslateModule],
   templateUrl: './wishlist.html'
 })
 export class WishlistComponent implements OnInit, OnDestroy {

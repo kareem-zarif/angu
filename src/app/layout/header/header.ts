@@ -9,6 +9,8 @@ import { ICartItem } from '../../models/i-cart-item';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
+import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AddressService } from '../../services/address.service';
 import { IAddress } from '../../models/iaddress';
@@ -24,7 +26,6 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-
 interface Language {
   code: string;
   label: string;
@@ -33,7 +34,7 @@ interface Language {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatAutocompleteModule, MatButtonModule,MatIconModule],
+  imports: [RouterLink, CommonModule, FormsModule,TranslateModule, ReactiveFormsModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatAutocompleteModule, MatButtonModule,MatIconModule],
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
@@ -67,6 +68,12 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     private wishlistService: WishlistService,
     private http: HttpClient,
     private unifiedNotificationService: UnifiedNotificationService,
+    private translate: TranslateService
+  ) {
+        this.translate.addLangs(['en', 'ar']); 
+        this.translate.setDefaultLang('en');
+   }
+
     private addressService: AddressService,
     private cdr: ChangeDetectorRef
   ) {
@@ -273,6 +280,7 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
   changeLang(code: string, label: string): void {
     this.selectedLang = { code, label };
     localStorage.setItem('selectedLanguage', JSON.stringify(this.selectedLang));
+    this.translate.use(code);
     this.applyLanguageDirection(code);
   }
 
@@ -281,11 +289,15 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     if (savedLang) {
       try {
         this.selectedLang = JSON.parse(savedLang);
+        this.translate.use(this.selectedLang.code);
         this.applyLanguageDirection(this.selectedLang.code);
       } catch {
         this.selectedLang = { code: 'en', label: 'Eng' };
       }
     }
+    else {
+    this.translate.use(this.selectedLang.code);
+  }
   }
 
   private applyLanguageDirection(langCode: string): void {

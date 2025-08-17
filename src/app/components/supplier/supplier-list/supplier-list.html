@@ -13,7 +13,7 @@
     <!-- Suppliers Container -->
     <div class="suppliers-container">
       <div class="suppliers-wrapper">
-        <h2 class="text-2xl font-bold text-[#483C21] mb-6">الموردين المقترحين</h2>
+        <h2 class="text-2xl font-bold text-[#483C21] mb-6">{{ 'SUPPLIER_LIST.SUGGESTED_SUPPLIER' | translate }}</h2>
         <!-- Loading state -->
         <div *ngIf="loading" class="flex justify-center items-center py-10">
           <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#483C21]"></div>
@@ -21,7 +21,7 @@
         <!-- Error state -->
         <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <p>{{ error }}</p>
-          <button (click)="loadSuppliers()" class="text-red-700 underline mt-2">إعادة المحاولة</button>
+          <button (click)="loadSuppliers()" class="text-red-700 underline mt-2"> {{ 'SUPPLIER_LIST.TRY_AGAIN' | translate }}</button>
         </div>
         <!-- Suppliers Grid -->
         <div *ngIf="!loading && !error" class="suppliers-grid grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -60,7 +60,7 @@
             </div>
             <!-- Supplier Products -->
             <div class="p-4">
-              <h4 class="text-md font-semibold text-gray-700 mb-3">منتجات المورد</h4>
+              <h4 class="text-md font-semibold text-gray-700 mb-3">{{ 'SUPPLIER_LIST.SUPPLIER_PRODUCT' | translate }} </h4>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div *ngFor="let product of getTopProducts(supplier)"
                   class="product-item border rounded-md p-2 hover:shadow-md relative">
@@ -90,7 +90,7 @@
                         currency:'EGP':'symbol':'1.0-0' }}</span>
                       <button (click)="requestSample(product, $event)"
                         class="text-xs bg-[#483C21] text-white px-2 py-1 rounded hover:bg-[#322a19]">
-                        اطلب عينة
+                          {{ 'SUPPLIER_LIST.ASK_FOR_SAMPLE' | translate }}
                       </button>
                     </div>
 
@@ -104,7 +104,7 @@
               <div class="text-center mt-4 flex gap-2 justify-around">
                 <button (click)="viewSupplierProducts(supplier.factoryName)"
                   class="text-[#483C21] text-sm hover:underline cursor-pointer py-2 px-4 border border-[#483C21] rounded-md hover:bg-[#483C21] hover:text-white transition-colors duration-200">
-                  عرض كل المنتجات
+                    {{ 'SUPPLIER_LIST.SHOW_PRODUCT' | translate }}
                 </button>
                 <button (click)="navigateToChat(supplier.id, $event)"
                   class="text-[#483C21] text-sm hover:underline cursor-pointer py-2 px-4 border border-[#483C21] rounded-md hover:bg-[#FF8C00] hover:text-black transition-colors duration-200">
@@ -116,7 +116,7 @@
         </div>
         <!-- No suppliers message -->
         <div *ngIf="filteredSuppliers.length === 0 && !loading" class="text-center py-10 text-gray-500">
-          لا يوجد موردين متطابقين مع معايير البحث
+               {{ 'SUPPLIER_LIST.NO_PRODUCTS_FOR_SEARCH' | translate }}
         </div>
         <!-- Pagination -->
         <app-pagination *ngIf="filteredSuppliers.length > 0" [totalItems]="filteredSuppliers.length"

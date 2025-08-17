@@ -12,6 +12,7 @@ import { Pagination } from '../../pagination/pagination';
 import { SubCategoryService } from '../../../services/sub-category.service';
 import { WishlistService } from '../../../services/wishlistService';
 import { Auth } from '../../../services/auth';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-supplier-list',
@@ -21,7 +22,8 @@ import { Auth } from '../../../services/auth';
     RouterModule,
     Rating,
     SupplierSidebar,
-    Pagination
+    Pagination,
+    TranslateModule
   ],
   templateUrl: './supplier-list.html',
   styleUrl: './supplier-list.css'
