@@ -19,6 +19,8 @@ import { SignalrChat } from './components/signalr-chat/signalr-chat';
 import { Chatbot } from './components/chatbot/chatbot';
 import { PaymentCancel } from './components/payment/payment-cancel/payment-cancel';
 import { RegisterComponent } from './components/register/register';
+import { BestSellers } from './components/best-sellers/best-sellers';
+import { NewReleases } from './components/new-releases/new-releases';
 
 
 
@@ -31,6 +33,8 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'register-selection', component: RegisterSelection },
   { path: 'recommendation', component: Recommendation },
+   { path: 'bestsellers', component: BestSellers },
+  { path: 'newreleases', component: NewReleases },
 
   { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
 

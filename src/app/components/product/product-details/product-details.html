@@ -32,8 +32,8 @@
           <div class="relative">
             <!-- Main product image -->
             <div class="bg-gray-100 rounded-lg overflow-hidden h-80 flex items-center justify-center mb-4">
-              <img [src]="product.productPicsPathes[selectedImageIndex]" [alt]="product.name"
-                class="max-h-full max-w-full object-contain" />
+              <img *ngIf="product?.productPicsPathes?.length" [src]="product.productPicsPathes[selectedImageIndex]"
+                [alt]="product.name">
 
               <!-- Wishlist heart icon -->
               <button
@@ -192,34 +192,35 @@
         </div>
       </div>
     </div>
-                  <!-- ADDING REVIEWS ************************************************** -->
-<div class="mt-10 p-6 border-t">
-  <h2 class="text-2xl font-bold mb-6 text-[#483C21]">التقييمات (Reviews)</h2>
+    <!-- ADDING REVIEWS ************************************************** -->
+    <div class="mt-10 p-6 border-t">
+      <h2 class="text-2xl font-bold mb-6 text-[#483C21]">التقييمات (Reviews)</h2>
 
-  <div *ngIf="product?.reviews?.length; else noReviews">
-    <div *ngFor="let review of product.reviews" class="mb-6 p-4 bg-[#f9f9f9] rounded-lg shadow-sm border border-gray-200">
-      
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-lg font-semibold text-gray-800">
-          <i class="fas fa-user-circle mr-2 text-[#483C21]"></i>
-          {{ review.customerName }}
-        </h3>
-        <div class="flex items-center">
-          <app-rating [rating]="review.rating"></app-rating>
-          <span class="ml-2 text-sm font-medium text-gray-600">({{ review.rating }}/5)</span>
+      <div *ngIf="product?.reviews?.length; else noReviews">
+        <div *ngFor="let review of product.reviews"
+          class="mb-6 p-4 bg-[#f9f9f9] rounded-lg shadow-sm border border-gray-200">
+
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold text-gray-800">
+              <i class="fas fa-user-circle mr-2 text-[#483C21]"></i>
+              {{ review.customerName }}
+            </h3>
+            <div class="flex items-center">
+              <app-rating [rating]="review.rating"></app-rating>
+              <span class="ml-2 text-sm font-medium text-gray-600">({{ review.rating }}/5)</span>
+            </div>
+          </div>
+
+          <p class="text-gray-700 italic">"{{ review.comment }}"</p>
         </div>
       </div>
 
-      <p class="text-gray-700 italic">"{{ review.comment }}"</p>
+      <ng-template #noReviews>
+        <p class="text-gray-500 text-center italic">لا توجد تقييمات لهذا المنتج بعد.</p>
+      </ng-template>
     </div>
-  </div>
+    <app-add-review *ngIf="product?.id" [productId]="product.id"></app-add-review>
 
-  <ng-template #noReviews>
-    <p class="text-gray-500 text-center italic">لا توجد تقييمات لهذا المنتج بعد.</p>
-  </ng-template>
-</div>
-<app-add-review *ngIf="product?.id" [productId]="product.id"></app-add-review>
-
-     <!-- ****************************** -->
+    <!-- ****************************** -->
   </div>
 </div>
