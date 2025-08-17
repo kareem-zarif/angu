@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap, catchError, map, BehaviorSubject } from 'rxjs';
 import { IProduct, ProductCreateDto, ProductUpdateDto } from '../models/i-product';
 import { LocalStorageNotificationService } from './local-storage-notification.service';
+import { environment } from '../../environment/environment';
 
 export interface AdminNotification {
   id: string;
@@ -21,8 +22,10 @@ export interface AdminNotification {
   providedIn: 'root'
 })
 export class AdminProductsService {
-  private apiUrl = 'https://localhost:7253/api/Product';
-  private _imageBaseUrl = 'https://localhost:7253';
+  // Try admin endpoint first, fallback to regular endpoint
+  private apiUrl = `${environment.apiUrl}/admin/Product`;
+  private fallbackApiUrl = `${environment.apiUrl}/Product`;
+  private _imageBaseUrl = environment.imgUrl;
 
   // Notification subjects for real-time updates
   private sellerNotificationsSubject = new BehaviorSubject<AdminNotification[]>([]);
@@ -33,15 +36,22 @@ export class AdminProductsService {
     private localNotificationService: LocalStorageNotificationService
   ) { }
 
-  // Get all products - matches GET /api/Product
+  // Get all products - matches GET /api/admin/Product or fallback to /api/Product
   getAllProducts(): Observable<IProduct[]> {
-    console.log('Admin Get All - API URL:', this.apiUrl);
+    console.log('🔍 AdminProductsService: Trying admin endpoint:', this.apiUrl);
     return this.http.get<IProduct[]>(this.apiUrl).pipe(
       map(products => this.processProductImages(products)),
-      tap(response => console.log('Admin Get All - Success response:', response)),
+      tap(response => console.log('✅ Admin endpoint successful, got products:', response.length)),
       catchError(error => {
-        console.error('Admin Get All - HTTP Error:', error);
-        throw error;
+        console.log('⚠️ Admin endpoint failed, trying fallback:', this.fallbackApiUrl);
+        return this.http.get<IProduct[]>(this.fallbackApiUrl).pipe(
+          map(products => this.processProductImages(products)),
+          tap(response => console.log('✅ Fallback endpoint successful, got products:', response.length)),
+          catchError(fallbackError => {
+            console.error('❌ Both endpoints failed:', error, fallbackError);
+            throw fallbackError;
+          })
+        );
       })
     );
   }

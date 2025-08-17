@@ -29,12 +29,10 @@ import { TranslateModule } from '@ngx-translate/core';
   styleUrl: './supplier-list.css'
 })
 export class SupplierList implements OnInit, OnDestroy {
-  // Suppliers data
   allSuppliers: ISupplier[] = [];
   filteredSuppliers: ISupplier[] = [];
   displayedSuppliers: ISupplier[] = [];
 
-  // Filter states
   selectedCategory: string | null = null;
   selectedSubCategory: string | null = null;
   selectedRating: number | null = null;
@@ -43,25 +41,23 @@ export class SupplierList implements OnInit, OnDestroy {
   selectedState: string | null = null;
   selectedShipping: string | null = null;
 
-  // Location data
   cities: string[] = [];
   states: string[] = [];
 
-  // Pagination
   currentPage: number = 1;
   itemsPerPage: number = 8;
 
-  // UI states
   loading: boolean = false;
   error: string | null = null;
 
-  // Subcategory mapping
   private subCategoryToCategory: Map<string, string> = new Map();
 
-  //user
   currentUserId: string | undefined = undefined;
 
   private subscription: Subscription | null = null;
+  private authSubscription: Subscription | null = null;
+
+  toastMessage: string | null = null;
 
   constructor(
     private supplierService: SupplierService,
@@ -69,18 +65,18 @@ export class SupplierList implements OnInit, OnDestroy {
     private cartService: CartService,
     private wishlistService: WishlistService,
     private router: Router,
-    private _auth:Auth
+    private _auth: Auth
   ) { }
 
   ngOnInit(): void {
-    this.currentUserId=this._auth.getCurrentUser()?.UserId;
-    // Load subcategory mapping
-    this.loadSubCategoryMapping();
+    // الاشتراك في المستخدم الحالي
+    this.authSubscription = this._auth.currentUser$.subscribe(user => {
+      this.currentUserId = user?.UserId;
+    });
 
-    // Load suppliers
+    this.loadSubCategoryMapping();
     this.loadSuppliers();
 
-    // Load location data
     this.supplierService.getAllCities().subscribe(cities => {
       this.cities = cities;
     });
@@ -93,6 +89,9 @@ export class SupplierList implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.subscription) {
       this.subscription.unsubscribe();
+    }
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
     }
   }
 
@@ -128,24 +127,20 @@ export class SupplierList implements OnInit, OnDestroy {
     });
   }
 
-  // Handle category selection
   onCategorySelected(categoryId: string | null): void {
     this.selectedCategory = categoryId;
-    this.selectedSubCategory = null; // Reset subcategory when category changes
+    this.selectedSubCategory = null;
     this.applyFilters();
   }
 
-  // Handle subcategory selection
   onSubCategorySelected(subCategoryId: string | null): void {
     this.selectedSubCategory = subCategoryId;
-    // If a subcategory is selected, we can determine its parent category
     if (subCategoryId && this.subCategoryToCategory.has(subCategoryId)) {
       this.selectedCategory = this.subCategoryToCategory.get(subCategoryId) || null;
     }
     this.applyFilters();
   }
 
-  // Handle filter changes from sidebar
   onFilterChange(filters: any): void {
     this.selectedRating = filters.rating;
     this.selectedWarranty = filters.warranty;
@@ -155,9 +150,7 @@ export class SupplierList implements OnInit, OnDestroy {
     this.applyFilters();
   }
 
-  // Apply all filters
   applyFilters(): void {
-    // Use the service's searchSuppliers method with all filters
     this.supplierService.searchSuppliers(null, {
       city: this.selectedCity || undefined,
       state: this.selectedState || undefined,
@@ -165,16 +158,13 @@ export class SupplierList implements OnInit, OnDestroy {
       warranty: this.selectedWarranty || undefined,
       shipping: this.selectedShipping || undefined
     }).subscribe(suppliers => {
-      // Further filter by category/subcategory (these are not handled by the service)
       this.filteredSuppliers = suppliers.filter(supplier => {
         const products = supplier.products || [];
 
-        // Filter by subcategory
         if (this.selectedSubCategory && !products.some(p => p.subCategoryId === this.selectedSubCategory)) {
           return false;
         }
 
-        // Filter by category (only apply if subcategory is not selected)
         if (!this.selectedSubCategory && this.selectedCategory &&
           !products.some(p => this.isCategoryMatch(p.subCategoryId, this.selectedCategory!))) {
           return false;
@@ -183,47 +173,36 @@ export class SupplierList implements OnInit, OnDestroy {
         return true;
       });
 
-      // Reset to first page when filters change
       this.currentPage = 1;
       this.updateDisplayedSuppliers();
     });
   }
 
-  // Update displayed suppliers based on pagination
   updateDisplayedSuppliers(): void {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
     this.displayedSuppliers = this.filteredSuppliers.slice(startIndex, endIndex);
   }
 
-  // Handle page change
   onPageChange(page: number): void {
     this.currentPage = page;
     this.updateDisplayedSuppliers();
-
-    // Scroll to top
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Navigate to product details
   navigateToProductDetails(productId: string, event: Event): void {
-    event.stopPropagation(); // Prevent event bubbling
+    event.stopPropagation();
     this.router.navigate(['/products', productId]);
   }
 
-  // Add product to cart (for sample request)
   requestSample(product: IProduct, event: Event): void {
-    event.stopPropagation(); // Prevent event bubbling
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    event.stopPropagation();
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     this.showToast(`تمت إضافة ${product.name} إلى السلة`);
   }
 
-  // Toggle wishlist
   toggleWishlist(product: IProduct, event: Event): void {
-    event.stopPropagation(); // Prevent event bubbling
+    event.stopPropagation();
 
     if (this.isInWishlist(product.id)) {
       this.wishlistService.removeFromWishlist(product.id);
@@ -234,13 +213,9 @@ export class SupplierList implements OnInit, OnDestroy {
     }
   }
 
-  // Check if product is in wishlist
   isInWishlist(productId: string): boolean {
     return this.wishlistService.isInWishlist(productId);
   }
-
-  // Show toast notification
-  toastMessage: string | null = null;
 
   showToast(message: string): void {
     this.toastMessage = message;
@@ -249,38 +224,30 @@ export class SupplierList implements OnInit, OnDestroy {
     }, 3000);
   }
 
-  // Add product to cart
   addToCart(product: IProduct): void {
-    this.cartService.addToCart(product,undefined,this.currentUserId);
-    // Show toast or notification here
+    this.cartService.addToCart(product, undefined, this.currentUserId);
   }
 
-  // Get top 3 products for a supplier
   getTopProducts(supplier: ISupplier): IProduct[] {
     if (!supplier.products || supplier.products.length === 0) return [];
-
-    // Sort by rating (highest first) and take top 3
-    return [...supplier.products]
+    return [...supplier.products.filter(x => x.approvalStatus === 2)]
       .sort((a, b) => (b.rating || 0) - (a.rating || 0))
       .slice(0, 3);
   }
 
-  // View all products from a supplier
   viewSupplierProducts(supplierName: string): void {
     this.router.navigate(['/products'], {
       queryParams: {
         supplier: supplierName,
-        supplierName: supplierName // Add the supplier name as a separate parameter
+        supplierName: supplierName
       }
     });
   }
 
-  // Helper method to check if a product's subcategory belongs to a category
   private isCategoryMatch(subCategoryId: string, categoryId: string): boolean {
     return this.subCategoryToCategory.get(subCategoryId) === categoryId;
   }
 
-  // Format warranty text
   formatWarranty(months: number | null | undefined): string {
     if (!months) return 'No Warranty';
 
@@ -298,7 +265,6 @@ export class SupplierList implements OnInit, OnDestroy {
     }
   }
 
-  // Get shipping text
   getShippingText(shipping: ShippingTypes): string {
     switch (shipping) {
       case ShippingTypes.Free:
@@ -310,5 +276,10 @@ export class SupplierList implements OnInit, OnDestroy {
       default:
         return 'No Shipping Info';
     }
+  }
+
+  navigateToChat(supplierId: string, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.router.navigate(['/chat', supplierId]);
   }
 }

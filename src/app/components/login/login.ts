@@ -10,8 +10,8 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { Auth, User } from '../../services/auth';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
-import { SellerService } from '../../services/seller.service';
+import { Subscription, Subject } from 'rxjs';
+import { filter, take, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -27,13 +27,13 @@ export class Login implements OnInit, OnDestroy {
   registrationSuccess: boolean = false;
 
   private subscription: Subscription = new Subscription();
+  private destroy$ = new Subject<void>(); // used to clean auth subscription
 
   constructor(
     private fb: FormBuilder,
     private authService: Auth,
     private router: Router,
     private route: ActivatedRoute,
-    private sellerService: SellerService
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -43,16 +43,20 @@ export class Login implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // التحقق من وجود المستخدم مسجل دخول بالفعل
-    if (this.authService.isLoggedIn()) {
-      this.redirectBasedOnRole();
-      return;
-    }
+    // اشتراك في currentUser$ لنتعامل مع حالة الدخول reactively
+    // إذا كان هناك مستخدم فعلًا نعمل redirect تلقائيًا
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        if (user) {
+          // لو المستخدم موجود (مسجّل دخول) نوجهه فورًا
+          this.redirectBasedOnRole();
+        }
+      });
 
-    // استلام المعاملات من الـ URL
+    // قراءة query params (registration success / prefill email / error)
     this.subscription.add(
       this.route.queryParams.subscribe((params) => {
-        // التحقق من رسالة نجاح التسجيل
         if (params['message'] === 'registration_success') {
           this.registrationSuccess = true;
           setTimeout(() => {
@@ -60,19 +64,16 @@ export class Login implements OnInit, OnDestroy {
           }, 5000);
         }
 
-        // تعبئة البريد الإلكتروني إذا تم تمريره
         if (params['email']) {
           this.loginForm.patchValue({
             email: params['email'],
           });
         }
 
-        // معالجة رسائل خطأ محددة
         if (params['error']) {
           switch (params['error']) {
             case 'session_expired':
-              this.errorMessage =
-                'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى.';
+              this.errorMessage = 'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى.';
               break;
             case 'unauthorized':
               this.errorMessage = 'يجب تسجيل الدخول للوصول إلى هذه الصفحة.';
@@ -84,7 +85,7 @@ export class Login implements OnInit, OnDestroy {
       })
     );
 
-    // مراقبة تغييرات النموذج لإزالة رسائل الخطأ
+    // Clear errorMessage on form changes
     this.subscription.add(
       this.loginForm.valueChanges.subscribe(() => {
         if (this.errorMessage) {
@@ -95,15 +96,15 @@ export class Login implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    // تنظيف subscription التقليدي والاشتراك في auth
     this.subscription.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onSubmit() {
     console.log('Login submit clicked');
-    console.log('Form valid:', this.loginForm.valid);
-    console.log('Form value:', this.loginForm.value);
 
-    // إزالة الرسائل السابقة
     this.errorMessage = '';
     this.registrationSuccess = false;
 
@@ -120,63 +121,36 @@ export class Login implements OnInit, OnDestroy {
       password: this.loginForm.value.password,
     };
 
-    console.log('Sending login data:', { email: loginData.email });
-
     this.subscription.add(
       this.authService.login(loginData).subscribe({
         next: (response: User) => {
           console.log('Login successful:', response);
           this.isSubmitting = false;
 
-          // ✅ تخزين التوكن في localStorage
-          localStorage.setItem('token', response.token);
-
-          // حفظ خيار "تذكرني" إذا تم اختياره
+          // لا نحتاج لاستدعاء setCurrentUser هنا لأن Auth.login يقوم بذلك
           if (this.loginForm.value.rememberMe) {
             localStorage.setItem('rememberMe', 'true');
           }
 
-          // ✅ التعديل هنا:
-          // لو المستخدم بائع، نتحقق من حالة البروفايل
-          if (response.roles && response.roles.includes('Seller')) {
-            this.sellerService.getProfileStatus().subscribe({
-              next: (status) => {
-                if (status.isComplete) {
-                  // لو البروفايل كامل، نوديه لصفحة البائع الرئيسية
-                  this.router.navigate(['/about-us']);
-                } else {
-                  // لو مش كامل، نوديه لصفحة إكمال البيانات
-                  this.router.navigate(['/seller-profile']);
-                }
-              },
-              error: (err) => {
-                console.error('Error checking profile status', err);
-                // في حالة وجود خطأ، نعتبر أن البروفايل غير مكتمل احتياطيًا
-                this.router.navigate(['/seller-profile']);
-              },
-            });
-          } else {
-            // لو مش بائع، نستخدم الدالة العادية للتوجيه
-            this.redirectBasedOnRole();
-          }
+          // ننتظر اصدار قيمة currentUser مرة واحدة ثم نوجّه المستخدم
+          this.authService.currentUser$
+            .pipe(filter(u => !!u), take(1))
+            .subscribe(() => this.redirectBasedOnRole());
         },
         error: (error) => {
           console.error('Login error:', error);
           this.isSubmitting = false;
 
-          // معالجة محسّنة للأخطاء
           if (error.message) {
             if (
               error.message.includes('بيانات تسجيل الدخول غير صحيحة') ||
               error.message.includes('Unauthorized')
             ) {
               this.errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
-              // تسليط الضوء على الحقول
               this.loginForm.get('email')?.setErrors({ incorrect: true });
               this.loginForm.get('password')?.setErrors({ incorrect: true });
             } else if (error.message.includes('لا يمكن الاتصال بالخادم')) {
-              this.errorMessage =
-                'لا يمكن الاتصال بالخادم. تحقق من اتصالك بالإنترنت.';
+              this.errorMessage = 'لا يمكن الاتصال بالخادم. تحقق من اتصالك بالإنترنت.';
             } else {
               this.errorMessage = error.message;
             }
@@ -184,14 +158,12 @@ export class Login implements OnInit, OnDestroy {
             this.errorMessage = 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
           }
 
-          // هز النموذج للتأكيد على الخطأ
           this.shakeForm();
         },
       })
     );
   }
 
-  // توجيه المستخدم بناءً على دوره
   private redirectBasedOnRole() {
     const currentUser = this.authService.getCurrentUser();
 
@@ -202,25 +174,21 @@ export class Login implements OnInit, OnDestroy {
 
     console.log('Redirecting user with roles:', currentUser.roles);
 
-    // توجيه بناءً على الدور
     if (currentUser.roles.includes('Admin')) {
       this.router.navigate(['/admin']);
     } else if (currentUser.roles.includes('Seller')) {
-      this.router.navigate(['/about-us']);
+      this.router.navigate(['/seller/dashboard']);
     } else if (currentUser.roles.includes('Customer')) {
       this.router.navigate(['/products']);
     } else {
-      // fallback للمستخدمين بدون أدوار محددة
       this.router.navigate(['/dashboard']);
     }
   }
 
-  // تبديل عرض كلمة المرور
   togglePasswordVisibility() {
     this.showPassword = !this.showPassword;
   }
 
-  // تعليم جميع الحقول كما لو تم لمسها لإظهار رسائل الخطأ
   private markFormGroupTouched() {
     Object.keys(this.loginForm.controls).forEach((key) => {
       const control = this.loginForm.get(key);
@@ -228,7 +196,6 @@ export class Login implements OnInit, OnDestroy {
     });
   }
 
-  // وظيفة للحصول على رسائل الخطأ المحسّنة
   getFieldError(fieldName: string): string {
     const field = this.loginForm.get(fieldName);
     if (field?.errors && field.touched) {
@@ -240,14 +207,10 @@ export class Login implements OnInit, OnDestroy {
       }
       if (field.errors['minlength']) {
         const requiredLength = field.errors['minlength'].requiredLength;
-        return `${this.getFieldDisplayName(
-          fieldName
-        )} يجب أن يكون على الأقل ${requiredLength} أحرف`;
+        return `${this.getFieldDisplayName(fieldName)} يجب أن يكون على الأقل ${requiredLength} أحرف`;
       }
       if (field.errors['incorrect']) {
-        return fieldName === 'email'
-          ? 'البريد الإلكتروني غير صحيح'
-          : 'كلمة المرور غير صحيحة';
+        return fieldName === 'email' ? 'البريد الإلكتروني غير صحيح' : 'كلمة المرور غير صحيحة';
       }
     }
     return '';
@@ -261,7 +224,6 @@ export class Login implements OnInit, OnDestroy {
     return displayNames[fieldName] || fieldName;
   }
 
-  // تأثير الهز للنموذج عند حدوث خطأ
   private shakeForm() {
     const formElement = document.querySelector('.form-container');
     if (formElement) {
@@ -272,40 +234,31 @@ export class Login implements OnInit, OnDestroy {
     }
   }
 
-  // مسح النموذج
   clearForm() {
     this.loginForm.reset();
     this.errorMessage = '';
     this.registrationSuccess = false;
   }
 
-  // تسجيل الدخول كضيف (اختياري)
   loginAsGuest() {
     this.router.navigate(['/guest']);
   }
 
-  // وظائف إضافية للتحسين
-
-  // التحقق من صحة البريد الإلكتروني أثناء الكتابة
   onEmailBlur() {
     const emailControl = this.loginForm.get('email');
     if (emailControl && emailControl.valid && emailControl.value) {
-      // يمكن إضافة فحص للتحقق من وجود البريد الإلكتروني
       console.log('Email is valid:', emailControl.value);
     }
   }
 
-  // التقاط Enter في حقل كلمة المرور
   onKeyPress(event: KeyboardEvent) {
     if (event.key === 'Enter' && this.loginForm.valid) {
       this.onSubmit();
     }
   }
 
-  // التحقق من قوة الاتصال بالخادم
   async checkServerConnection(): Promise<boolean> {
     try {
-      // يمكن إضافة استدعاء ping للخادم هنا
       return true;
     } catch (error) {
       console.error('Server connection failed:', error);
@@ -313,7 +266,6 @@ export class Login implements OnInit, OnDestroy {
     }
   }
 
-  // معالجة حفظ بيانات تسجيل الدخول للمستقبل
   saveLoginAttempt() {
     const email = this.loginForm.get('email')?.value;
     if (email && this.loginForm.get('email')?.valid) {
@@ -321,7 +273,6 @@ export class Login implements OnInit, OnDestroy {
     }
   }
 
-  // استرجاع آخر بريد إلكتروني تم استخدامه
   loadLastLoginEmail() {
     const lastEmail = localStorage.getItem('lastLoginEmail');
     if (lastEmail) {
@@ -329,7 +280,6 @@ export class Login implements OnInit, OnDestroy {
     }
   }
 
-  // تنظيف البيانات المحفوظة
   clearSavedData() {
     localStorage.removeItem('lastLoginEmail');
     localStorage.removeItem('rememberMe');

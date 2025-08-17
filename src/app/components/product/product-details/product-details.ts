@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
 import { ProductService } from '../../../services/product-service';
 import { WishlistService } from '../../../services/wishlistService';
 import { CartService } from '../../../services/cart.service';
@@ -13,6 +12,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SubCategoryService } from '../../../services/sub-category.service';
 import { Auth } from '../../../services/auth';
 import { AddReviewComponent } from '../../add-review/add-review';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-product-details',
@@ -27,15 +28,18 @@ export class ProductDetails implements OnInit, OnDestroy {
   error: string | null = null;
   selectedImageIndex: number = 0;
   quantity: number = 1;
-  private subscription: Subscription | null = null;
   supplierName: string = '';
   categoryName: string = '';
   subCategoryName: string = '';
   currentUserId: string | undefined = undefined;
+
   // Dynamic breadcrumbs
   breadcrumbs: { label: string, link?: string }[] = [
     { label: 'Home', link: '/' }
   ];
+
+  // destroy$ used to clean subscriptions on destroy
+  private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -49,22 +53,35 @@ export class ProductDetails implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.currentUserId = this._auth.getCurrentUser()?.UserId;
-    this.subscription = this.route.params.subscribe(params => {
-      const id = params['id'];
-      if (id) {
-        this.loadProduct(id);
-      } else {
-        this.error = 'Product ID not provided';
-        this.loading = false;
-      }
-    });
+    // set initial user if available
+    const current = this._auth.getCurrentUser();
+    this.currentUserId = current?.UserId;
+
+    // subscribe to auth changes so currentUserId updates reactively
+    this._auth.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUserId = user?.UserId;
+      });
+
+    // subscribe to route params to load product; cleaned up by takeUntil
+    this.route.params
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        const id = params['id'];
+        if (id) {
+          this.loadProduct(id);
+        } else {
+          this.error = 'Product ID not provided';
+          this.loading = false;
+        }
+      });
   }
 
   ngOnDestroy(): void {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
+    // cleanup subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadProduct(id: string): void {
@@ -79,6 +96,8 @@ export class ProductDetails implements OnInit, OnDestroy {
         // Get subcategory info
         if (product.subCategoryId) {
           this.loadSubCategoryInfo(product.subCategoryId);
+        } else {
+          this.generateBreadcrumbs();
         }
 
         // Get supplier name
@@ -151,7 +170,7 @@ export class ProductDetails implements OnInit, OnDestroy {
 
   addToCart(): void {
     if (!this.product) return;
-    this.cartService.addToCart(this.product, this.quantity,this.currentUserId);
+    this.cartService.addToCart(this.product, this.quantity, this.currentUserId);
     this.router.navigate(['/cart']);
   }
 

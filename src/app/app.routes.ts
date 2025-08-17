@@ -19,6 +19,8 @@ import { SignalrChat } from './components/signalr-chat/signalr-chat';
 import { Chatbot } from './components/chatbot/chatbot';
 import { PaymentCancel } from './components/payment/payment-cancel/payment-cancel';
 import { RegisterComponent } from './components/register/register';
+import { BestSellers } from './components/best-sellers/best-sellers';
+import { NewReleases } from './components/new-releases/new-releases';
 
 
 
@@ -31,6 +33,8 @@ export const routes: Routes = [
   { path: 'register', component: RegisterComponent },
   { path: 'register-selection', component: RegisterSelection },
   { path: 'recommendation', component: Recommendation },
+   { path: 'bestsellers', component: BestSellers },
+  { path: 'newreleases', component: NewReleases },
 
   { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
 
@@ -45,6 +49,7 @@ export const routes: Routes = [
   { path: 'wishlist', component: WishlistComponent },
   { path: 'orders', component: OrdersComponent },
   { path: 'account-management', component: AccountManagement },
+  { path: 'address-management', loadComponent: () => import('./components/address-management/address-management').then(m => m.AddressManagement) },
   { path: 'cart', component: Cart },
   { path: 'checkout', component: CheckoutComponent },
 
@@ -53,9 +58,10 @@ export const routes: Routes = [
   { path: 'paymentCancel', component: PaymentCancel },
 
   //signalr routes
-    { path: 'signalr', component: SignalrChat },
-//chatbot routes
-    { path: 'chatbot', component: Chatbot },
+  { path: 'signalr', component: SignalrChat },
+  { path: 'chat/:supplierId', component: SignalrChat },
+  //chatbot routes
+  { path: 'chatbot', component: Chatbot },
   // Admin routes
   {
     path: 'admin',
@@ -97,6 +103,11 @@ export const routes: Routes = [
         path: 'subcategories',
         loadComponent: () => import('./components/admin-subcategories/admin-subcategories')
           .then(m => m.AdminSubCategoriesComponent)
+      },
+      {
+        path: 'admins',
+        loadComponent: () => import('./components/admin-management')
+          .then(m => m.AdminManagementComponent)
       }
     ]
   },
@@ -109,7 +120,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
-        loadComponent: () => import('./components/seller-dashboard/seller-dashboard')
+        loadComponent: () => import('./components/seller-dashboard')
           .then(m => m.SellerDashboardComponent)
       },
       {
@@ -147,6 +158,11 @@ export const routes: Routes = [
         path: 'compliance',
         loadComponent: () => import('./components/seller-compliance/seller-compliance')
           .then(m => m.SellerComplianceComponent)
+      },
+      {
+        path: 'addresses',
+        loadComponent: () => import('./components/seller-address-management/seller-address-management')
+          .then(m => m.SellerAddressManagementComponent)
       }
     ]
   },

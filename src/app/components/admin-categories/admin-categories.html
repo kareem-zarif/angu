@@ -49,30 +49,30 @@
       </div>
     </div>
   </div>
-  <div class="overflow-x-auto rounded shadow bg-white">
-    <table class="min-w-full text-sm">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="px-3 py-2">NO.</th>
-          <th class="px-3 py-2">Name</th>
-          <th class="px-3 py-2">Description</th>
-          <th class="px-3 py-2">Subcategories</th>
-          <th class="px-3 py-2">Action</th>
+  <div class="overflow-x-auto rounded shadow bg-white app-table-card">
+    <table class="app-table">
+      <thead class="app-thead">
+        <tr>
+          <th class="app-th text-left">NO.</th>
+          <th class="app-th text-left">Name</th>
+          <th class="app-th text-left">Description</th>
+          <th class="app-th text-left">Subcategories</th>
+          <th class="app-th text-left">Action</th>
         </tr>
       </thead>
-      <tbody>
-        <tr *ngFor="let category of getPaginatedCategories(); let i = index" class="border-b">
-          <td style="text-align: center;" class="px-3 py-2">{{ i + 1 }}</td>
-          <td style="text-align: center;" class="px-3 py-2">{{ category.name }}</td>
-          <td style="text-align: center;" class="px-3 py-2">{{ category.description }}</td>
-          <td style="text-align: center;" class="px-3 py-2">
-            <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
-              {{ category.subcategoriesCount || 0 }}
+      <tbody class="app-tbody">
+        <tr *ngFor="let category of getPaginatedCategories(); let i = index" class="app-tr-hover">
+          <td class="px-3 py-2">{{ i + 1 }}</td>
+          <td class="px-3 py-2">{{ category.name }}</td>
+          <td class="px-3 py-2">{{ category.description || 'N/A' }}</td>
+          <td class="px-3 py-2">
+            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
+              {{ category.subcategoriesCount || 0 }} subcategories
             </span>
           </td>
-          <td style="text-align: center; align-items: center; padding: inline 5px;" class="px-3 py-2 flex gap-2">
-            <button class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" (click)="openEdit(category)">Edit</button>
-            <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" (click)="deleteCategory(category)">Delete</button>
+          <td class="px-3 py-2 flex gap-2">
+            <button class="btn-soft-blue" (click)="openEdit(category)">Edit</button>
+            <button class="btn-soft-red" (click)="deleteCategory(category)">Delete</button>
           </td>
         </tr>
         <tr *ngIf="getPaginatedCategories().length === 0">
@@ -107,8 +107,8 @@
     ></app-pagination>
   </div>
   <!-- Modal for Add/Edit -->
-  <div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+  <div *ngIf="showModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="showModal = false">&times;</button>
       <h3 class="text-lg font-bold mb-4">{{ editCategory ? 'Edit Category' : 'Add Category' }}</h3>
       

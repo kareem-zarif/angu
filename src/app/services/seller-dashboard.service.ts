@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, catchError, of, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../environment/environment';
 import { ProductService } from './product-service';
 import { SellerOrdersService } from './seller-orders.service';
@@ -116,30 +117,39 @@ export class SellerDashboardService {
 
   // Get comprehensive dashboard statistics from seller services
   getDashboardStats(): Observable<SellerDashboardStats> {
+    console.log('🔄 SellerDashboardService: Starting to load dashboard stats...');
+    
     return forkJoin({
       products: this.productService.getAllForSeller(),
-      orders: this.sellerOrdersService.getSellerOrders(),
-      orderStats: this.sellerOrdersService.getSellerOrderStats()
+      orders: this.sellerOrdersService.getSellerOrders()
     }).pipe(
+      tap(data => {
+        console.log('📊 SellerDashboardService: Raw data received:', {
+          products: data.products.length,
+          orders: data.orders.length
+        });
+      }),
       map(data => {
+        console.log('🔍 SellerDashboardService: Processing data...');
+        
         const stats: SellerDashboardStats = {
           totalProducts: data.products.length,
           activeProducts: data.products.filter(p => p.approvalStatus === 2).length,
           pendingProducts: data.products.filter(p => p.approvalStatus === 1).length,
           rejectedProducts: data.products.filter(p => p.approvalStatus === 3).length,
           totalOrders: data.orders.length,
-          pendingOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          pendingOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 1 || status.orderStatus === 2
             )
           ).length,
-          completedOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          completedOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 4
             )
           ).length,
-          cancelledOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          cancelledOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 5
             )
           ).length,
@@ -153,11 +163,15 @@ export class SellerDashboardService {
           lowStockProducts: data.products.filter(p => p.noINStock < 10).length
         };
         
+        console.log('📈 SellerDashboardService: Calculated stats:', stats);
+
         this.dashboardStatsSubject.next(stats);
         return stats;
       }),
       catchError(error => {
-        console.error('Error loading seller dashboard stats:', error);
+        console.error('❌ SellerDashboardService: Error loading dashboard stats:', error);
+        console.log('🔄 SellerDashboardService: Returning fallback data...');
+        
         // Return fallback data
         return of({
           totalProducts: 0,
@@ -205,31 +219,62 @@ export class SellerDashboardService {
 
   // Get order statistics with charts data
   getOrderStats(): Observable<OrderStats> {
-    return forkJoin({
+    console.log('🔄 SellerDashboardService: Getting order stats...');
+    
+    return this.sellerOrdersService.getSellerOrders().pipe(
+      tap(orders => {
+        console.log('📊 SellerDashboardService: Orders for order stats:', orders.length);
+      }),
+      map(orders => {
+        console.log('🔍 SellerDashboardService: Calculating order stats...');
+        
+        const monthlyOrders = this.groupOrdersByMonth(orders);
+        const revenueByMonth = this.groupRevenueByMonth(orders);
+        const averageOrderValue = orders.length > 0 
+          ? orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length 
+          : 0;
+
+        const orderStats = {
+          totalOrders: orders.length,
+          pendingOrders: orders.filter(order => 
+            order.orderStatusHistory?.some(status => 
+              status.orderStatus === 1 || status.orderStatus === 2
+            )
+          ).length,
+          completedOrders: orders.filter(order => 
+            order.orderStatusHistory?.some(status => 
+              status.orderStatus === 4
+            )
+          ).length,
+          cancelledOrders: orders.filter(order => 
+            order.orderStatusHistory?.some(status => 
+//from old
+   /* return forkJoin({
       orders: this.sellerOrdersService.getSellerOrders(),
       orderStats: this.sellerOrdersService.getSellerOrderStats()
     }).pipe(
       map(data => {
         const monthlyOrders = this.groupOrdersByMonth(data.orders);
         const revenueByMonth = this.groupRevenueByMonth(data.orders);
-        const averageOrderValue = data.orders.length > 0 
-          ? data.orders.reduce((sum, order) => sum + order.totalAmount, 0) / data.orders.length 
+        const averageOrderValue = data.orders.length > 0
+          ? data.orders.reduce((sum, order) => sum + order.totalAmount, 0) / data.orders.length
           : 0;
 
         return {
           totalOrders: data.orders.length,
-          pendingOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          pendingOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 1 || status.orderStatus === 2
             )
           ).length,
-          completedOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          completedOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
               status.orderStatus === 4
             )
           ).length,
-          cancelledOrders: data.orders.filter(order => 
-            order.orderStatusHistory?.some(status => 
+          cancelledOrders: data.orders.filter(order =>
+            order.orderStatusHistory?.some(status =>
+            */
               status.orderStatus === 5
             )
           ).length,
@@ -237,6 +282,23 @@ export class SellerDashboardService {
           revenueByMonth,
           averageOrderValue
         };
+        
+        console.log('📈 SellerDashboardService: Order stats calculated:', orderStats);
+        return orderStats;
+      }),
+      catchError(error => {
+        console.error('❌ SellerDashboardService: Error getting order stats:', error);
+        console.log('🔄 SellerDashboardService: Returning fallback order stats...');
+        
+        return of({
+          totalOrders: 0,
+          pendingOrders: 0,
+          completedOrders: 0,
+          cancelledOrders: 0,
+          monthlyOrders: [],
+          revenueByMonth: [],
+          averageOrderValue: 0
+        });
       })
     );
   }
@@ -255,6 +317,59 @@ export class SellerDashboardService {
           revenueByMonth,
           revenueByWeek
         };
+      })
+    );
+  }
+
+  // Get header statistics for seller header component
+  getHeaderStats(): Observable<SellerHeaderStats> {
+    console.log('🔄 SellerDashboardService: Getting header stats...');
+    
+    return forkJoin({
+      products: this.productService.getAllForSeller(),
+      orders: this.sellerOrdersService.getSellerOrders()
+    }).pipe(
+      tap(data => {
+        console.log('📊 SellerDashboardService: Header stats raw data:', {
+          products: data.products.length,
+          orders: data.orders.length
+        });
+      }),
+      map(data => {
+        // Calculate pending orders
+        const pendingOrders = data.orders.filter(order => 
+          order.orderStatusHistory && order.orderStatusHistory.length > 0 &&
+          order.orderStatusHistory.some(status => 
+            status.orderStatus === 1 || status.orderStatus === 2
+          )
+        ).length;
+        
+        // Calculate total earnings
+        const totalEarnings = data.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        
+        // Calculate monthly growth (placeholder for now)
+        const monthlyGrowth = 12.5; // This would need proper calculation logic
+        
+        const headerStats: SellerHeaderStats = {
+          totalProducts: data.products.length,
+          pendingOrders: pendingOrders,
+          totalEarnings: totalEarnings,
+          monthlyGrowth: monthlyGrowth
+        };
+        
+        console.log('📈 SellerDashboardService: Header stats calculated:', headerStats);
+        return headerStats;
+      }),
+      catchError(error => {
+        console.error('❌ SellerDashboardService: Error getting header stats:', error);
+        console.log('🔄 SellerDashboardService: Returning fallback header stats...');
+        
+        return of({
+          totalProducts: 0,
+          pendingOrders: 0,
+          totalEarnings: 0,
+          monthlyGrowth: 0
+        });
       })
     );
   }
@@ -294,7 +409,7 @@ export class SellerDashboardService {
               description: `Order placed by ${order.customerName || 'Customer'} - ${order.totalAmount} EGP`,
               time: 'Recently',
               amount: order.totalAmount,
-              status: order.orderStatusHistory?.some(status => status.orderStatus === 4) ? 'completed' : 
+              status: order.orderStatusHistory?.some(status => status.orderStatus === 4) ? 'completed' :
                      order.orderStatusHistory?.some(status => status.orderStatus === 5) ? 'cancelled' : 'pending',
               timestamp: new Date()
             });
@@ -392,7 +507,7 @@ export class SellerDashboardService {
   private calculateMonthlyRevenue(orders: any[]): number {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     return orders
       .filter(order => new Date(order.createdOn || '') >= firstDayOfMonth)
       .reduce((sum, order) => sum + order.totalAmount, 0);
@@ -401,7 +516,7 @@ export class SellerDashboardService {
   private calculateWeeklyRevenue(orders: any[]): number {
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     return orders
       .filter(order => new Date(order.createdOn || '') >= oneWeekAgo)
       .reduce((sum, order) => sum + order.totalAmount, 0);
@@ -415,7 +530,7 @@ export class SellerDashboardService {
   private calculateAverageRating(products: any[]): number {
     const productsWithRating = products.filter(p => p.rating && p.rating > 0);
     if (productsWithRating.length === 0) return 0;
-    
+
     const totalRating = productsWithRating.reduce((sum, product) => sum + product.rating, 0);
     return Math.round((totalRating / productsWithRating.length) * 10) / 10;
   }
@@ -432,60 +547,60 @@ export class SellerDashboardService {
 
   private groupProductsByCategory(products: any[]): { category: string; count: number }[] {
     const categoryMap = new Map<string, number>();
-    
+
     products.forEach(product => {
       const category = product.subCategoryId || 'Unknown';
       categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
     });
-    
+
     return Array.from(categoryMap.entries()).map(([category, count]) => ({ category, count }));
   }
 
   private groupProductsByStatus(products: any[]): { status: string; count: number }[] {
     const statusMap = new Map<string, number>();
-    
+
     products.forEach(product => {
-      const status = product.approvalStatus === 2 ? 'Approved' : 
+      const status = product.approvalStatus === 2 ? 'Approved' :
                     product.approvalStatus === 1 ? 'Pending' : 'Rejected';
       statusMap.set(status, (statusMap.get(status) || 0) + 1);
     });
-    
+
     return Array.from(statusMap.entries()).map(([status, count]) => ({ status, count }));
   }
 
   private groupOrdersByMonth(orders: any[]): { month: string; count: number }[] {
     const monthMap = new Map<string, number>();
-    
+
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       monthMap.set(month, (monthMap.get(month) || 0) + 1);
     });
-    
+
     return Array.from(monthMap.entries()).map(([month, count]) => ({ month, count }));
   }
 
   private groupRevenueByMonth(orders: any[]): { month: string; revenue: number }[] {
     const monthMap = new Map<string, number>();
-    
+
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       monthMap.set(month, (monthMap.get(month) || 0) + order.totalAmount);
     });
-    
+
     return Array.from(monthMap.entries()).map(([month, revenue]) => ({ month, revenue }));
   }
 
   private groupRevenueByWeek(orders: any[]): { week: string; revenue: number }[] {
     const weekMap = new Map<string, number>();
-    
+
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const week = `Week ${Math.ceil(date.getDate() / 7)} ${date.toLocaleDateString('en-US', { month: 'short' })}`;
       weekMap.set(week, (weekMap.get(week) || 0) + order.totalAmount);
     });
-    
+
     return Array.from(weekMap.entries()).map(([week, revenue]) => ({ week, revenue }));
   }
 
@@ -503,17 +618,7 @@ export class SellerDashboardService {
     }
   }
 
-  // Legacy methods for backward compatibility
-  getHeaderStats(): Observable<SellerHeaderStats> {
-    return this.getDashboardStats().pipe(
-      map(stats => ({
-        totalProducts: stats.totalProducts,
-        pendingOrders: stats.pendingOrders,
-        totalEarnings: stats.totalRevenue,
-        monthlyGrowth: stats.monthlyGrowth
-      }))
-    );
-  }
+
 
   searchGlobal(query: string): Observable<any[]> {
     return forkJoin({
@@ -522,17 +627,17 @@ export class SellerDashboardService {
     }).pipe(
       map(data => {
         const results: any[] = [];
-        
+
         // Search in products
         data.products
           .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))
           .forEach(p => results.push({ type: 'product', item: p }));
-        
+
         // Search in orders
         data.orders
           .filter(o => o.id.includes(query) || o.customerName?.toLowerCase().includes(query.toLowerCase()))
           .forEach(o => results.push({ type: 'order', item: o }));
-        
+
         return results.slice(0, 10);
       })
     );
@@ -557,4 +662,4 @@ export class SellerDashboardService {
   updateSellerProfile(profile: any): Observable<any> {
     return of({}); // Implement if needed
   }
-} 
+}

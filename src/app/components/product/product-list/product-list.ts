@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router, Params } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ProductService } from '../../../services/product-service';
 import { WishlistService } from '../../../services/wishlistService';
 import { CartService } from '../../../services/cart.service';
@@ -56,6 +57,10 @@ export class ProductList implements OnInit, OnDestroy {
 
   //current user
   currentUserId: string | undefined = undefined;
+
+  // destroy$ used to clean subscriptions (auth, etc.)
+  private destroy$ = new Subject<void>();
+
   constructor(
     private productService: ProductService,
     private subCategoryService: SubCategoryService,
@@ -63,11 +68,20 @@ export class ProductList implements OnInit, OnDestroy {
     private wishlistService: WishlistService,
     private cartService: CartService,
     private router: Router,
-    private _auth:Auth
+    private _auth: Auth
   ) { }
 
   ngOnInit(): void {
-    this.currentUserId=this._auth.getCurrentUser()?.UserId;
+    // Set initial user if available (preserves previous behavior)
+    this.currentUserId = this._auth.getCurrentUser()?.UserId;
+
+    // Subscribe to auth.currentUser$ so we react to login/logout dynamically
+    this._auth.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUserId = user?.UserId;
+      });
+
     // Load subcategory mapping
     this.loadSubCategoryMapping();
 
@@ -75,7 +89,12 @@ export class ProductList implements OnInit, OnDestroy {
     this.subscription = this.activatedRoute.queryParams.subscribe((params: Params) => {
       this.supplierFilter = params['supplier'] || null;
       this.supplierName = params['supplierName'] || this.supplierFilter;
-      this.loadProducts();
+
+      // 🆕 إضافة السيرش والكاتيجوري
+      const searchQuery = params['q']?.trim() || null;
+      this.selectedCategory = params['category'] && params['category'] !== 'all' ? params['category'] : null;
+
+      this.loadProducts(searchQuery);
     });
   }
 
@@ -83,6 +102,9 @@ export class ProductList implements OnInit, OnDestroy {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
+    // cleanup auth & other subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadSubCategoryMapping(): void {
@@ -98,37 +120,46 @@ export class ProductList implements OnInit, OnDestroy {
     });
   }
 
-  loadProducts(): void {
-    this.loading = true;
-    this.error = null;
+ loadProducts(searchQuery?: string): void {
+  this.loading = true;
+  this.error = null;
 
-    let productsObservable;
+  let productsObservable;
 
-    if (this.supplierFilter) {
-      productsObservable = this.productService.filterBySupplier(this.supplierFilter);
-    } else {
-      productsObservable = this.productService.getProducts();
-    }
-
-    productsObservable.subscribe({
-      next: (products) => {
-        this.allProducts = products;
-        this.calculatePriceRange();
-        this.applyFilters();
-        this.loading = false;
-
-        // Enable animations with a slight delay for better UX
-        setTimeout(() => {
-          this.animationsEnabled = true;
-        }, 100);
-      },
-      error: (error) => {
-        console.error('Error loading products:', error);
-        this.error = 'Failed to load products. Please try again later.';
-        this.loading = false;
-      }
-    });
+  if (this.supplierFilter) {
+    productsObservable = this.productService.filterBySupplier(this.supplierFilter);
+  } else {
+    productsObservable = this.productService.getProducts();
   }
+
+  productsObservable.subscribe({
+    next: (products) => {
+      this.allProducts = products;
+
+      // 🆕 فلترة بالكلمة لو موجودة
+      if (searchQuery) {
+        this.allProducts = this.allProducts.filter(p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+
+      this.calculatePriceRange();
+      this.applyFilters();
+      this.loading = false;
+
+      setTimeout(() => {
+        this.animationsEnabled = true;
+      }, 100);
+    },
+    error: (error) => {
+      console.error('Error loading products:', error);
+      this.error = 'Failed to load products. Please try again later.';
+      this.loading = false;
+    }
+  });
+}
+
 
   calculatePriceRange(): void {
     if (this.allProducts.length === 0) return;
@@ -278,7 +309,7 @@ export class ProductList implements OnInit, OnDestroy {
 
   addToCart(product: IProduct, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     // Show toast or notification here if needed
   }
 
@@ -287,7 +318,7 @@ export class ProductList implements OnInit, OnDestroy {
     if (this.isInWishlist(product.id)) {
       this.wishlistService.removeFromWishlist(product.id);
     } else {
-      this.wishlistService.addToWishlist(product,this.currentUserId);
+      this.wishlistService.addToWishlist(product, this.currentUserId);
     }
   }
 
@@ -313,7 +344,7 @@ export class ProductList implements OnInit, OnDestroy {
 
   requestSample(product: IProduct, event: Event): void {
     event.stopPropagation();
-    this.cartService.addToCart(product,undefined,this.currentUserId);
+    this.cartService.addToCart(product, undefined, this.currentUserId);
     // Show toast notification
     this.showToast(`تمت إضافة ${product.name} إلى السلة`);
   }

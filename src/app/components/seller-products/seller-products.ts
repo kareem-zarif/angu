@@ -84,6 +84,9 @@ export class SellerProductsComponent implements OnInit {
     this.loadProducts();
     this.loadCategories();
     this.loadSubcategories();
+    
+    // Check API connectivity for debugging
+    this.checkApiConnectivity();
   }
 
   loadProducts(): void {
@@ -238,31 +241,44 @@ export class SellerProductsComponent implements OnInit {
     this.selectedImages = [];
     this.formErrors = {};
     
+    console.log('Opening edit modal for product:', product);
+    
     // Find the category for this product's subcategory
     if (product.subCategoryId) {
       this.subCategoryService.getById(product.subCategoryId).subscribe({
         next: (subCategory) => {
+          console.log('Subcategory loaded:', subCategory);
           // Find the category by name
           const category = this.categories.find(c => c.name === subCategory.categoryName);
           if (category) {
             this.selectedCategoryId = category.id;
+            console.log('Category found:', category);
             // Load subcategories for the selected category
             this.subCategoryService.getByCategoryName(subCategory.categoryName).subscribe({
               next: (subCategories) => {
                 this.subCategories = subCategories;
+                console.log('Subcategories loaded:', subCategories);
                 // Ensure the form subcategory ID is preserved
                 this.form.subCategoryId = product.subCategoryId;
               },
               error: (error) => {
                 console.error('Error loading subcategories for edit:', error);
+                this.formErrors['subCategoryId'] = 'Failed to load subcategories';
               }
             });
+          } else {
+            console.warn('Category not found for subcategory:', subCategory);
+            this.formErrors['subCategoryId'] = 'Category not found';
           }
         },
         error: (error) => {
           console.error('Error loading subcategory for edit:', error);
+          this.formErrors['subCategoryId'] = 'Failed to load subcategory';
         }
       });
+    } else {
+      console.warn('Product has no subcategory ID:', product);
+      this.formErrors['subCategoryId'] = 'No subcategory assigned';
     }
     
     this.showEditModal = true;
@@ -281,36 +297,87 @@ export class SellerProductsComponent implements OnInit {
   validateForm(): boolean {
     this.formErrors = {};
 
+    // Product name validation
     if (!this.form.name?.trim()) {
       this.formErrors['name'] = 'Product name is required';
+    } else if (this.form.name.trim().length < 3) {
+      this.formErrors['name'] = 'Product name must be at least 3 characters long';
     }
 
+    // Description validation
     if (!this.form.description?.trim()) {
       this.formErrors['description'] = 'Product description is required';
+    } else if (this.form.description.trim().length < 10) {
+      this.formErrors['description'] = 'Product description must be at least 10 characters long';
     }
 
+    // Price validation
     if (!this.form.pricePerPiece || this.form.pricePerPiece <= 0) {
       this.formErrors['pricePerPiece'] = 'Price must be greater than 0';
+    } else if (this.form.pricePerPiece > 999999) {
+      this.formErrors['pricePerPiece'] = 'Price cannot exceed 999,999';
     }
 
-    if (this.form.pricePer50Piece !== undefined && this.form.pricePer50Piece !== null && this.form.pricePer50Piece <= 0) {
-      this.formErrors['pricePer50Piece'] = 'Price per 50 pieces must be greater than 0';
+    // Bulk pricing validation
+    if (this.form.pricePer50Piece !== undefined && this.form.pricePer50Piece !== null) {
+      if (this.form.pricePer50Piece <= 0) {
+        this.formErrors['pricePer50Piece'] = 'Price per 50 pieces must be greater than 0';
+      } else if (this.form.pricePerPiece && this.form.pricePer50Piece >= this.form.pricePerPiece) {
+        this.formErrors['pricePer50Piece'] = 'Bulk price must be less than individual price';
+      }
     }
 
-    if (this.form.pricePer100Piece !== undefined && this.form.pricePer100Piece !== null && this.form.pricePer100Piece <= 0) {
-      this.formErrors['pricePer100Piece'] = 'Price per 100 pieces must be greater than 0';
+    if (this.form.pricePer100Piece !== undefined && this.form.pricePer100Piece !== null) {
+      if (this.form.pricePer100Piece <= 0) {
+        this.formErrors['pricePer100Piece'] = 'Price per 100 pieces must be greater than 0';
+      } else if (this.form.pricePerPiece && this.form.pricePer100Piece >= this.form.pricePerPiece) {
+        this.formErrors['pricePer100Piece'] = 'Bulk price must be less than individual price';
+      }
+      if (this.form.pricePer50Piece && this.form.pricePer100Piece >= this.form.pricePer50Piece) {
+        this.formErrors['pricePer100Piece'] = 'Price per 100 pieces must be less than price per 50 pieces';
+      }
     }
 
-    if (this.form.noINStock === undefined || this.form.noINStock < 0) {
-      this.formErrors['noINStock'] = 'Stock quantity must be 0 or greater';
+    // Stock validation
+    if (this.form.noINStock === undefined || this.form.noINStock === null) {
+      this.formErrors['noINStock'] = 'Stock quantity is required';
+    } else if (this.form.noINStock < 0) {
+      this.formErrors['noINStock'] = 'Stock quantity cannot be negative';
+    } else if (this.form.noINStock > 999999) {
+      this.formErrors['noINStock'] = 'Stock quantity cannot exceed 999,999';
     }
 
+    // Minimum factory order validation
+    if (this.form.minNumToFactoryOrder !== undefined && this.form.minNumToFactoryOrder !== null) {
+      if (this.form.minNumToFactoryOrder < 1) {
+        this.formErrors['minNumToFactoryOrder'] = 'Minimum factory order must be at least 1';
+      } else if (this.form.minNumToFactoryOrder > 999999) {
+        this.formErrors['minNumToFactoryOrder'] = 'Minimum factory order cannot exceed 999,999';
+      }
+    }
+
+    // Subcategory validation
     if (!this.form.subCategoryId) {
       this.formErrors['subCategoryId'] = 'Subcategory is required';
     }
 
-    if (this.form.warrantyNMonths !== undefined && this.form.warrantyNMonths !== null && this.form.warrantyNMonths < 0) {
-      this.formErrors['warrantyNMonths'] = 'Warranty months must be 0 or greater';
+    // Warranty validation
+    if (this.form.warrantyNMonths !== undefined && this.form.warrantyNMonths !== null) {
+      if (this.form.warrantyNMonths < 0) {
+        this.formErrors['warrantyNMonths'] = 'Warranty months cannot be negative';
+      } else if (this.form.warrantyNMonths > 120) {
+        this.formErrors['warrantyNMonths'] = 'Warranty cannot exceed 120 months (10 years)';
+      }
+    }
+
+    // Shipping validation
+    if (this.form.shipping === undefined || this.form.shipping === null) {
+      this.formErrors['shipping'] = 'Shipping type is required';
+    }
+
+    // Log validation errors for debugging
+    if (Object.keys(this.formErrors).length > 0) {
+      console.log('Form validation errors:', this.formErrors);
     }
 
     return Object.keys(this.formErrors).length === 0;
@@ -326,14 +393,25 @@ export class SellerProductsComponent implements OnInit {
     if (this.selectedProduct) {
       // Update existing product - preserve original approval status
       const cleanedFormData = this.cleanFormData(this.form);
+      const currentUser = this.auth.getCurrentUser();
+      
+      if (!currentUser?.UserId) {
+        alert('User not authenticated. Please login again.');
+        this.isSubmitting = false;
+        return;
+      }
+
       const updateData: IProduct = {
         ...this.selectedProduct,
         ...cleanedFormData,
         approvalStatus: this.selectedProduct.approvalStatus // Keep original approval status
       };
 
+      console.log('Updating product with data:', updateData);
+
       this.productService.update(updateData, this.selectedImages).subscribe({
-        next: () => {
+        next: (updatedProduct) => {
+          console.log('Product updated successfully:', updatedProduct);
           this.loadProducts();
           this.showEditModal = false;
           this.isSubmitting = false;
@@ -344,26 +422,55 @@ export class SellerProductsComponent implements OnInit {
             `Product "${updateData.name}" has been updated by seller`, 
             '/admin/products', { 
               productName: updateData.name,
-              sellerId: this.auth.getCurrentUser()?.UserId 
+              sellerId: currentUser.UserId 
             });
         },
         error: (error) => {
           console.error('Error updating product:', error);
           this.isSubmitting = false;
-          alert('Failed to update product. Please try again.');
+          
+          // Provide more specific error messages
+          let errorMessage = 'Failed to update product. Please try again.';
+          
+          if (error.status === 400) {
+            errorMessage = 'Invalid data provided. Please check your input and try again.';
+          } else if (error.status === 401) {
+            errorMessage = 'Unauthorized. Please login again.';
+          } else if (error.status === 403) {
+            errorMessage = 'Access denied. You may not have permission to update this product.';
+          } else if (error.status === 404) {
+            errorMessage = 'Product not found. It may have been deleted.';
+          } else if (error.status === 500) {
+            errorMessage = 'Server error. Please try again later.';
+          } else if (error.error && error.error.message) {
+            errorMessage = `Error: ${error.error.message}`;
+          }
+          
+          alert(errorMessage);
         }
       });
     } else {
       // Create new product
       const cleanedFormData = this.cleanFormData(this.form);
+      const currentUser = this.auth.getCurrentUser();
+      
+      if (!currentUser?.UserId) {
+        alert('User not authenticated. Please login again.');
+        this.isSubmitting = false;
+        return;
+      }
+
       const createData: IProduct = {
         ...cleanedFormData as IProduct,
         id: '',
         productPicsPathes: []
       };
 
+      console.log('Creating product with data:', createData);
+
       this.productService.add(createData, this.selectedImages).subscribe({
-        next: () => {
+        next: (createdProduct) => {
+          console.log('Product created successfully:', createdProduct);
           this.loadProducts();
           this.showAddModal = false;
           this.isSubmitting = false;
@@ -371,20 +478,35 @@ export class SellerProductsComponent implements OnInit {
           alert('Product created successfully!');
           
           // Create notification for admin about new product
-          const currentSellerId = this.auth.getCurrentUser()?.UserId;
-          if (currentSellerId && this.form.name) {
+          if (this.form.name) {
             this.notifyAdmin('product_created', 'New Product Pending Review', 
               `New product "${this.form.name}" has been submitted for approval.`, 
               '/admin/products', { 
                 productName: this.form.name,
-                sellerId: currentSellerId 
+                sellerId: currentUser.UserId 
               });
           }
         },
         error: (error) => {
           console.error('Error creating product:', error);
           this.isSubmitting = false;
-          alert('Failed to create product. Please try again.');
+          
+          // Provide more specific error messages
+          let errorMessage = 'Failed to create product. Please try again.';
+          
+          if (error.status === 400) {
+            errorMessage = 'Invalid data provided. Please check your input and try again.';
+          } else if (error.status === 401) {
+            errorMessage = 'Unauthorized. Please login again.';
+          } else if (error.status === 403) {
+            errorMessage = 'Access denied. You may not have permission to create products.';
+          } else if (error.status === 500) {
+            errorMessage = 'Server error. Please try again later.';
+          } else if (error.error && error.error.message) {
+            errorMessage = `Error: ${error.error.message}`;
+          }
+          
+          alert(errorMessage);
         }
       });
     }
@@ -591,19 +713,59 @@ export class SellerProductsComponent implements OnInit {
       cleaned.warrantyNMonths = undefined;
     }
     
-    // Ensure numeric fields are properly typed
+    // Ensure numeric fields are properly typed and within valid ranges
     if (cleaned.pricePerPiece !== undefined) {
       cleaned.pricePerPiece = Number(cleaned.pricePerPiece);
+      if (isNaN(cleaned.pricePerPiece) || cleaned.pricePerPiece <= 0) {
+        cleaned.pricePerPiece = 0; // This will trigger validation error
+      }
     }
     
     if (cleaned.noINStock !== undefined) {
       cleaned.noINStock = Number(cleaned.noINStock);
+      if (isNaN(cleaned.noINStock) || cleaned.noINStock < 0) {
+        cleaned.noINStock = 0; // This will trigger validation error
+      }
     }
     
     if (cleaned.minNumToFactoryOrder !== undefined) {
       cleaned.minNumToFactoryOrder = Number(cleaned.minNumToFactoryOrder);
+      if (isNaN(cleaned.minNumToFactoryOrder) || cleaned.minNumToFactoryOrder < 1) {
+        cleaned.minNumToFactoryOrder = 1; // Set to minimum valid value
+      }
     }
     
+    // Ensure shipping type is valid
+    if (cleaned.shipping !== undefined) {
+      cleaned.shipping = Number(cleaned.shipping);
+      if (isNaN(cleaned.shipping) || cleaned.shipping < 0 || cleaned.shipping > 4) {
+        cleaned.shipping = 1; // Default to Free shipping
+      }
+    }
+    
+    // Ensure approval status is valid (for new products)
+    if (cleaned.approvalStatus !== undefined) {
+      cleaned.approvalStatus = Number(cleaned.approvalStatus);
+      if (isNaN(cleaned.approvalStatus) || cleaned.approvalStatus < 1 || cleaned.approvalStatus > 3) {
+        cleaned.approvalStatus = 1; // Default to Pending
+      }
+    }
+    
+    // Ensure subcategory ID is a valid string
+    if (cleaned.subCategoryId && typeof cleaned.subCategoryId !== 'string') {
+      cleaned.subCategoryId = String(cleaned.subCategoryId);
+    }
+    
+    // Ensure name and description are trimmed
+    if (cleaned.name) {
+      cleaned.name = cleaned.name.trim();
+    }
+    
+    if (cleaned.description) {
+      cleaned.description = cleaned.description.trim();
+    }
+    
+    console.log('Cleaned form data:', cleaned);
     return cleaned;
   }
 
@@ -648,4 +810,25 @@ export class SellerProductsComponent implements OnInit {
   // clearAdminNotifications(): void {
   //   this.localNotificationService.clearNotifications('admin');
   // }
+
+  // Add method to check API connectivity
+  checkApiConnectivity(): void {
+    console.log('Checking API connectivity...');
+    console.log('API URL:', 'https://localhost:7253/api');
+    
+    // Test basic connectivity
+    fetch('https://localhost:7253/api/Product')
+      .then(response => {
+        console.log('API connectivity test response:', response.status, response.statusText);
+        if (response.ok) {
+          console.log('✅ API is accessible');
+        } else {
+          console.warn('⚠️ API returned status:', response.status);
+        }
+      })
+      .catch(error => {
+        console.error('❌ API connectivity test failed:', error);
+        alert('Warning: Cannot connect to the backend API. Please check if the backend server is running.');
+      });
+  }
 } 

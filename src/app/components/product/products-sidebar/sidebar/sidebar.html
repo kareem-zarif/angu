@@ -16,12 +16,12 @@
   </div>
 
   <!-- Best Sellers Dropdown -->
-  <div class="mb-6 relative">
+  <!-- <div class="mb-6 relative">
   <div
     class="flex justify-between items-center cursor-pointer"
     (click)="toggleBestSellers()"
   >
-    <!-- العنصر اللي عليه التولتيب -->
+
     <div
       class="relative"
       (mouseenter)="tooltipVisible = true"
@@ -31,7 +31,6 @@
         {{ 'PRODUCT_SIDEBAR.BSET_SELLING' | translate }}
       </h3>
 
-      <!-- Tooltip مخصص -->
       <span
         *ngIf="tooltipVisible"
         class="absolute top-1/2 left-[120%] w-72 bg-gray-800 text-white text-sm rounded py-2 px-3 z-50 shadow-lg transform -translate-y-1/2"
@@ -41,7 +40,6 @@
       </span>
     </div>
 
-    <!-- السهم -->
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
       stroke-width="1.5" stroke="currentColor"
       class="w-4 h-4 transition-transform ml-2"
@@ -51,7 +49,7 @@
   </div>
 
   <!-- محتوى التوصيات -->
-  <div
+  <!-- <div
     *ngIf="bestSellersOpen"
     class="mt-3 pl-4 py-3 border-l-2 border-yellow-300 bg-yellow-50 rounded-md shadow-sm"
   >
@@ -61,13 +59,11 @@
     >
         {{ 'PRODUCT_SIDEBAR.RECOMENDATION' | translate }}
     </a>
-  </div>
-</div>
-
-
+  </div> -->
+<!-- </div> --> 
 
   <!-- New Releases Dropdown -->
-  <div class="mb-6">
+  <!-- <div class="mb-6">
     <div class="flex justify-between items-center cursor-pointer" (click)="toggleNewReleases()">
       <h3 class="font-bold text-lg" style="color: #483C21;"> {{ 'PRODUCT_SIDEBAR.NEW_RELEASE' | translate }}</h3>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
@@ -78,15 +74,15 @@
     <div *ngIf="newReleasesOpen" class="mt-2 pl-2 border-l-2 border-gray-200">
       <div class="text-sm text-gray-600">New products will appear here</div>
     </div>
-  </div>
+  </div> -->
 
   <!-- Last Viewed Link -->
-  <div class="mb-6">
+  <!-- <div class="mb-6">
     <div class="flex items-center cursor-pointer" (click)="toggleLastViewed()">
       <h3 class="font-bold text-lg"
         [ngClass]="{'text-[#483C21] font-bold': lastViewedActive, 'text-gray-700': !lastViewedActive}"> {{ 'PRODUCT_SIDEBAR.LAST_VIEWED' | translate }}</h3>
     </div>
-  </div>
+  </div> -->
 
   <!-- Customer Review / Rating Filter -->
   <div class="mb-6">

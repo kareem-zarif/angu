@@ -101,10 +101,14 @@
                   </div>
                 </div>
               </div>
-              <div class="text-center mt-4">
+              <div class="text-center mt-4 flex gap-2 justify-around">
                 <button (click)="viewSupplierProducts(supplier.factoryName)"
                   class="text-[#483C21] text-sm hover:underline cursor-pointer py-2 px-4 border border-[#483C21] rounded-md hover:bg-[#483C21] hover:text-white transition-colors duration-200">
                     {{ 'SUPPLIER_LIST.SHOW_PRODUCT' | translate }}
+                </button>
+                <button (click)="navigateToChat(supplier.id, $event)"
+                  class="text-[#483C21] text-sm hover:underline cursor-pointer py-2 px-4 border border-[#483C21] rounded-md hover:bg-[#FF8C00] hover:text-black transition-colors duration-200">
+                  تواصل مع المصنع
                 </button>
               </div>
             </div>

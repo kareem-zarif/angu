@@ -9,12 +9,21 @@
 }
 
 :host-context([dir="rtl"]) .dropdown-content li a {
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
-/* Language dropdown styles */
+/* Search dropdown styles */
 .dropdown-content {
-  min-width: 120px;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 0.375rem 0.375rem;
+  z-index: 99999;
+  max-height: 15rem;
+  overflow-y: auto;
 }
 
 .dropdown-content li {
@@ -30,4 +39,17 @@
 
 .dropdown-content li a:hover {
   background-color: #f3f4f6;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-select {
+  font-size: 14px;
+}
+
+input.mat-input-element {
+  font-size: 14px;
+  padding: 8px 12px;
 }

@@ -1,0 +1,479 @@
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Admin Management</h1>
+      <p class="text-gray-600 mt-1">Manage admin accounts, roles, and permissions</p>
+    </div>
+    <button 
+      (click)="openAddModal()" 
+      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+    >
+      <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+      </svg>
+      Add New Admin
+    </button>
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- Search Input -->
+      <div class="md:col-span-2">
+        <div class="relative">
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (input)="onSearch()"
+            placeholder="Search admins by username, email, or name..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Role Filter -->
+      <div>
+        <select
+          [(ngModel)]="roleFilter"
+          (change)="onSearch()"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="all">All Roles</option>
+          <option *ngFor="let role of availableRoles" [value]="role.value">{{ role.label }}</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <select
+          [(ngModel)]="statusFilter"
+          (change)="onSearch()"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="all">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Clear Filters Button -->
+    <div class="mt-4 flex justify-end">
+      <button
+        (click)="clearSearch()"
+        class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+      >
+        Clear Filters
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex justify-center items-center py-12">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Admins Table -->
+  <div *ngIf="!loading" class="bg-white rounded-lg shadow overflow-hidden app-table-card">
+    <table class="app-table">
+             <thead class="app-thead">
+         <tr>
+           <th class="app-th text-left">Admin Info</th>
+           <th class="app-th text-left">Role</th>
+           <th class="app-th text-left">Actions</th>
+         </tr>
+       </thead>
+      <tbody class="app-tbody">
+                 <tr *ngFor="let admin of getPaginatedAdmins()" class="app-tr-hover">
+           <td class="app-td">
+             <div class="flex items-center">
+               <div class="flex-shrink-0 h-10 w-10">
+                 <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                   <span class="text-blue-600 font-semibold text-sm">
+                     {{ getDisplayName(admin).charAt(0) }}
+                   </span>
+                 </div>
+               </div>
+               <div class="ml-4">
+                 <div class="text-sm font-medium text-gray-900">{{ getDisplayName(admin) }}</div>
+                 <div class="text-sm text-gray-500">{{ admin.email }}</div>
+               </div>
+             </div>
+           </td>
+           <td class="app-td">
+             <div class="space-y-2">
+               <div>
+                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                   {{ admin.userRoleH }}
+                 </span>
+                 <p class="text-xs text-gray-500 mt-1">Full system access</p>
+               </div>
+             </div>
+           </td>
+           <td class="app-td">
+             <div class="flex gap-2">
+               <button 
+                 (click)="openEditModal(admin)" 
+                 class="btn-soft-blue"
+                 title="Edit Admin"
+               >
+                 Edit
+               </button>
+               <button 
+                 (click)="openDeleteModal(admin)" 
+                 class="btn-soft-red"
+                 title="Delete Admin"
+               >
+                 Delete
+               </button>
+             </div>
+           </td>
+         </tr>
+      </tbody>
+    </table>
+
+    <!-- Empty State -->
+    <div *ngIf="getPaginatedAdmins().length === 0" class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">No admins found</h3>
+      <p class="mt-1 text-sm text-gray-500">Get started by creating a new admin account.</p>
+      <div class="mt-6">
+        <button 
+          (click)="openAddModal()" 
+          class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          Add Admin
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalPages > 1" class="mt-6 flex justify-center">
+    <nav class="flex items-center space-x-2">
+      <button
+        (click)="onPageChange(currentPage - 1)"
+        [disabled]="currentPage === 1"
+        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Previous
+      </button>
+      
+      <div class="flex space-x-1">
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          (click)="onPageChange(i + 1)"
+          [class]="currentPage === i + 1 ? 'px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md' : 'px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50'"
+        >
+          {{ i + 1 }}
+        </button>
+      </div>
+      
+      <button
+        (click)="onPageChange(currentPage + 1)"
+        [disabled]="currentPage === totalPages"
+        class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Next
+      </button>
+    </nav>
+  </div>
+
+  <!-- Add Admin Modal -->
+  <div *ngIf="showAddModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-900">Add New Admin</h2>
+        <button 
+          (click)="closeAddModal()" 
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <form [formGroup]="adminForm" (ngSubmit)="onSubmitAdd()" class="space-y-6">
+                 <!-- Basic Information -->
+         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div>
+             <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+             <input
+               type="text"
+               formControlName="firstName"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               placeholder="Enter first name"
+             />
+             <div *ngIf="adminForm.get('firstName')?.invalid && adminForm.get('firstName')?.touched" class="text-red-500 text-xs mt-1">
+               First name is required and must be 3-50 characters
+             </div>
+           </div>
+
+           <div>
+             <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+             <input
+               type="text"
+               formControlName="lastName"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               placeholder="Enter last name"
+             />
+             <div *ngIf="adminForm.get('lastName')?.invalid && adminForm.get('lastName')?.touched" class="text-red-500 text-xs mt-1">
+               Last name is required and must be 3-50 characters
+             </div>
+           </div>
+         </div>
+
+         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div>
+             <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+             <input
+               type="email"
+               formControlName="email"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               placeholder="Enter email"
+             />
+             <div *ngIf="adminForm.get('email')?.invalid && adminForm.get('email')?.touched" class="text-red-500 text-xs mt-1">
+               Please enter a valid email address
+             </div>
+           </div>
+
+           <div>
+             <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+             <input
+               type="tel"
+               formControlName="phoneNumber"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               placeholder="01XXXXXXXX or +201XXXXXXXX"
+             />
+             <div *ngIf="adminForm.get('phoneNumber')?.invalid && adminForm.get('phoneNumber')?.touched" class="text-red-500 text-xs mt-1">
+               Please enter a valid Egyptian phone number
+             </div>
+           </div>
+         </div>
+
+
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+            <input
+              type="password"
+              formControlName="password"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter password"
+            />
+                         <div *ngIf="adminForm.get('password')?.invalid && adminForm.get('password')?.touched" class="text-red-500 text-xs mt-1">
+               Password must have 1 Uppercase, 1 Lowercase, 1 number and at least 10 characters
+             </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
+            <input
+              type="password"
+              formControlName="confirmPassword"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Confirm password"
+            />
+            <div *ngIf="adminForm.errors?.['passwordMismatch'] && adminForm.get('confirmPassword')?.touched" class="text-red-500 text-xs mt-1">
+              Passwords do not match
+            </div>
+          </div>
+        </div>
+
+                 <!-- Admin Role Info -->
+         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+           <div class="flex items-center">
+             <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+             </svg>
+             <span class="text-sm text-blue-800 font-medium">Admin Role</span>
+           </div>
+           <p class="text-sm text-blue-700 mt-1">This user will be automatically assigned the Admin role with full system access.</p>
+         </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            (click)="closeAddModal()"
+            class="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="adminForm.invalid || isSubmitting"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span *ngIf="isSubmitting" class="inline-flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating...
+            </span>
+            <span *ngIf="!isSubmitting">Create Admin</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Admin Modal -->
+  <div *ngIf="showEditModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+                 <h2 class="text-xl font-semibold text-gray-900">Edit Admin: {{ selectedAdmin?.displayName }}</h2>
+        <button 
+          (click)="closeEditModal()" 
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <form [formGroup]="editForm" (ngSubmit)="onSubmitEdit()" class="space-y-6">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div>
+             <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+             <input
+               type="email"
+               formControlName="email"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+             />
+           </div>
+
+           <div>
+             <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+             <input
+               type="tel"
+               formControlName="phoneNumber"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               placeholder="01XXXXXXXX or +201XXXXXXXX"
+             />
+           </div>
+         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+            <input
+              type="text"
+              formControlName="firstName"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+            <input
+              type="text"
+              formControlName="lastName"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        
+
+                 <!-- Admin Role Info -->
+         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+           <div class="flex items-center">
+             <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+             </svg>
+             <span class="text-sm text-blue-800 font-medium">Admin Role</span>
+           </div>
+           <p class="text-sm text-blue-700 mt-1">This user has the Admin role with full system access.</p>
+         </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            (click)="closeEditModal()"
+            class="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            [disabled]="editForm.invalid || isSubmitting"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <span *ngIf="isSubmitting" class="inline-flex items-center">
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Updating...
+            </span>
+            <span *ngIf="!isSubmitting">Update Admin</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div *ngIf="showDeleteModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+      <div class="flex items-center mb-4">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-lg font-medium text-gray-900">Delete Admin</h3>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+                 <p class="text-sm text-gray-500">
+           Are you sure you want to delete <strong>{{ selectedAdmin?.displayName }}</strong>? 
+           This action cannot be undone.
+         </p>
+      </div>
+
+      <div class="flex justify-end space-x-3">
+        <button
+          type="button"
+          (click)="closeDeleteModal()"
+          class="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="onDeleteAdmin()"
+          [disabled]="isSubmitting"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <span *ngIf="isSubmitting" class="inline-flex items-center">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Deleting...
+          </span>
+          <span *ngIf="!isSubmitting">Delete Admin</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

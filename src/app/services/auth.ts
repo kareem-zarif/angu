@@ -13,6 +13,7 @@ export interface User {
   UserId: string;
   email: string;
   displayName: string;
+  sellerName?: string; // Add seller name field
   token: string;
   roles: string[];
   isAuthenticated: boolean;
@@ -48,7 +49,7 @@ export class Auth {
     // backend expects /register/customer
     return this.http.post(`${this.baseUrl}/register/customer`, payload);
   }
- registerSupplier(payload: ISupplierRegister): Observable<any> {
+  registerSupplier(payload: ISupplierRegister): Observable<any> {
     return this.http.post(`${this.baseUrl}/register/supplier`, payload);
   }
 
@@ -62,6 +63,7 @@ export class Auth {
             UserId: response.UserId,
             email: response.email,
             displayName: response.displayName,
+            sellerName: response.sellerName || response.displayName, // Extract seller name
             token: response.token,
             isAuthenticated: true,
             roles: []
@@ -148,11 +150,18 @@ export class Auth {
         user.UserId = decodedToken['nameid'];
       }
 
+      // Extract seller name from token if available
+      if (decodedToken && decodedToken['sellerName']) {
+        user.sellerName = decodedToken['sellerName'];
+      } else if (decodedToken && decodedToken['displayName']) {
+        user.sellerName = decodedToken['displayName'];
+      }
+
       // حفظ المستخدم في localStorage
       localStorage.setItem('user', JSON.stringify(user));
       this.currentUserSource.next(user);
 
-      console.log('User set successfully:', { UserId: user.UserId, email: user.email, roles: user.roles });
+      console.log('User set successfully:', { UserId: user.UserId, email: user.email, roles: user.roles, token: user.token });
     } catch (error) {
       console.error('Error setting current user:', error);
       this.logout();
@@ -256,6 +265,23 @@ export class Auth {
 
     console.error('Auth Service Error:', error);
     return throwError(() => new Error(errorMessage));
+  }
+
+  getToken(): string {
+    const currentUser = this.currentUserSource.value;
+    return currentUser?.token || '';
+  };
+
+  getUserId(): string | null {
+    return this.currentUserSource.value?.UserId ?? null;
+  }
+
+  getSellerName(): string | null {
+    return this.currentUserSource.value?.sellerName ?? null;
+  }
+
+  getRoles(): string[] {
+    return this.currentUserSource.value?.roles ?? [];
   }
 
   // تنظيف الموارد عند تدمير الخدمة

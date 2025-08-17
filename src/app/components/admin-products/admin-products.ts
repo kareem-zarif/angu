@@ -9,6 +9,8 @@ import { ISubCategory } from '../../models/i-sub-category';
 import { PaginationComponent } from '../shared/pagination/pagination';
 import { CategoryService } from '../../services/category.service';
 import { SubCategoryService } from '../../services/sub-category.service';
+import { ProductSupplierService, ProductSupplierResDto } from '../../services/product-supplier.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-admin-products',
@@ -56,6 +58,9 @@ export class AdminProductsComponent implements OnInit {
   subcategories: ISubCategory[] = [];
   subcategoriesByCategory: { [categoryName: string]: ISubCategory[] } = {};
 
+  // Product-supplier relationships
+  productSuppliers: ProductSupplierResDto[] = [];
+
   // Approval modal properties
   newApprovalStatus: ProductApprovalStatus = ProductApprovalStatus.Pending;
   approvalNotes: string = '';
@@ -64,7 +69,8 @@ export class AdminProductsComponent implements OnInit {
     private productService: AdminProductsService,
     private notificationService: NotificationService,
     private categoryService: CategoryService,
-    private subCategoryService: SubCategoryService
+    private subCategoryService: SubCategoryService,
+    private productSupplierService: ProductSupplierService
   ) {}
 
   ngOnInit() {
@@ -77,9 +83,14 @@ export class AdminProductsComponent implements OnInit {
     this.isLoading = true;
     this.error = null;
 
-    this.productService.getAllProducts().subscribe({
-      next: (products) => {
+    // Load both products and product-supplier relationships
+    forkJoin({
+      products: this.productService.getAllProducts(),
+      productSuppliers: this.productSupplierService.getAll()
+    }).subscribe({
+      next: ({ products, productSuppliers }) => {
         this.products = products;
+        this.productSuppliers = productSuppliers;
         this.applyFilters();
         this.isLoading = false;
       },
@@ -145,19 +156,19 @@ export class AdminProductsComponent implements OnInit {
         const searchLower = this.searchTerm.toLowerCase();
         switch (this.searchField) {
           case 'name':
-            return product.name.toLowerCase().includes(searchLower);
+            return product.name?.toLowerCase().includes(searchLower) || false;
           case 'description':
-            return product.description.toLowerCase().includes(searchLower);
+            return product.description?.toLowerCase().includes(searchLower) || false;
           case 'supplier':
-            return (product.supplierNames || []).some(name => 
+            return this.getSupplierNames(product).some(name => 
               name.toLowerCase().includes(searchLower)
             );
           case 'all':
           default:
             return (
-              product.name.toLowerCase().includes(searchLower) ||
-              product.description.toLowerCase().includes(searchLower) ||
-              (product.supplierNames || []).some(name => 
+              (product.name?.toLowerCase().includes(searchLower) || false) ||
+              (product.description?.toLowerCase().includes(searchLower) || false) ||
+              this.getSupplierNames(product).some(name => 
                 name.toLowerCase().includes(searchLower)
               )
             );
@@ -171,20 +182,20 @@ export class AdminProductsComponent implements OnInit {
       }
 
       // Stock filter
-      if (this.stockFilter === 'inStock' && product.noINStock <= 0) return false;
-      if (this.stockFilter === 'outOfStock' && product.noINStock > 0) return false;
-      if (this.stockFilter === 'lowStock' && product.noINStock > 10) return false;
+      if (this.stockFilter === 'inStock' && (product.noINStock || 0) <= 0) return false;
+      if (this.stockFilter === 'outOfStock' && (product.noINStock || 0) > 0) return false;
+      if (this.stockFilter === 'lowStock' && (product.noINStock || 0) > 10) return false;
 
       // Price range filter
-      if (this.minPriceFilter !== null && product.pricePerPiece < this.minPriceFilter) return false;
-      if (this.maxPriceFilter !== null && product.pricePerPiece > this.maxPriceFilter) return false;
+      if (this.minPriceFilter !== null && (product.pricePerPiece || 0) < this.minPriceFilter) return false;
+      if (this.maxPriceFilter !== null && (product.pricePerPiece || 0) > this.maxPriceFilter) return false;
 
       // Category filter - if category is selected, filter by subcategories in that category
       if (this.categoryFilter !== 'all') {
         const categoryName = this.categories.find(cat => cat.id === this.categoryFilter)?.name;
         if (categoryName) {
           const subcategoryIds = this.subcategoriesByCategory[categoryName]?.map(sub => sub.id) || [];
-          if (!subcategoryIds.includes(product.subCategoryId)) return false;
+          if (!subcategoryIds.includes(product.subCategoryId || '')) return false;
         }
       }
 
@@ -240,7 +251,7 @@ export class AdminProductsComponent implements OnInit {
 
   openApprovalModal(product: IProduct) {
     this.selectedProduct = product;
-    this.newApprovalStatus = product.approvalStatus;
+    this.newApprovalStatus = this.getSafeApprovalStatus(product);
     this.approvalNotes = '';
     this.showApprovalModal = true;
   }
@@ -262,22 +273,28 @@ export class AdminProductsComponent implements OnInit {
         this.notificationService.showSuccess('Product status updated successfully!');
         
         // Create notification for seller about product approval
-        if (this.selectedProduct && this.selectedProduct.supplierNames && this.selectedProduct.supplierNames.length > 0) {
-          const sellerId = this.getSellerIdFromProduct(this.selectedProduct);
-          console.log('Creating approval notification for seller:', sellerId, 'product:', this.selectedProduct.name);
-          
-          this.notificationService.createProductApprovalNotification(
-            sellerId,
-            this.selectedProduct.name,
-            this.newApprovalStatus === ProductApprovalStatus.Approved
-          ).subscribe({
-            next: (notification) => {
-              console.log('Notification created successfully:', notification);
-            },
-            error: (error) => {
-              console.error('Error creating notification:', error);
-            }
-          });
+        try {
+          const sellerId = this.getSellerIdFromProduct(this.selectedProduct!);
+          if (sellerId && sellerId !== 'unknown-seller-id') {
+            console.log('Creating approval notification for seller:', sellerId, 'product:', this.selectedProduct!.name);
+            
+            this.notificationService.createProductApprovalNotification(
+              sellerId,
+              this.selectedProduct!.name,
+              this.newApprovalStatus === ProductApprovalStatus.Approved
+            ).subscribe({
+              next: (notification) => {
+                console.log('Notification created successfully:', notification);
+              },
+              error: (error) => {
+                console.error('Error creating notification:', error);
+              }
+            });
+          } else {
+            console.warn('Could not create notification: No valid seller ID found');
+          }
+        } catch (error) {
+          console.error('Error creating approval notification:', error);
         }
       },
       error: (error) => {
@@ -305,22 +322,28 @@ export class AdminProductsComponent implements OnInit {
         this.notificationService.showSuccess('Product rejected successfully!');
         
         // Create notification for seller about product rejection
-        if (this.selectedProduct && this.selectedProduct.supplierNames && this.selectedProduct.supplierNames.length > 0) {
-          const sellerId = this.getSellerIdFromProduct(this.selectedProduct);
-          console.log('Creating rejection notification for seller:', sellerId, 'product:', this.selectedProduct.name);
-          
-          this.notificationService.createProductApprovalNotification(
-            sellerId,
-            this.selectedProduct.name,
-            false // rejected
-          ).subscribe({
-            next: (notification) => {
-              console.log('Notification created successfully:', notification);
-            },
-            error: (error) => {
-              console.error('Error creating notification:', error);
-            }
-          });
+        try {
+          const sellerId = this.getSellerIdFromProduct(this.selectedProduct!);
+          if (sellerId && sellerId !== 'unknown-seller-id') {
+            console.log('Creating rejection notification for seller:', sellerId, 'product:', this.selectedProduct!.name);
+            
+            this.notificationService.createProductApprovalNotification(
+              sellerId,
+              this.selectedProduct!.name,
+              false // rejected
+            ).subscribe({
+              next: (notification) => {
+                console.log('Notification created successfully:', notification);
+              },
+              error: (error) => {
+                console.error('Error creating notification:', error);
+              }
+            });
+          } else {
+            console.warn('Could not create notification: No valid seller ID found');
+          }
+        } catch (error) {
+          console.error('Error creating rejection notification:', error);
         }
       },
       error: (error) => {
@@ -332,14 +355,68 @@ export class AdminProductsComponent implements OnInit {
   }
 
   private getSellerIdFromProduct(product: IProduct): string {
-    // This is a placeholder implementation
-    // In a real application, you would have a proper mapping from supplier names to seller IDs
+    // Find the ProductSupplier relationship for this product
+    const productSupplier = this.productSuppliers.find(ps => ps.productId === product.id);
+    
+    if (productSupplier) {
+      return productSupplier.supplierId;
+    }
+    
+    // Fallback: try to get from product.suppliers array if it exists
+    if (product.suppliers && product.suppliers.length > 0) {
+      return product.suppliers[0];
+    }
+    
+    // Fallback: try to get from product.supplierNames if it exists
     if (product.supplierNames && product.supplierNames.length > 0) {
       // For now, we'll use a hash of the supplier name as a pseudo-ID
       // In production, you should have a proper supplier/seller mapping table
       return btoa(product.supplierNames[0]).substring(0, 8);
     }
-    return 'default-seller-id';
+    
+    console.warn('No supplier ID found for product:', product.id, product.name);
+    return 'unknown-seller-id';
+  }
+
+  // Helper method to get supplier names for display
+  getSupplierNames(product: IProduct): string[] {
+    // First try to get from ProductSupplier relationships
+    const productSupplier = this.productSuppliers.find(ps => ps.productId === product.id);
+    if (productSupplier) {
+      return [productSupplier.factoryName || 'Unknown Supplier'];
+    }
+    
+    // Fallback: try to get from product.supplierNames
+    if (product.supplierNames && product.supplierNames.length > 0) {
+      return product.supplierNames;
+    }
+    
+    // Fallback: try to get from product.suppliers
+    if (product.suppliers && product.suppliers.length > 0) {
+      return product.suppliers;
+    }
+    
+    return ['No Supplier'];
+  }
+
+  // Helper method to check if product has supplier information
+  hasSupplierInfo(product: IProduct): boolean {
+    return this.getSupplierNames(product).some(name => name !== 'No Supplier' && name !== 'Unknown Supplier');
+  }
+
+  // Helper method to safely get product property
+  safeGetProperty<T>(product: IProduct | null, property: keyof IProduct, defaultValue: T): T {
+    if (!product) return defaultValue;
+    const value = product[property];
+    if (value === null || value === undefined) {
+      return defaultValue;
+    }
+    return value as T;
+  }
+
+  // Helper method to safely get approval status
+  getSafeApprovalStatus(product: IProduct | null): ProductApprovalStatus {
+    return this.safeGetProperty(product, 'approvalStatus', ProductApprovalStatus.Pending);
   }
 
   openEditModal(product: IProduct) {

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Input, ChangeDetectorRef } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -7,10 +7,24 @@ import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlistService';
 import { ICartItem } from '../../models/i-cart-item';
 import { HttpClient } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
 import { TranslateService } from '@ngx-translate/core';
 import { TranslateModule } from '@ngx-translate/core';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { AddressService } from '../../services/address.service';
+import { IAddress } from '../../models/iaddress';
+import { AddressManagement } from '../../components/address-management/address-management';
+import { FormControl } from '@angular/forms';
+import { Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 interface Language {
   code: string;
@@ -20,33 +34,32 @@ interface Language {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, CommonModule,FormsModule,TranslateModule],
+  imports: [RouterLink, CommonModule, FormsModule,TranslateModule, ReactiveFormsModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatAutocompleteModule, MatButtonModule,MatIconModule],
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
-export class Header implements OnInit, OnDestroy {
-  // User state
+export class Header implements OnInit, OnDestroy, AfterViewInit {
   currentUser: User | null = null;
-
-  // Cart and wishlist state
-  cartCount: number = 0;
-  cartTotal: number = 0;
+  cartCount = 0;
+  cartTotal = 0;
   cartItems: ICartItem[] = [];
-  wishlistCount: number = 0;
-
-  // Language settings
+  wishlistCount = 0;
   selectedLang: Language = { code: 'en', label: 'Eng' };
-
-  searchQuery: string = '';
+  @ViewChild('searchInput', { static: false }) searchInput!: ElementRef;
+  searchQueryControl = new FormControl();
+  searchCategory = new FormControl('all');
+  filteredOptions: Observable<string[]>;
   searchSuggestions: string[] = [];
-
-  // Notification state
+  private hideTimeout: any;
   notifications: any[] = [];
-  notificationCount: number = 0;
-  showNotifications: boolean = false;
-
-  // Subscriptions management
+  notificationCount = 0;
+  showNotifications = false;
+  currentAddress: IAddress | null = null;
+  addressDisplay = 'Select Address';
+  isLoadingAddress = false;
   private subscriptions: Subscription = new Subscription();
+  showSuggestions = false;
+  @Input() addressManagementComponent?: AddressManagement;
 
   constructor(
     private authService: Auth,
@@ -61,38 +74,61 @@ export class Header implements OnInit, OnDestroy {
         this.translate.setDefaultLang('en');
    }
 
+    private addressService: AddressService,
+    private cdr: ChangeDetectorRef
+  ) {
+    this.filteredOptions = this.searchQueryControl.valueChanges.pipe(
+      startWith(''),
+      debounceTime(300),
+      distinctUntilChanged(),
+      map(value => this._filter(value || ''))
+    );
+  }
+
+  ngAfterViewInit() {
+    console.log('searchInput initialized:', this.searchInput);
+  }
+
   ngOnInit(): void {
-    // Subscribe to user state
     this.subscriptions.add(
-      this.authService.currentUser$.subscribe(user => {
+      this.authService.currentUser$.subscribe((user: User | null) => {
         this.currentUser = user;
-      })
-    );
-
-    // Subscribe to cart and wishlist state
-    this.subscriptions.add(
-      this.cartService.getCartCount().subscribe(count => {
-        this.cartCount = count;
-      })
-    );
-
-    this.subscriptions.add(
-      this.cartService.getCartTotal().subscribe(total => {
-        this.cartTotal = total;
+        if (user?.UserId) {
+          this.updateAddressFromLocalStorage();
+        } else {
+          this.resetAddressState();
+        }
       })
     );
 
     this.subscriptions.add(
-      this.cartService.getCartItems().subscribe(items => {
-        this.cartItems = items;
+      this.addressService.defaultAddress$.subscribe((addr: IAddress | null) => {
+        if (addr) {
+          this.setCurrentAddress(addr);
+        } else {
+          this.updateAddressFromLocalStorage();
+        }
       })
     );
 
-    this.wishlistService.getWishlistObservable().subscribe(products => {
-      this.wishlistCount = products.length;
-    });
+    this.subscriptions.add(
+      this.cartService.getCartCount().subscribe(count => this.cartCount = count)
+    );
 
-    // Subscribe to notifications
+    this.subscriptions.add(
+      this.cartService.getCartTotal().subscribe(total => this.cartTotal = total)
+    );
+
+    this.subscriptions.add(
+      this.cartService.getCartItems().subscribe(items => this.cartItems = items)
+    );
+
+    this.subscriptions.add(
+      this.wishlistService.getWishlistObservable().subscribe(products => {
+        this.wishlistCount = products.length;
+      })
+    );
+
     this.subscriptions.add(
       this.unifiedNotificationService.allNotifications$.subscribe(notifications => {
         this.notifications = notifications;
@@ -100,25 +136,139 @@ export class Header implements OnInit, OnDestroy {
       })
     );
 
-    // Load saved language preference
     this.loadSavedLanguage();
+  }
+
+  private _filter(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    this.getSearchSuggestions(filterValue);
+    return this.searchSuggestions.filter(option => option.toLowerCase().includes(filterValue));
+  }
+
+  private getSearchSuggestions(query: string): void {
+    if (query.length >= 1) {
+      this.http
+        .get<string[]>(`https://localhost:7253/api/product/search?q=${encodeURIComponent(query)}`)
+        .subscribe({
+          next: (data) => {
+            this.searchSuggestions = Array.isArray(data) ? data : [];
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.searchSuggestions = [];
+            this.cdr.detectChanges();
+          }
+        });
+    } else {
+      this.searchSuggestions = [];
+    }
+  }
+
+  onSearchSelect(event: MatAutocompleteSelectedEvent): void {
+    const value = event.option.value;
+    if (value) {
+      this.searchQueryControl.setValue(value);
+      this.performSearch();
+    }
+  }
+
+  performSearch(): void {
+    const query = this.searchQueryControl.value?.trim();
+    if (query) {
+      this.router.navigate(['/products'], {
+        queryParams: { q: query, category: this.searchCategory.value }
+      });
+    }
+  }
+
+  private updateAddressFromLocalStorage(): void {
+    const defaultAddressKey = `defaultAddress_${this.currentUser?.UserId}`;
+    const savedAddressId = localStorage.getItem(defaultAddressKey);
+    if (savedAddressId && this.currentUser?.UserId) {
+      this.subscriptions.add(
+        this.addressService.getAddress(savedAddressId).subscribe({
+          next: address => this.setCurrentAddress(address),
+          error: () => this.resetAddressState()
+        })
+      );
+    } else {
+      this.loadCurrentAddress();
+    }
+  }
+
+  private resetAddressState(): void {
+    this.currentAddress = null;
+    this.addressDisplay = 'Select Address';
+    this.isLoadingAddress = false;
+  }
+
+  loadCurrentAddress(): void {
+    if (!this.currentUser?.UserId) {
+      this.resetAddressState();
+      return;
+    }
+    this.isLoadingAddress = true;
+    this.subscriptions.add(
+      this.addressService.getAddresses(this.currentUser.UserId).subscribe({
+        next: addresses => {
+          if (addresses?.length) {
+            const defaultAddress = addresses.find(addr => addr.IsDefault);
+            this.setCurrentAddress(defaultAddress || addresses[0]);
+          } else {
+            this.addressDisplay = 'No address set';
+          }
+          this.isLoadingAddress = false;
+        },
+        error: () => {
+          this.addressDisplay = 'Error loading address';
+          this.isLoadingAddress = false;
+        }
+      })
+    );
+  }
+
+  private setCurrentAddress(address: IAddress): void {
+    this.currentAddress = address;
+    this.addressDisplay = this.getAddressDisplay(this.currentAddress);
+    this.cdr.detectChanges();
+  }
+
+  getAddressDisplay(address: IAddress): string {
+    if (!address) return 'Select Address';
+    const parts = [];
+    if (address.street) parts.push(address.street);
+    if (address.city) parts.push(address.city);
+    if (address.state) parts.push(address.state);
+    if (!parts.length) return 'Invalid Address';
+    return address.city && address.state
+      ? `${address.city}, ${address.state}`
+      : parts.join(', ').trim();
+  }
+
+  navigateToAddressManagement(): void {
+    if (this.isLoggedIn()) {
+      this.router.navigate(['/address-management']);
+    } else {
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: '/address-management' }
+      });
+    }
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
-  // Authentication methods
   isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
   }
 
   logout(): void {
     this.authService.logout();
+    this.resetAddressState();
     this.router.navigate(['/']);
   }
 
-  // Navigation methods
   navigateToRegister(): void {
     this.router.navigate(['/register-selection']);
   }
@@ -127,7 +277,6 @@ export class Header implements OnInit, OnDestroy {
     this.router.navigate(['/login']);
   }
 
-  // Language management methods
   changeLang(code: string, label: string): void {
     this.selectedLang = { code, label };
     localStorage.setItem('selectedLanguage', JSON.stringify(this.selectedLang));
@@ -142,8 +291,8 @@ export class Header implements OnInit, OnDestroy {
         this.selectedLang = JSON.parse(savedLang);
         this.translate.use(this.selectedLang.code);
         this.applyLanguageDirection(this.selectedLang.code);
-      } catch (error) {
-        console.error('Error loading language from storage:', error);
+      } catch {
+        this.selectedLang = { code: 'en', label: 'Eng' };
       }
     }
     else {
@@ -167,39 +316,6 @@ export class Header implements OnInit, OnDestroy {
     }
   }
 
-  // Search methods
-  onSearchInput(): void {
-    if (this.searchQuery.length < 2) {
-      this.searchSuggestions = [];
-      return;
-    }
-
-    this.http.get<string[]>(`api/product/search?q=${encodeURIComponent(this.searchQuery)}`)
-      .subscribe({
-        next: (suggestions) => {
-          this.searchSuggestions = suggestions;
-        },
-        error: (error) => {
-          console.error('Search error:', error);
-          this.searchSuggestions = [];
-        }
-      });
-  }
-
-  selectSuggestion(suggestion: string): void {
-    this.searchQuery = suggestion;
-    this.searchSuggestions = [];
-    this.performSearch();
-  }
-
-  performSearch(): void {
-    if (this.searchQuery) {
-      this.router.navigate(['/products'], { queryParams: { q: this.searchQuery } });
-    }
-  }
-
-
-  // Notification methods
   toggleNotifications(): void {
     this.showNotifications = !this.showNotifications;
   }
@@ -215,6 +331,7 @@ export class Header implements OnInit, OnDestroy {
     if (!notification.isRead) {
       this.unifiedNotificationService.markAsRead(notification.id);
     }
+    this.showNotifications = false;
   }
 
   getNotificationIcon(type: string): string {
@@ -266,17 +383,16 @@ export class Header implements OnInit, OnDestroy {
 
   formatTime(timestamp: Date): string {
     const now = new Date();
-    const diff = now.getTime() - timestamp.getTime();
+    const notificationDate = new Date(timestamp);
+    const diff = now.getTime() - notificationDate.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 60) {
-      return `${minutes} minutes ago`;
-    } else if (hours < 24) {
-      return `${hours} hours ago`;
-    } else {
-      return `${days} days ago`;
-    }
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+    return notificationDate.toLocaleDateString();
   }
 }

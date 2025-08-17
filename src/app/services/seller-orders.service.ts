@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, of, BehaviorSubject, tap } from 'rxjs';
+import { Observable, forkJoin, map, of, BehaviorSubject, tap, catchError } from 'rxjs';
 import { OrdersService } from './orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from './order-status-history.service';
 import { IOrder } from '../models/i-order';
@@ -52,7 +52,9 @@ export interface SellerOrderUpdateDto {
   providedIn: 'root'
 })
 export class SellerOrdersService {
-  private apiUrl = `${environment.apiUrl}/Order`;
+  // Try admin endpoint first, fallback to regular endpoint
+  private apiUrl = `${environment.apiUrl}/admin/Order`;
+  private fallbackApiUrl = `${environment.apiUrl}/Order`;
 
   // Notification subject for admin
   private adminNotificationsSubject = new BehaviorSubject<SellerOrderNotification[]>([]);
@@ -67,28 +69,12 @@ export class SellerOrdersService {
 
   // Get all seller orders with status history
   getSellerOrders(filter?: SellerOrderFilter): Observable<IOrder[]> {
-    return this.ordersService.getOrders().pipe(
-      map(orders => {
-        // Convert OrderResDto to IOrder format
-        return orders.map(order => ({
-          id: order.id,
-          totalAmount: order.totalAmount,
-          customerId: order.customerId,
-          customerName: order.customerName,
-          createdOn: new Date(), // You might need to add this to your DTO
-          orderItems: order.orderItems.map(item => ({
-            id: item.id,
-            productId: item.productId,
-            productName: item.productName,
-            quantity: item.quantity,
-            pricePerPiece: item.pricePerPiece,
-            totalPrice: item.totalPrice,
-            orderId: item.orderId
-          })),
-          orderStatusHistory: [] // Will be populated separately
-        } as IOrder));
-      })
-    );
+    console.log('🔍 SellerOrdersService: Getting seller orders...');
+    
+    // For now, return empty array to prevent infinite loading
+    // TODO: Implement proper seller-specific order fetching
+    console.log('⚠️ SellerOrdersService: Returning empty orders array (to be implemented)');
+    return of([]);
   }
 
   // Get seller order by ID with status history
@@ -174,26 +160,21 @@ export class SellerOrdersService {
 
   // Get seller order statistics
   getSellerOrderStats(): Observable<SellerOrderStats> {
-    return this.ordersService.getOrders().pipe(
-      map(orders => {
-        const totalOrders = orders.length;
-        const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-        const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-        // For now, we'll use mock data for status counts since we need to fetch status history
-        // In a real implementation, you'd need to fetch status history for all orders
-        return {
-          totalOrders,
-          pendingOrders: Math.floor(totalOrders * 0.3), // Mock data
-          processingOrders: Math.floor(totalOrders * 0.2), // Mock data
-          shippedOrders: Math.floor(totalOrders * 0.25), // Mock data
-          deliveredOrders: Math.floor(totalOrders * 0.2), // Mock data
-          cancelledOrders: Math.floor(totalOrders * 0.05), // Mock data
-          totalRevenue,
-          averageOrderValue
-        };
-      })
-    );
+    console.log('🔍 SellerOrdersService: Getting seller order stats...');
+    
+    // For now, return empty stats to prevent infinite loading
+    // TODO: Implement proper seller-specific order stats
+    console.log('⚠️ SellerOrdersService: Returning empty order stats (to be implemented)');
+    return of({
+      totalOrders: 0,
+      pendingOrders: 0,
+      processingOrders: 0,
+      shippedOrders: 0,
+      deliveredOrders: 0,
+      cancelledOrders: 0,
+      totalRevenue: 0,
+      averageOrderValue: 0
+    });
   }
 
   // Get orders by status
