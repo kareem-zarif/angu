@@ -9,6 +9,8 @@ import { ICartItem } from '../../models/i-cart-item';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
+import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 interface Language {
   code: string;
@@ -18,7 +20,7 @@ interface Language {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, CommonModule,FormsModule],
+  imports: [RouterLink, CommonModule,FormsModule,TranslateModule],
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
@@ -52,8 +54,12 @@ export class Header implements OnInit, OnDestroy {
     private cartService: CartService,
     private wishlistService: WishlistService,
     private http: HttpClient,
-    private unifiedNotificationService: UnifiedNotificationService
-  ) { }
+    private unifiedNotificationService: UnifiedNotificationService,
+    private translate: TranslateService
+  ) {
+        this.translate.addLangs(['en', 'ar']); 
+        this.translate.setDefaultLang('en');
+   }
 
   ngOnInit(): void {
     // Subscribe to user state
@@ -125,6 +131,7 @@ export class Header implements OnInit, OnDestroy {
   changeLang(code: string, label: string): void {
     this.selectedLang = { code, label };
     localStorage.setItem('selectedLanguage', JSON.stringify(this.selectedLang));
+    this.translate.use(code);
     this.applyLanguageDirection(code);
   }
 
@@ -133,11 +140,15 @@ export class Header implements OnInit, OnDestroy {
     if (savedLang) {
       try {
         this.selectedLang = JSON.parse(savedLang);
+        this.translate.use(this.selectedLang.code);
         this.applyLanguageDirection(this.selectedLang.code);
       } catch (error) {
         console.error('Error loading language from storage:', error);
       }
     }
+    else {
+    this.translate.use(this.selectedLang.code);
+  }
   }
 
   private applyLanguageDirection(langCode: string): void {

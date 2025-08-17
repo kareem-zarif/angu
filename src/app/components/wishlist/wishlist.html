@@ -7,8 +7,8 @@
     <aside class="w-72 bg-white rounded-xl shadow p-6 h-fit sticky top-8">
       <!-- Best Sellers (placeholder, not functional) -->
       <div class="mb-6">
-        <h3 class="font-bold text-lg mb-2">Best Sellers</h3>
-        <div class="text-gray-500 text-sm">(Coming soon)</div>
+        <h3 class="font-bold text-lg mb-2"> {{ 'WISHLIST.BSET_SELLING' | translate }}</h3>                         
+        <div class="text-gray-500 text-sm">{{ 'WISHLIST.COMING_SOON' | translate }}</div>
       </div>
       <!-- Customer Review -->
       <div class="mb-6">
@@ -68,14 +68,13 @@
 
     <!-- Wishlist Items -->
     <div class="flex-1">
-      <h2 class="text-3xl font-extrabold text-gray-800 mb-6 text-center tracking-tight">Wishlist</h2>
+      <h2 class="text-3xl font-extrabold text-gray-800 mb-6 text-center tracking-tight">{{ 'WISHLIST.WISHLIST' | translate }}</h2>
       <div class="flex justify-end mb-6">
         <button
           class="bg-red-600 text-white px-6 py-2 rounded-lg shadow transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           (click)="clearWishlist()"
-          [disabled]="wishlist.length === 0"
-        >
-          Clear All
+          [disabled]="wishlist.length === 0">
+       {{ 'WISHLIST.CLEAR' | translate }}
         </button>
       </div>
 
@@ -84,11 +83,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
-        <h3 class="text-lg font-medium text-gray-900">Your wishlist is empty</h3>
-        <p class="mt-1 text-sm text-gray-500">Start adding products to your wishlist!</p>
+        <h3 class="text-lg font-medium text-gray-900">{{ 'WISHLIST.EMPTY_WISHLIST' | translate }}</h3>
+        <p class="mt-1 text-sm text-gray-500">{{ 'WISHLIST.ADD_TO_WISHLIST' | translate }}!</p>
         <div class="mt-6">
           <a href="/products" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#483C21] hover:bg-[#362d19]">
-            Browse Products
+           {{ 'WISHLIST.BROWSE_PRODUCTS' | translate }} 
           </a>
         </div>
       </div>

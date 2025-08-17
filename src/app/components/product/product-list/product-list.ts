@@ -9,9 +9,9 @@ import { IProduct } from '../../../models/i-product';
 import { Rating } from '../../rating/rating/rating';
 import { Sidebar } from '../products-sidebar/sidebar/sidebar';
 import { Pagination } from '../../pagination/pagination';
-import { TranslateModule } from '@ngx-translate/core';
 import { SubCategoryService } from '../../../services/sub-category.service';
 import { Auth } from '../../../services/auth';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-product-list',

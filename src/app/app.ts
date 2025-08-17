@@ -12,12 +12,13 @@ import { SignalrChat } from './components/signalr-chat/signalr-chat';
 import { Chatbot } from './components/chatbot/chatbot';
 // import { HttpClient } from '@microsoft/signalr';
 
-
+import { TranslateModule } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, Header, Footer, AboutUs, RegisterSelection, Recommendation,SignalrChat,Chatbot],
+  imports: [CommonModule, RouterOutlet, Header, Footer, AboutUs, RegisterSelection, Recommendation,SignalrChat,Chatbot,TranslateModule],
  templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
@@ -25,7 +26,15 @@ import { Chatbot } from './components/chatbot/chatbot';
 export class App {
   title = 'angu';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router,private translate: TranslateService) {
+      this.translate.addLangs(['en', 'ar']);
+
+    const savedLang = localStorage.getItem('lang') || 'en';
+
+    this.translate.setDefaultLang('en');
+
+    this.translate.use(savedLang);
+  }
 
   shouldHideMainHeader(): boolean {
     return this.router.url.startsWith('/admin') || this.router.url.startsWith('/seller');

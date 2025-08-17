@@ -17,7 +17,7 @@ import { AddReviewComponent } from '../../add-review/add-review';
 @Component({
   selector: 'app-product-details',
   standalone: true,
-  imports: [CommonModule, RouterModule, Rating, FormsModule, TranslateModule,AddReviewComponent],
+  imports: [CommonModule, RouterModule, Rating, FormsModule, TranslateModule,AddReviewComponent,TranslateModule],
   templateUrl: './product-details.html',
   styleUrl: './product-details.css'
 })

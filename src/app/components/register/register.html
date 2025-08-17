@@ -9,7 +9,7 @@
     <div class="form-container relative px-4 py-10 bg-white mx-8 md:mx-0 shadow rounded-3xl sm:p-10">
       <div class="max-w-md mx-auto">
         <div class="flex items-center space-x-5">
-          <h1 class="text-2xl font-semibold">Register as {{ selectedRole }}</h1>
+          <h1 class="text-2xl font-semibold">{{ 'REGISTER.REGISTER_AS' | translate }} {{ selectedRole }}</h1>
           <span [class]="'role-badge ' + (selectedRole === 'Customer' ? 'customer-badge' : 'seller-badge')">
             {{ selectedRole }}
           </span>
@@ -21,47 +21,47 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="input-group">
                 <input type="text" formControlName="firstName" class="input-field" [class.invalid]="registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.touched || registerForm.get('firstName')?.dirty)" placeholder=" ">
-                <label class="input-label">First Name</label>
+                <label class="input-label">{{ 'REGISTER.FIRST_NAME' | translate }} </label>
                 <div class="error-text" *ngIf="registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.touched || registerForm.get('firstName')?.dirty)">
-                  <span *ngIf="registerForm.get('firstName')?.errors?.['required']">First name is required</span>
-                  <span *ngIf="registerForm.get('firstName')?.errors?.['minlength']">Minimum 2 characters</span>
+                  <span *ngIf="registerForm.get('firstName')?.errors?.['required']">{{ 'REGISTER.FS_REQUIRED' | translate }} </span>
+                  <span *ngIf="registerForm.get('firstName')?.errors?.['minlength']">{{ 'REGISTER.MINI_CHARS' | translate }}</span>
                 </div>
               </div>
 
               <div class="input-group">
                 <input type="text" formControlName="lastName" class="input-field" [class.invalid]="registerForm.get('lastName')?.invalid && (registerForm.get('lastName')?.touched || registerForm.get('lastName')?.dirty)" placeholder=" ">
-                <label class="input-label">Last Name</label>
+                <label class="input-label">{{ 'REGISTER.LAST_NAME' | translate }}</label>
                 <div class="error-text" *ngIf="registerForm.get('lastName')?.invalid && (registerForm.get('lastName')?.touched || registerForm.get('lastName')?.dirty)">
-                  <span *ngIf="registerForm.get('lastName')?.errors?.['required']">Last name is required</span>
-                  <span *ngIf="registerForm.get('lastName')?.errors?.['minlength']">Minimum 3 characters</span>
+                  <span *ngIf="registerForm.get('lastName')?.errors?.['required']">{{ 'REGISTER.LS_REQUIRED' | translate }} </span>
+                  <span *ngIf="registerForm.get('lastName')?.errors?.['minlength']">{{ 'REGISTER.MINI_CHARS' | translate }}</span>
                 </div>
               </div>
             </div>
 
             <div class="input-group">
               <input type="email" formControlName="email" class="input-field" [class.invalid]="registerForm.get('email')?.invalid && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)" placeholder=" ">
-              <label class="input-label">Email</label>
+              <label class="input-label">{{ 'REGISTER.EMAIL' | translate }}</label>
               <div class="error-text" *ngIf="registerForm.get('email')?.invalid && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)">
-                <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required</span>
-                <span *ngIf="registerForm.get('email')?.errors?.['email']">Invalid email format</span>
+                <span *ngIf="registerForm.get('email')?.errors?.['required']">{{ 'REGISTER.EMAIL_REQUIRED' | translate }}</span>
+                <span *ngIf="registerForm.get('email')?.errors?.['email']">{{ 'REGISTER.EMAIL_INVALID' | translate }}</span>
               </div>
             </div>
 
             <div class="input-group">
               <input type="password" formControlName="password" class="input-field" [class.invalid]="registerForm.get('password')?.invalid && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)" placeholder=" ">
-              <label class="input-label">Password</label>
+              <label class="input-label">{{ 'REGISTER.PASSWORD' | translate }}</label>
               <div class="error-text" *ngIf="registerForm.get('password')?.invalid && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)">
-                <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required</span>
-                <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Minimum 8 characters</span>
-                <span *ngIf="registerForm.get('password')?.errors?.['pattern']">Must include uppercase, lowercase, number, and special character</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['required']">{{ 'REGISTER.PASS_REQUIRED' | translate }}</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['minlength']">{{ 'REGISTER.MINI_PASS_CHARS' | translate }}</span>
+                <span *ngIf="registerForm.get('password')?.errors?.['pattern']">{{ 'REGISTER.PASS_PATTERN' | translate }}</span>
               </div>
             </div>
 
             <div class="input-group">
               <input type="text" formControlName="phoneNumber" class="input-field" [class.invalid]="registerForm.get('phoneNumber')?.invalid && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)" placeholder=" ">
-              <label class="input-label">Phone Number</label>
+              <label class="input-label">{{ 'REGISTER.PHONE_NO' | translate }}</label>
               <div class="error-text" *ngIf="registerForm.get('phoneNumber')?.invalid && (registerForm.get('phoneNumber')?.touched || registerForm.get('phoneNumber')?.dirty)">
-                <span *ngIf="registerForm.get('phoneNumber')?.errors?.['required']">Phone number is required for suppliers</span>
+                <span *ngIf="registerForm.get('phoneNumber')?.errors?.['required']">{{ 'REGISTER.PHONE_REQUIRED' | translate }}</span>
               </div>
             </div>
 
@@ -69,35 +69,35 @@
             <ng-container *ngIf="selectedRole === 'Supplier'">
               <div class="input-group">
                 <input type="text" formControlName="companyName" class="input-field" [class.invalid]="registerForm.get('companyName')?.invalid && (registerForm.get('companyName')?.touched || registerForm.get('companyName')?.dirty)" placeholder=" ">
-                <label class="input-label">Factory Name</label>
+                <label class="input-label">{{ 'REGISTER.FACTORY_NAME' | translate }}</label>
                 <div class="error-text" *ngIf="registerForm.get('companyName')?.invalid && (registerForm.get('companyName')?.touched || registerForm.get('companyName')?.dirty)">
-                  <span *ngIf="registerForm.get('companyName')?.errors?.['required']">Factory name is required</span>
+                  <span *ngIf="registerForm.get('companyName')?.errors?.['required']">{{ 'REGISTER.FACTORY_REQUIRED' | translate }}</span>
                 </div>
               </div>
 
               <div class="input-group">
                 <textarea formControlName="companyDescription" class="input-field h-24" [class.invalid]="registerForm.get('companyDescription')?.invalid && (registerForm.get('companyDescription')?.touched || registerForm.get('companyDescription')?.dirty)" placeholder=" "></textarea>
-                <label class="input-label">Factory Description</label>
+                <label class="input-label">{{ 'REGISTER.FACTORY_DESC' | translate }}</label>
                 <div class="error-text" *ngIf="registerForm.get('companyDescription')?.invalid && (registerForm.get('companyDescription')?.touched || registerForm.get('companyDescription')?.dirty)">
-                  <span *ngIf="registerForm.get('companyDescription')?.errors?.['required']">Factory description is required</span>
+                  <span *ngIf="registerForm.get('companyDescription')?.errors?.['required']">{{ 'REGISTER.FACTDESC_REQUIRED' | translate }}</span>
                 </div>
               </div>
 
               <div class="input-group">
                 <input type="text" formControlName="BankAccountName" class="input-field"  placeholder=" ">
-                <label class="input-label">Bank Name</label>
+                <label class="input-label">{{ 'REGISTER.BANK_NAME' | translate }}</label>
               </div>
 
               <div class="input-group">
                 <input type="text" formControlName="BankAccountNumber" class="input-field" placeholder=" ">
-                <label class="input-label">Bank Account Number</label>
+                <label class="input-label">{{ 'REGISTER.BANK_ACC_NUM' | translate }}</label>
               </div>
             </ng-container>
-          </div>
+          </div> 
 
           <div class="pt-4">
             <button type="submit" [disabled]="registerForm.invalid || isLoading" class="submit-btn w-full">
-              {{ isLoading ? 'Registering...' : 'Register' }}
+              {{ isLoading ?  ('REGISTER.REGISTERING' | translate) : ('REGISTER.REGISTER' | translate)  }}
             </button>
           </div>
         </form>

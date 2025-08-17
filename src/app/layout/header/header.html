@@ -5,11 +5,11 @@
         <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-black font-bold text-sm">
           B2C
         </div>
-        <span class="text-orange-500 font-semibold text-lg tracking-wide">Horas</span>
+        <span class="text-orange-500 font-semibold text-lg tracking-wide"> {{ 'HEADER.HORAS' | translate }}</span>
       </div>
 
       <div class="text-pink-500 flex items-center gap-1">
-        Deliver To Mahmoud:
+                {{ 'HEADER.DELIVER_TO' | translate }} :
         <span class="block text-white font-semibold text-lg"> Bilbeis</span>
       </div>
     </div>
@@ -17,7 +17,7 @@
     <div class="flex items-center bg-white rounded-full overflow-hidden w-[500px] shadow-md">
       <select class="px-4 py-2 text-gray-600 outline-none cursor-pointer bg-transparent border-none appearance-none"
         aria-label="All categories">
-        <option>All</option>
+        <option>{{ 'HEADER.ALL' | translate }}</option>
         <option>ٍSpcial</option>
       </select>
 
@@ -30,7 +30,7 @@
 
       <button
         class="bg-orange-500 px-6 py-2 text-white font-semibold rounded-r-full hover:bg-orange-600 transition-colors duration-200">
-        Search
+         {{ 'HEADER.SEARCH' | translate }}
       </button>
     </div>
 
@@ -58,16 +58,15 @@
         </div>
 
         <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-[1] text-neutral-800">
-          <li><a (click)="changeLang('en', 'Eng')">🇺🇸 English</a></li>
-          <li><a (click)="changeLang('fr', 'Fr')">🇫🇷 French</a></li>
-          <li><a (click)="changeLang('ar', 'عربي')">🇸🇦 Arabic</a></li>
+          <li><a (click)="changeLang('en', 'Eng')">{{ 'HEADER.ENGLISH' | translate }}</a></li>
+          <li><a (click)="changeLang('ar', 'عربي')"> {{ 'HEADER.ARABIC' | translate }}</a></li>
         </ul>
       </div>
 
       <div class="cursor-pointer select-none hover:text-orange-500 transition-colors duration-200">
-        Hello , Mahmoud Yassin
+        {{ 'HEADER.HELLO' | translate }} , Mahmoud Yassin
         <br />
-        <span class="font-normal text-gray-400 underline">Account & Lists</span>
+        <span class="font-normal text-gray-400 underline">  {{ 'HEADER.ACCOUNT_LIST' | translate }}</span>
       </div>
 
       <a routerLink="/wishlist"
@@ -85,7 +84,7 @@
       </a>
 
       <a routerLink="/orders" class="cursor-pointer hover:text-orange-500 transition-colors duration-200 font-semibold">
-        Orders
+         {{ 'HEADER.ORDERS' | translate }}
       </a>
 
       <!-- Notifications -->
@@ -112,8 +111,8 @@
         >
           <div class="p-4">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
-              <button (click)="markAllAsRead()" class="text-sm text-blue-600 hover:text-blue-800">Mark all as read</button>
+              <h3 class="text-lg font-semibold text-gray-800">{{ 'HEADER.NOTIFICATION' | translate }}</h3>
+              <button (click)="markAllAsRead()" class="text-sm text-blue-600 hover:text-blue-800">{{ 'HEADER.READ_ALL' | translate }}</button>
             </div>
             <div class="space-y-3 max-h-64 overflow-y-auto">
               <div 
@@ -165,13 +164,13 @@
                 </div>
 
                 <div *ngIf="cartItems.length === 0" class="p-4 text-center text-gray-500">
-                  Your cart is empty
+                  {{ 'HEADER.CART_EMPTY' | translate }}
                 </div>
               </div>
 
               <div class="card-actions pt-3">
-                 <span class="text-lg font-bold text-[#483C21]">{{ cartTotal | number:'1.2-2' }} EGP</span>
-                <a routerLink="cart" class="btn btn-primary  btn-block">View Cart</a>
+                 <span class="text-lg font-bold text-[#483C21]">{{ cartTotal | number:'1.2-2' }} {{ 'HEADER.EGP' | translate }}</span>
+                <a routerLink="cart" class="btn btn-primary  btn-block">{{ 'HEADER.VIEW_CART' | translate }}</a>
               </div>
 
             </div>
@@ -189,10 +188,10 @@
             <!-- If user is not logged in -->
             <ng-container *ngIf="!isLoggedIn()">
               <li>
-                <a (click)="navigateToRegister()"> Register </a>
+                <a (click)="navigateToRegister()"> {{ 'HEADER.REGISTER' | translate }} </a>
               </li>
               <li>
-                <a (click)="navigateToLogin()"> Login </a>
+                <a (click)="navigateToLogin()"> {{ 'HEADER.LOGIN' | translate }} </a>
               </li>
             </ng-container>
 
@@ -200,18 +199,18 @@
             <ng-container *ngIf="isLoggedIn()">
               <li>
                 <a class="justify-between" routerLink="/profile">
-                  Profile
-                  <span class="badge">New</span>
+                   {{ 'HEADER.ACCOUNT' | translate }} 
+                  <span class="badge"> {{ 'HEADER.NEW' | translate }} </span>
                 </a>
               </li>
-              <li><a routerLink="/settings">Settings</a></li>
+              <li><a routerLink="/settings"> {{ 'HEADER.SETTINGS' | translate }} </a></li>
               <li *ngIf="currentUser?.roles?.includes('Seller')">
-                <a routerLink="/seller-dashboard">Seller Dashboard</a>
+                <a routerLink="/seller-dashboard">{{ 'HEADER.SELLER_DASHBOARD' | translate }} </a>
               </li>
               <li *ngIf="currentUser?.roles?.includes('Admin')">
-                <a routerLink="/admin-dashboard">Management Dashboard</a>
+                <a routerLink="/admin-dashboard">{{ 'HEADER.MANAGEMENT_DASHBOARD' | translate }}</a>
               </li>
-              <li><a (click)="logout()">Logout</a></li>
+              <li><a (click)="logout()">{{ 'HEADER.LOGOUT' | translate }}</a></li>
             </ng-container>
           </ul>
         </div>
@@ -231,39 +230,39 @@
   <div class="flex justify-around items-center">
     <div class="text-center">
       <a routerLink="/discounts" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
-        All Discounts
+       {{ 'HEADER.ALL_DISCOUNT' | translate }}
       </a>
-      <span class="block text-xs text-orange-500">Special Offers</span>
+      <span class="block text-xs text-orange-500">{{ 'HEADER.SPECIAL_OFFERS' | translate }}</span>
     </div>
     <div class="text-center">
       <a routerLink="/deals" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
-        Today Deals
+        {{ 'HEADER.TODAY_DEALS' | translate }}
       </a>
-      <span class="block text-xs text-orange-500">Daily Discounts</span>
+      <span class="block text-xs text-orange-500">  {{ 'HEADER.DAILY_DISCOUNTS' | translate }}</span>
     </div>
     <div class="text-center">
       <a routerLink="/products" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
-        Products
+       {{ 'HEADER.PRODUCT' | translate }} 
       </a>
-      <span class="block text-xs text-orange-500">Our Catalog</span>
+      <span class="block text-xs text-orange-500">{{ 'HEADER.OUR_CATLOG' | translate }}</span>
     </div>
     <div class="text-center">
       <a routerLink="suppliers" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
-        Suppliers
+         {{ 'HEADER.SUPPLIERS' | translate }}
       </a>
-      <span class="block text-xs text-orange-500">Vendor List</span>
+      <span class="block text-xs text-orange-500"> {{ 'HEADER.VENDOR_LIST' | translate }}</span>
     </div>
     <div class="text-center">
       <a routerLink="about-us" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
-        About Us
+         {{ 'HEADER.ABOUT_US' | translate }}   
       </a>
-      <span class="block text-xs text-orange-500">Our Story</span>
+      <span class="block text-xs text-orange-500">{{ 'HEADER.OUR_STORY' | translate }} </span>
     </div>
     <div class="text-center">
       <a routerLink="/join" routerLinkActive="text-orange-500" class="cursor-pointer block hover:text-orange-500">
-        Become a Supplier
+        {{ 'HEADER.BECOME_SUPP' | translate }} 
       </a>
-      <span class="block text-xs text-orange-500">Join Us</span>
+      <span class="block text-xs text-orange-500">{{ 'HEADER.JOIN_US' | translate }}</span>
     </div>
   </div>
 </nav>

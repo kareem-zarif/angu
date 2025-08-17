@@ -5,12 +5,13 @@ import { Auth } from '../../services/auth';
 import { CommonModule } from '@angular/common';
 import { ICustomerRegister } from '../../models/icustomer-register';
 import { ISupplierRegister } from '../../models/isupplier-register';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-register',
   templateUrl: './register.html',
   styleUrls: ['./register.css'],
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule,TranslateModule],
   standalone: true
 })
 export class RegisterComponent implements OnInit {
