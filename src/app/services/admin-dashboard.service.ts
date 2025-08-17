@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, catchError, of, BehaviorSubject } from 'rxjs';
+import { Observable, forkJoin, map, catchError, of, BehaviorSubject, tap } from 'rxjs';
 import { environment } from '../../environment/environment';
 import { AdminProductsService } from './admin-products-service';
 import { AdminOrdersService } from './admin-orders-service';
@@ -96,24 +96,103 @@ export class AdminDashboardService {
     private adminCustomersService: AdminCustomersService,
     private adminCategoriesService: AdminCategoriesService,
     private adminSubcategoriesService: AdminSubCategoriesService
-  ) {}
+  ) {
+    // Test backend connectivity on service initialization
+    this.testBackendConnectivity();
+  }
+
+  // Test if backend is accessible
+  private testBackendConnectivity(): void {
+    console.log('🔍 Testing backend connectivity...');
+    console.log('🌐 Environment API URL:', environment.apiUrl);
+    
+    // Try to access a simple endpoint to test connectivity
+    this.http.get(`${environment.apiUrl}/Product`).subscribe({
+      next: (response) => {
+        console.log('✅ Backend is accessible! Response:', response);
+      },
+      error: (error) => {
+        console.error('❌ Backend is not accessible! Error:', error);
+        console.error('🔧 Please check:');
+        console.error('   1. Is your backend server running?');
+        console.error('   2. Is it running on https://localhost:7253?');
+        console.error('   3. Are there any CORS issues?');
+        console.error('   4. Is the API endpoint correct?');
+      }
+    });
+  }
 
   // Get comprehensive dashboard statistics from all services
   getDashboardStats(): Observable<DashboardStats> {
+    console.log('🔄 AdminDashboardService: Starting to fetch dashboard stats...');
+    
+    // Test each service individually to identify which one is failing
+    console.log('🔍 Testing individual services...');
+    
+    const products$ = this.adminProductsService.getAllProducts().pipe(
+      tap(products => console.log('✅ Products service working, received:', products.length, 'products')),
+      catchError(error => {
+        console.error('❌ Products service failed:', error);
+        return of([]);
+      })
+    );
+    
+    const orders$ = this.adminOrdersService.getOrders().pipe(
+      tap(orders => console.log('✅ Orders service working, received:', orders.length, 'orders')),
+      catchError(error => {
+        console.error('❌ Orders service failed:', error);
+        return of([]);
+      })
+    );
+    
+    const suppliers$ = this.adminSuppliersService.getAll().pipe(
+      tap(suppliers => console.log('✅ Suppliers service working, received:', suppliers.length, 'suppliers')),
+      catchError(error => {
+        console.error('❌ Suppliers service failed:', error);
+        return of([]);
+      })
+    );
+    
+    const customers$ = this.adminCustomersService.getCustomers().pipe(
+      tap(customers => console.log('✅ Customers service working, received:', customers.length, 'customers')),
+      catchError(error => {
+        console.error('❌ Customers service failed:', error);
+        return of([]);
+      })
+    );
+    
+    const categories$ = this.adminCategoriesService.getCategories().pipe(
+      tap(categories => console.log('✅ Categories service working, received:', categories.length, 'categories')),
+      catchError(error => {
+        console.error('❌ Categories service failed:', error);
+        return of([]);
+      })
+    );
+    
+    const subcategories$ = this.adminSubcategoriesService.getSubCategories().pipe(
+      tap(subcategories => console.log('✅ Subcategories service working, received:', subcategories.length, 'subcategories')),
+      catchError(error => {
+        console.error('❌ Subcategories service failed:', error);
+        return of([]);
+      })
+    );
+    
     return forkJoin({
-      products: this.adminProductsService.getAllProducts(),
-      orders: this.adminOrdersService.getOrders(),
-      suppliers: this.adminSuppliersService.getAll(),
-      customers: this.adminCustomersService.getCustomers(),
-      categories: this.adminCategoriesService.getCategories(),
-      subcategories: this.adminSubcategoriesService.getSubCategories()
+      products: products$,
+      orders: orders$,
+      suppliers: suppliers$,
+      customers: customers$,
+      categories: categories$,
+      subcategories: subcategories$
     }).pipe(
       map(data => {
+        console.log('📊 AdminDashboardService: Raw data received:', data);
+        
         const stats: DashboardStats = {
           totalOrders: data.orders.length,
-                  pendingOrders: data.orders.filter(order => 
-          order.currentStatus === 1 || order.currentStatus === 2
-        ).length,
+          pendingOrders: data.orders.filter(order => 
+            order.currentStatus === 1 || order.currentStatus === 2
+          ).length,
           totalRevenue: data.orders.reduce((sum, order) => sum + order.totalAmount, 0),
           activeCustomers: data.customers.length,
           totalProducts: data.products.length,
@@ -128,11 +207,12 @@ export class AdminDashboardService {
           weeklyOrders: this.calculateWeeklyOrders(data.orders)
         };
         
+        console.log('📈 AdminDashboardService: Calculated stats:', stats);
         this.dashboardStatsSubject.next(stats);
         return stats;
       }),
       catchError(error => {
-        console.error('Error loading dashboard stats:', error);
+        console.error('❌ AdminDashboardService: Error loading dashboard stats:', error);
         // Return fallback data
         return of({
           totalOrders: 0,

@@ -77,16 +77,18 @@ export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   loadDashboardData(): void {
+    console.log('🔄 AdminDashboardComponent: Starting to load dashboard data...');
     this.isLoading = true;
 
     // Load dashboard stats
     this.adminDashboardService.getDashboardStats().subscribe({
       next: (stats) => {
+        console.log('✅ AdminDashboardComponent: Dashboard stats received:', stats);
         this.dashboardStats = stats;
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading dashboard stats:', error);
+        console.error('❌ AdminDashboardComponent: Error loading dashboard stats:', error);
         this.isLoading = false;
       }
     });
@@ -94,10 +96,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit
     // Load recent activities
     this.adminDashboardService.getRecentActivities().subscribe({
       next: (activities) => {
+        console.log('✅ AdminDashboardComponent: Recent activities received:', activities);
         this.recentActivities = activities;
       },
       error: (error) => {
-        console.error('Error loading recent activities:', error);
+        console.error('❌ AdminDashboardComponent: Error loading recent activities:', error);
       }
     });
 
@@ -394,6 +397,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit
   }
 
   refreshData(): void {
+    console.log('🔄 AdminDashboardComponent: Refresh button clicked, reloading data...');
     this.loadDashboardData();
   }
 }

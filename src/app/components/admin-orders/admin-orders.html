@@ -51,39 +51,39 @@
     </div>
   </div>
   
-  <div class="overflow-x-auto rounded shadow bg-white">
-    <table class="min-w-full text-sm">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="px-3 py-2">NO.</th>
-          <th class="px-3 py-2">Order ID</th>
-          <th class="px-3 py-2">Customer Name</th>
-          <th class="px-3 py-2">Total Amount</th>
-          <th class="px-3 py-2">Items Count</th>
-          <th class="px-3 py-2">Created Date</th>
-          <th class="px-3 py-2">Status</th>
-          <th class="px-3 py-2">Action</th>
+  <div class="overflow-x-auto rounded shadow bg-white app-table-card">
+    <table class="app-table">
+      <thead class="app-thead">
+        <tr>
+          <th class="app-th text-left">NO.</th>
+          <th class="app-th text-left">Order ID</th>
+          <th class="app-th text-left">Customer Name</th>
+          <th class="app-th text-left">Total Amount</th>
+          <th class="app-th text-left">Items Count</th>
+          <th class="app-th text-left">Created Date</th>
+          <th class="app-th text-left">Status</th>
+          <th class="app-th text-left">Action</th>
         </tr>
       </thead>
-      <tbody>
-        <tr *ngFor="let order of getPaginatedOrders(); let i = index" class="border-b">
-          <td style="text-align: center;" class="px-3 py-2">{{ i + 1 }}</td>
-          <td style="text-align: center;" class="px-3 py-2">{{ order.id }}</td>
-          <td style="text-align: center;" class="px-3 py-2">{{ order.customerName || 'N/A' }}</td>
-          <td style="text-align: center;" class="px-3 py-2">${{ order.totalAmount.toFixed(2) || '0.00' }}</td>
-          <td style="text-align: center;" class="px-3 py-2">
+      <tbody class="app-tbody">
+        <tr *ngFor="let order of getPaginatedOrders(); let i = index" class="app-tr-hover">
+          <td class="px-3 py-2">{{ i + 1 }}</td>
+          <td class="px-3 py-2">{{ order.id }}</td>
+          <td class="px-3 py-2">{{ getCustomerName(order) }}</td>
+          <td class="px-3 py-2">${{ order.totalAmount.toFixed(2) || '0.00' }}</td>
+          <td class="px-3 py-2">
             <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">{{ getOrderItemsCount(order) }}</span>
           </td>
-          <td style="text-align: center;" class="px-3 py-2">{{ formatDate(order.createdOn || '') }}</td>
-          <td style="text-align: center;" class="px-3 py-2">
+          <td class="px-3 py-2">{{ formatDate(order.createdOn || '') }}</td>
+          <td class="px-3 py-2">
             <span [ngClass]="getStatusClass(order.currentStatus || 1)" class="px-2 py-1 rounded-full text-xs font-semibold">
               {{ getStatusLabel(order.currentStatus || 1) }}
             </span>
           </td>
-          <td style="text-align: center; padding: inline 5px;" class="px-3 py-2 flex gap-2">
-            <button class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" (click)="openEdit(order)">Edit</button>
+          <td class="px-3 py-2 flex gap-2">
+            <!-- <button class="btn-soft-green" (click)="openEdit(order)">Edit</button> -->
             <select 
-              class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 text-xs border-none"
+              class="btn-soft-yellow border-none"
               [value]="order.currentStatus || 1"
               (change)="updateOrderStatus(order, $event)"
               [disabled]="isSubmitting"
@@ -92,8 +92,8 @@
                 {{ status.label }}
               </option>
             </select>
-            <button class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 text-xs" (click)="showOrderStatusHistory(order.id)">History</button>
-            <button class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600" (click)="deleteOrder(order)">Delete</button>
+            <button class="btn-soft-blue" (click)="showOrderStatusHistory(order.id)">History</button>
+            <button class="btn-soft-red" (click)="deleteOrder(order)">Delete</button>
           </td>
         </tr>
         <tr *ngIf="getPaginatedOrders().length === 0 && !loading">
@@ -129,8 +129,8 @@
   </div>
 
   <!-- Modal for Add/Edit -->
-  <div *ngIf="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+  <div *ngIf="showModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="showModal = false">&times;</button>
       <h3 class="text-lg font-bold mb-4">{{ editOrder ? 'Edit Order' : 'Add Order' }}</h3>
       
@@ -228,27 +228,27 @@
   </div>
 
   <!-- Status History Modal -->
-  <div *ngIf="showStatusHistoryModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative">
+  <div *ngIf="showStatusHistoryModal" class="modal-backdrop-transparent">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="closeStatusHistoryModal()">&times;</button>
       <h3 class="text-lg font-bold mb-4">Order Status History</h3>
       
       <div class="overflow-y-auto max-h-96">
-        <table class="min-w-full text-sm">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="px-3 py-2 text-left">Status</th>
-              <th class="px-3 py-2 text-left">Modified On</th>
+        <table class="app-table">
+          <thead class="app-thead">
+            <tr>
+              <th class="app-th text-left">Status</th>
+              <th class="app-th text-left">Modified On</th>
             </tr>
           </thead>
-          <tbody>
-            <tr *ngFor="let history of selectedOrderHistory" class="border-b">
-              <td class="px-3 py-2">
+          <tbody class="app-tbody">
+            <tr *ngFor="let history of selectedOrderHistory" class="app-tr-hover">
+              <td class="px-6 py-3">
                 <span [ngClass]="getStatusClass(history.orderStatus)" class="px-2 py-1 rounded-full text-xs font-semibold">
                   {{ getStatusLabel(history.orderStatus) }}
                 </span>
               </td>
-              <td class="px-3 py-2">{{ formatStatusHistoryDate(history.modifiedOn) }}</td>
+              <td class="px-6 py-3">{{ formatStatusHistoryDate(history.modifiedOn) }}</td>
             </tr>
             <tr *ngIf="selectedOrderHistory.length === 0">
               <td colspan="2" class="text-center text-gray-400 py-6">

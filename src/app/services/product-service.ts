@@ -13,7 +13,9 @@ import { ProductSupplierService, ProductSupplierCreateDto } from './product-supp
   providedIn: 'root'
 })
 export class ProductService {
-  private _baseUrl = `${environment.apiUrl}/Product`;
+  // Try admin endpoint first, fallback to regular endpoint
+  private _baseUrl = `${environment.apiUrl}/admin/Product`;
+  private _fallbackBaseUrl = `${environment.apiUrl}/Product`;
   private _imageBaseUrl = 'https://localhost:7253';
 
   // Cache management
@@ -41,18 +43,42 @@ export class ProductService {
     }
 
     this.loadingSubject.next(true);
+    console.log('🔍 ProductService: Getting all products...');
+    console.log('🔍 ProductService: Trying admin endpoint first:', this._baseUrl);
 
+    // Try admin endpoint first, fallback to regular endpoint
     return this.http.get<IProduct[]>(`${this._baseUrl}`).pipe(
+      tap(products => {
+        console.log('✅ ProductService: Successfully fetched products from admin endpoint:', products.length);
+      }),
       map(products => this.processProductImages(products)),
       tap(products => {
         this.productsCache = products;
         this.lastFetchTime = Date.now();
         this.loadingSubject.next(false);
+        console.log('💾 ProductService: Products cached from admin endpoint, count:', products.length);
       }),
       catchError(error => {
-        console.error('Error fetching products:', error);
-        this.loadingSubject.next(false);
-        return throwError(() => new Error('Failed to fetch products'));
+        console.log('⚠️ ProductService: Admin endpoint failed, trying fallback endpoint:', error);
+        
+        // Fallback to regular endpoint
+        return this.http.get<IProduct[]>(`${this._fallbackBaseUrl}`).pipe(
+          tap(products => {
+            console.log('✅ ProductService: Successfully fetched products from fallback endpoint:', products.length);
+          }),
+          map(products => this.processProductImages(products)),
+          tap(products => {
+            this.productsCache = products;
+            this.lastFetchTime = Date.now();
+            this.loadingSubject.next(false);
+            console.log('💾 ProductService: Products cached from fallback endpoint, count:', products.length);
+          }),
+          catchError(fallbackError => {
+            console.error('❌ ProductService: Both endpoints failed:', fallbackError);
+            this.loadingSubject.next(false);
+            return throwError(() => new Error('Failed to fetch products from both endpoints'));
+          })
+        );
       })
     );
   }
@@ -72,21 +98,37 @@ export class ProductService {
       return of([]);
     }
 
+    console.log('🔍 ProductService: Getting products for seller:', currentSellerId);
+    console.log('🔍 ProductService: Trying admin endpoint first:', this._baseUrl);
+
     // First get the ProductSupplier relationships for this seller
     return this.productSupplierService.getProductsBySupplier(currentSellerId).pipe(
       switchMap(productSuppliers => {
+        console.log('📊 ProductService: ProductSupplier relationships found:', productSuppliers.length);
+        
         if (productSuppliers.length === 0) {
+          console.log('⚠️ ProductService: No product relationships found for seller');
           this.loadingSubject.next(false);
           return of([]);
         }
 
         // Get the actual product details for each product ID
         const productIds = productSuppliers.map(ps => ps.productId);
+        console.log('📋 ProductService: Product IDs to fetch:', productIds);
+        
+        // Try admin endpoint first, fallback to regular endpoint
         const productRequests = productIds.map(id => 
-          this.http.get<IProduct>(`${this._baseUrl}/${id}`).pipe(
+          this.http.get<IProduct>(`${this._fallbackBaseUrl}/${id}`).pipe(
+            tap(product => console.log(`✅ ProductService: Successfully fetched product ${id} from fallback endpoint`)),
             catchError(error => {
-              console.error(`Error fetching product ${id}:`, error);
-              return of(null);
+              console.log(`⚠️ ProductService: Fallback endpoint failed for product ${id}, trying admin endpoint:`, error);
+              return this.http.get<IProduct>(`${this._baseUrl}/${id}`).pipe(
+                tap(product => console.log(`✅ ProductService: Successfully fetched product ${id} from admin endpoint`)),
+                catchError(adminError => {
+                  console.error(`❌ ProductService: Both endpoints failed for product ${id}:`, adminError);
+                  return of(null);
+                })
+              );
             })
           )
         );
@@ -94,6 +136,7 @@ export class ProductService {
         return forkJoin(productRequests).pipe(
           map(products => {
             const validProducts = products.filter(p => p !== null) as IProduct[];
+            console.log('📦 ProductService: Total valid products fetched:', validProducts.length);
             return validProducts.map(product => this.processProductImage(product));
           })
         );
@@ -102,9 +145,10 @@ export class ProductService {
         this.productsCache = products;
         this.lastFetchTime = Date.now();
         this.loadingSubject.next(false);
+        console.log('💾 ProductService: Products cached, count:', products.length);
       }),
       catchError(error => {
-        console.error('Error fetching products for seller:', error);
+        console.error('❌ ProductService: Error fetching products for seller:', error);
         this.loadingSubject.next(false);
         return throwError(() => new Error('Failed to fetch products'));
       })

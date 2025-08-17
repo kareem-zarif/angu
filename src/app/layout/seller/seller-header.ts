@@ -44,6 +44,7 @@ export class SellerHeaderComponent implements OnInit, OnDestroy {
     totalEarnings: 0,
     monthlyGrowth: 0
   };
+  isLoading = false;
   notifications: LocalNotification[] = [];
   notificationCount = 0;
   showNotifications = false;
@@ -147,30 +148,112 @@ export class SellerHeaderComponent implements OnInit, OnDestroy {
     // Load notifications - handled by subscription in ngOnInit
   }
 
-  private loadHeaderStats() {
-    // Products + pending from products; earnings from orders
-    forkJoin({
-      products: this.productService.getAllForSeller(),
-      orders: this.sellerOrdersService.getSellerOrders()
-    }).subscribe({
-      next: ({ products, orders }) => {
-        const totalProducts = products.length;
-        const pendingProducts = products.filter(p => p.approvalStatus === ProductApprovalStatus.Pending).length;
-        const totalEarnings = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
-        this.headerStats = {
-          totalProducts,
-          pendingOrders: pendingProducts,
-          totalEarnings,
-          monthlyGrowth: this.dashboardStats.monthlyGrowth || 0
-        };
+  refreshStats(): void {
+    console.log('🔄 SellerHeader: Manual refresh requested...');
+    this.loadHeaderStats();
+  }
+
+  // Simple test method to check if services are working
+  testServices(): void {
+    console.log('🧪 Testing all seller services individually...');
+    
+    // Test Products Service
+    console.log('🔍 Testing Products Service...');
+    this.productService.getAllForSeller().subscribe({
+      next: (products) => {
+        console.log('✅ Products Service Success:', products);
+        console.log('📊 Products Count:', products.length);
+        if (products.length > 0) {
+          console.log('📋 First Product:', products[0]);
+        }
       },
-      error: () => {
+      error: (error) => {
+        console.error('❌ Products Service Error:', error);
+      }
+    });
+
+    // Test Orders Service
+    console.log('🔍 Testing Orders Service...');
+    this.sellerOrdersService.getSellerOrders().subscribe({
+      next: (orders) => {
+        console.log('✅ Orders Service Success:', orders);
+        console.log('📊 Orders Count:', orders.length);
+        if (orders.length > 0) {
+          console.log('📋 First Order:', orders[0]);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Orders Service Error:', error);
+      }
+    });
+
+    // Test Dashboard Service
+    console.log('🔍 Testing Dashboard Service...');
+    this.sellerDashboardService.getDashboardStats().subscribe({
+      next: (stats) => {
+        console.log('✅ Dashboard Service Success:', stats);
+        console.log('📊 Dashboard Stats:', stats);
+      },
+      error: (error) => {
+        console.error('❌ Dashboard Service Error:', error);
+      }
+    });
+  }
+
+  private loadHeaderStats() {
+    console.log('🔄 SellerHeader: Loading header stats...');
+    this.isLoading = true;
+    
+    // Use the new getHeaderStats method from seller dashboard service
+    this.sellerDashboardService.getHeaderStats().subscribe({
+      next: (stats) => {
+        console.log('📊 SellerHeader: Header stats received:', stats);
+        
         this.headerStats = {
-          totalProducts: this.dashboardStats.totalProducts || 0,
-          pendingOrders: this.dashboardStats.pendingOrders || 0,
-          totalEarnings: this.dashboardStats.totalRevenue || 0,
-          monthlyGrowth: this.dashboardStats.monthlyGrowth || 0
+          totalProducts: stats.totalProducts,
+          pendingOrders: stats.pendingOrders,
+          totalEarnings: stats.totalEarnings,
+          monthlyGrowth: stats.monthlyGrowth
         };
+        
+        console.log('📈 SellerHeader: Header stats updated:', this.headerStats);
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ SellerHeader: Error loading header stats:', error);
+        
+        // Fallback to individual service calls
+        console.log('🔄 SellerHeader: Trying fallback method...');
+        forkJoin({
+          products: this.productService.getAllForSeller(),
+          orders: this.sellerOrdersService.getSellerOrders()
+        }).subscribe({
+          next: ({ products, orders }) => {
+            console.log('📊 SellerHeader: Fallback data received:', { products: products.length, orders: orders.length });
+            
+            const totalProducts = products.length;
+            const pendingOrders = orders.filter(order => 
+              order.orderStatusHistory?.some(status => 
+                status.orderStatus === 1 || status.orderStatus === 2
+              )
+            ).length;
+            const totalEarnings = orders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+            
+            this.headerStats = {
+              totalProducts,
+              pendingOrders: pendingOrders,
+              totalEarnings,
+              monthlyGrowth: this.dashboardStats.monthlyGrowth || 0
+            };
+            
+            console.log('📈 SellerHeader: Fallback header stats updated:', this.headerStats);
+            this.isLoading = false;
+          },
+          error: (fallbackError) => {
+            console.error('❌ SellerHeader: Fallback also failed:', fallbackError);
+            this.isLoading = false;
+          }
+        });
       }
     });
   }

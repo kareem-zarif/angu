@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { OrderStatus } from '../models/i-order-status-history';
-import { tap } from 'rxjs/operators';
+import { tap, catchError } from 'rxjs/operators';
 import { LocalStorageNotificationService } from './local-storage-notification.service';
+import { environment } from '../../environment/environment';
 
 export interface AdminOrderNotification {
   id: string;
@@ -84,7 +85,9 @@ export interface OrderStatusHistoryUpdateDto {
 
 @Injectable({ providedIn: 'root' })
 export class AdminOrdersService {
-  private apiUrl = 'https://localhost:7253/api/Order';
+  // Try admin endpoint first, fallback to regular endpoint
+  private apiUrl = `${environment.apiUrl}/admin/Order`;
+  private fallbackApiUrl = `${environment.apiUrl}/Order`;
 
   // No longer needed - using LocalStorageNotificationService instead
   // private sellerNotificationsSubject = new BehaviorSubject<AdminOrderNotification[]>([]);
@@ -96,7 +99,20 @@ export class AdminOrdersService {
   ) {}
 
   getOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>(this.apiUrl);
+    console.log('🔍 AdminOrdersService: Trying admin endpoint:', this.apiUrl);
+    return this.http.get<Order[]>(this.apiUrl).pipe(
+      tap(orders => console.log('✅ Admin endpoint successful, got orders:', orders.length)),
+      catchError(error => {
+        console.log('⚠️ Admin endpoint failed, trying fallback:', this.fallbackApiUrl);
+        return this.http.get<Order[]>(this.fallbackApiUrl).pipe(
+          tap(orders => console.log('✅ Fallback endpoint successful, got orders:', orders.length)),
+          catchError(fallbackError => {
+            console.error('❌ Both endpoints failed:', error, fallbackError);
+            throw fallbackError;
+          })
+        );
+      })
+    );
   }
 
   getOrderById(id: string): Observable<Order> {
@@ -115,12 +131,38 @@ export class AdminOrdersService {
   }
 
   updateOrder(order: OrderUpdateDto): Observable<Order> {
-    return this.http.put<Order>(this.apiUrl, order).pipe(
+    console.log('🔍 AdminOrdersService: Updating order with ID:', order.id);
+    console.log('🔍 AdminOrdersService: Update data:', order);
+    
+    // Remove currentStatus from the request body as it's not expected by the backend
+    const { currentStatus, ...orderData } = order;
+    
+    console.log('🔍 AdminOrdersService: Trying admin endpoint first:', this.apiUrl);
+    return this.http.put<Order>(this.apiUrl, orderData).pipe(
       tap(response => {
+        console.log('✅ AdminOrdersService: Order updated successfully via admin endpoint:', response);
         // Send notification to seller about order update
         this.notifySeller('order_updated', 'Order Updated', 
           `Admin has updated order #${order.id}`, 
           'seller-123', '/seller/orders', { orderId: order.id });
+      }),
+      catchError(error => {
+        console.log('⚠️ AdminOrdersService: Admin endpoint failed, trying fallback:', this.fallbackApiUrl);
+        console.log('⚠️ AdminOrdersService: Error details:', error);
+        
+        return this.http.put<Order>(this.fallbackApiUrl, orderData).pipe(
+          tap(response => {
+            console.log('✅ AdminOrdersService: Order updated successfully via fallback endpoint:', response);
+            // Send notification to seller about order update
+            this.notifySeller('order_updated', 'Order Updated', 
+              `Admin has updated order #${order.id}`, 
+              'seller-123', '/seller/orders', { orderId: order.id });
+          }),
+          catchError(fallbackError => {
+            console.error('❌ AdminOrdersService: Both endpoints failed:', error, fallbackError);
+            throw fallbackError;
+          })
+        );
       })
     );
   }
@@ -138,8 +180,16 @@ export class AdminOrdersService {
 
   // Order Status History methods
   createOrderStatusHistory(statusHistory: OrderStatusHistoryCreateDto): Observable<OrderStatusHistory> {
-    return this.http.post<OrderStatusHistory>(`${this.apiUrl}/status-history`, statusHistory).pipe(
+    console.log('🔍 AdminOrdersService: Creating order status history:', statusHistory);
+    
+    // Try admin endpoint first, then fallback to regular OrderStatusHistory endpoint
+    const adminUrl = `${this.apiUrl}/status-history`;
+    const fallbackUrl = `${environment.apiUrl}/OrderStatusHistory`;
+    
+    console.log('🔍 AdminOrdersService: Trying admin endpoint first:', adminUrl);
+    return this.http.post<OrderStatusHistory>(adminUrl, statusHistory).pipe(
       tap(response => {
+        console.log('✅ AdminOrdersService: Status history created successfully via admin endpoint:', response);
         // Send notification to seller about order status change
         this.notifySeller('order_status_changed', 'Order Status Changed', 
           `Order #${statusHistory.orderId} status changed to ${this.getStatusName(statusHistory.orderStatus)}`, 
@@ -147,13 +197,44 @@ export class AdminOrdersService {
             orderId: statusHistory.orderId, 
             newStatus: this.getStatusName(statusHistory.orderStatus) 
           });
+      }),
+      catchError(error => {
+        console.log('⚠️ AdminOrdersService: Admin endpoint failed, trying fallback:', fallbackUrl);
+        console.log('⚠️ AdminOrdersService: Error details:', error);
+        
+        return this.http.post<OrderStatusHistory>(fallbackUrl, statusHistory).pipe(
+          tap(response => {
+            console.log('✅ AdminOrdersService: Status history created successfully via fallback endpoint:', response);
+            // Send notification to seller about order status change
+            this.notifySeller('order_status_changed', 'Order Status Changed', 
+              `Order #${statusHistory.orderId} status changed to ${this.getStatusName(statusHistory.orderStatus)}`, 
+              'seller-123', '/seller/orders', { 
+                orderId: statusHistory.orderId, 
+                newStatus: this.getStatusName(statusHistory.orderStatus) 
+              });
+          }),
+          catchError(fallbackError => {
+            console.error('❌ AdminOrdersService: Both endpoints failed:', error, fallbackError);
+            throw fallbackError;
+          })
+        );
       })
     );
   }
 
+
+
   updateOrderStatusHistory(statusHistory: OrderStatusHistoryUpdateDto): Observable<OrderStatusHistory> {
-    return this.http.put<OrderStatusHistory>(`${this.apiUrl}/status-history`, statusHistory).pipe(
+    console.log('🔍 AdminOrdersService: Updating order status history:', statusHistory);
+    
+    // Try admin endpoint first, then fallback to regular OrderStatusHistory endpoint
+    const adminUrl = `${this.apiUrl}/status-history`;
+    const fallbackUrl = `${environment.apiUrl}/OrderStatusHistory`;
+    
+    console.log('🔍 AdminOrdersService: Trying admin endpoint first:', adminUrl);
+    return this.http.put<OrderStatusHistory>(adminUrl, statusHistory).pipe(
       tap(response => {
+        console.log('✅ AdminOrdersService: Status history updated successfully via admin endpoint:', response);
         // Send notification to seller about order status change
         this.notifySeller('order_status_changed', 'Order Status Changed', 
           `Order #${statusHistory.orderId} status changed to ${this.getStatusName(statusHistory.orderStatus)}`, 
@@ -161,6 +242,27 @@ export class AdminOrdersService {
             orderId: statusHistory.orderId, 
             newStatus: this.getStatusName(statusHistory.orderStatus) 
           });
+      }),
+      catchError(error => {
+        console.log('⚠️ AdminOrdersService: Admin endpoint failed, trying fallback:', fallbackUrl);
+        console.log('⚠️ AdminOrdersService: Error details:', error);
+        
+        return this.http.put<OrderStatusHistory>(fallbackUrl, statusHistory).pipe(
+          tap(response => {
+            console.log('✅ AdminOrdersService: Status history updated successfully via fallback endpoint:', response);
+            // Send notification to seller about order status change
+            this.notifySeller('order_status_changed', 'Order Status Changed', 
+              `Order #${statusHistory.orderId} status changed to ${this.getStatusName(statusHistory.orderStatus)}`, 
+              'seller-123', '/seller/orders', { 
+                orderId: statusHistory.orderId, 
+                newStatus: this.getStatusName(statusHistory.orderStatus) 
+              });
+          }),
+          catchError(fallbackError => {
+            console.error('❌ AdminOrdersService: Both endpoints failed:', error, fallbackError);
+            throw fallbackError;
+          })
+        );
       })
     );
   }

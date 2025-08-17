@@ -1,0 +1,185 @@
+/* Seller Address Management Component Styles */
+
+/* Custom scrollbar for modals */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Table hover effects */
+.table-row-hover:hover {
+  background-color: #f9fafb;
+  transition: background-color 0.2s ease;
+}
+
+/* Button focus states */
+.btn-focus:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Form validation styles */
+.form-error {
+  border-color: #ef4444 !important;
+}
+
+.form-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Status badge animations */
+.status-badge {
+  transition: all 0.2s ease;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Empty state styling */
+.empty-state {
+  color: #6b7280;
+}
+
+.empty-state svg {
+  opacity: 0.5;
+}
+
+/* Search input focus */
+.search-input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Filter dropdown styling */
+.filter-dropdown {
+  transition: all 0.2s ease;
+}
+
+.filter-dropdown:hover {
+  border-color: #3b82f6;
+}
+
+/* Action button hover effects */
+.action-btn {
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Address icon styling */
+.address-icon {
+  transition: all 0.2s ease;
+}
+
+.address-icon:hover {
+  transform: scale(1.05);
+}
+
+/* Form field focus animations */
+.form-field:focus-within {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+/* Modal entrance animation */
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-backdrop-transparent > div {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+/* Table row animations */
+.app-tr-hover {
+  transition: all 0.2s ease;
+}
+
+.app-tr-hover:hover {
+  background-color: #f8fafc;
+  transform: translateX(2px);
+}
+
+/* Button loading states */
+.btn-loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Form summary box styling */
+.form-summary {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 640px) {
+  .grid-cols-1.md\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .md\:col-span-2 {
+    grid-column: span 1;
+  }
+}

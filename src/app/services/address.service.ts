@@ -1,22 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { environment } from '../../environment/environment';
 import { IAddress, IAddressCreate, IAddressUpdate } from '../models/iaddress';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AddressService {
-  private apiUrl = 'https://localhost:7253/api/Address';
+  private apiUrl = `${environment.apiUrl}/Address`;
 
   constructor(private http: HttpClient) { }
 
-  // Get all addresses and filter by person ID (since no specific endpoint exists)
+  // Get all addresses
   getAddresses(personId: string): Observable<IAddress[]> {
-    return this.http.get<IAddress[]>(this.apiUrl).pipe(
-      map(addresses => addresses.filter(address => address.personId === personId))
-    );
+    return this.http.get<IAddress[]>(this.apiUrl);
   }
 
   // Get a specific address by ID
@@ -24,7 +22,7 @@ export class AddressService {
     return this.http.get<IAddress>(`${this.apiUrl}/${id}`);
   }
 
-  // Create a new address (matches AddressCreateDto exactly)
+  // Create a new address (sends FormData to match [FromForm])
   createAddress(address: IAddressCreate): Observable<IAddress> {
     // Validate required fields
     if (!address.personId) {
@@ -40,29 +38,28 @@ export class AddressService {
       throw new Error('State is required');
     }
 
-    // Create payload that exactly matches AddressCreateDto
-    const createPayload = {
-      PersonId: address.personId,
-      Street: address.street || null,
-      City: address.city,
-      State: address.state,
-      PostalCode: address.postalCode || null,
-      Country: address.country || "Egypt"
-    };
+    // Create FormData to match [FromForm] expectation
+    const formData = new FormData();
+    formData.append('PersonId', address.personId);
+    formData.append('Street', address.street || '');
+    formData.append('City', address.city);
+    formData.append('State', address.state);
+    formData.append('PostalCode', address.postalCode || '');
+    formData.append('Country', address.country || 'Egypt');
     
     console.log('=== ADDRESS CREATION DEBUG ===');
     console.log('Original address data:', address);
-    console.log('Create payload (matches AddressCreateDto):', createPayload);
+    console.log('FormData created for [FromForm]:', formData);
     console.log('API URL:', this.apiUrl);
-    console.log('Request payload (JSON):', JSON.stringify(createPayload, null, 2));
-    console.log('PersonId type:', typeof createPayload.PersonId);
-    console.log('PersonId value:', createPayload.PersonId);
+    console.log('PersonId being sent:', address.personId);
+    console.log('City being sent:', address.city);
+    console.log('State being sent:', address.state);
     console.log('================================');
     
-    return this.http.post<IAddress>(this.apiUrl, createPayload);
+    return this.http.post<IAddress>(this.apiUrl, formData);
   }
 
-  // Update an existing address (matches your backend - no ID in URL)
+  // Update an existing address (sends FormData to match [FromForm])
   updateAddress(id: string, address: IAddressUpdate): Observable<IAddress> {
     // Validate required fields
     if (!address.personId) {
@@ -78,44 +75,26 @@ export class AddressService {
       throw new Error('State is required');
     }
 
-    // Create payload that exactly matches AddressUpdateDto
-    // The ID should already be in the address object from the component
-    const updatePayload = {
-      Id: address.id, // Use the id from the address object
-      PersonId: address.personId,
-      Street: address.street || null,
-      City: address.city,
-      State: address.state,
-      PostalCode: address.postalCode || null,
-      Country: address.country || "Egypt"
-    };
+    // Create FormData to match [FromForm] expectation
+    const formData = new FormData();
+    formData.append('Id', address.id);
+    formData.append('PersonId', address.personId);
+    formData.append('Street', address.street || '');
+    formData.append('City', address.city);
+    formData.append('State', address.state);
+    formData.append('PostalCode', address.postalCode || '');
+    formData.append('Country', address.country || 'Egypt');
     
     console.log('=== ADDRESS UPDATE DEBUG ===');
-    console.log('Updating address with payload (matches AddressUpdateDto):', updatePayload);
-    console.log('API URL:', this.apiUrl); // Note: No ID in URL for PUT
-    console.log('Request payload (JSON):', JSON.stringify(updatePayload, null, 2));
+    console.log('Updating address with FormData (matches [FromForm]):', formData);
+    console.log('API URL:', this.apiUrl);
     console.log('================================');
     
-    // PUT request without ID in URL, as per your controller
-    return this.http.put<IAddress>(this.apiUrl, updatePayload);
+    return this.http.put<IAddress>(this.apiUrl, formData);
   }
 
   // Delete an address
   deleteAddress(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
-
-  // Alternative methods (these likely won't work with your current backend)
-  // Keeping them as fallback options but they probably won't match your API
-  getAddressesByPersonId(personId: string): Observable<IAddress[]> {
-    // This will likely return all addresses since your backend doesn't support filtering by person ID in URL
-    console.warn('This endpoint likely does not exist in your backend - falling back to get all and filter');
-    return this.getAddresses(personId);
-  }
-
-  getAddressesByUserId(userId: string): Observable<IAddress[]> {
-    // This endpoint doesn't exist in your backend
-    console.warn('This endpoint does not exist in your backend - falling back to get all and filter');
-    return this.getAddresses(userId);
   }
 }
