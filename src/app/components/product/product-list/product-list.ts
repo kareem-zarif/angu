@@ -89,7 +89,12 @@ export class ProductList implements OnInit, OnDestroy {
     this.subscription = this.activatedRoute.queryParams.subscribe((params: Params) => {
       this.supplierFilter = params['supplier'] || null;
       this.supplierName = params['supplierName'] || this.supplierFilter;
-      this.loadProducts();
+
+      // 🆕 إضافة السيرش والكاتيجوري
+      const searchQuery = params['q']?.trim() || null;
+      this.selectedCategory = params['category'] && params['category'] !== 'all' ? params['category'] : null;
+
+      this.loadProducts(searchQuery);
     });
   }
 
@@ -115,37 +120,46 @@ export class ProductList implements OnInit, OnDestroy {
     });
   }
 
-  loadProducts(): void {
-    this.loading = true;
-    this.error = null;
+ loadProducts(searchQuery?: string): void {
+  this.loading = true;
+  this.error = null;
 
-    let productsObservable;
+  let productsObservable;
 
-    if (this.supplierFilter) {
-      productsObservable = this.productService.filterBySupplier(this.supplierFilter);
-    } else {
-      productsObservable = this.productService.getProducts();
-    }
-
-    productsObservable.subscribe({
-      next: (products) => {
-        this.allProducts = products;
-        this.calculatePriceRange();
-        this.applyFilters();
-        this.loading = false;
-
-        // Enable animations with a slight delay for better UX
-        setTimeout(() => {
-          this.animationsEnabled = true;
-        }, 100);
-      },
-      error: (error) => {
-        console.error('Error loading products:', error);
-        this.error = 'Failed to load products. Please try again later.';
-        this.loading = false;
-      }
-    });
+  if (this.supplierFilter) {
+    productsObservable = this.productService.filterBySupplier(this.supplierFilter);
+  } else {
+    productsObservable = this.productService.getProducts();
   }
+
+  productsObservable.subscribe({
+    next: (products) => {
+      this.allProducts = products;
+
+      // 🆕 فلترة بالكلمة لو موجودة
+      if (searchQuery) {
+        this.allProducts = this.allProducts.filter(p =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+
+      this.calculatePriceRange();
+      this.applyFilters();
+      this.loading = false;
+
+      setTimeout(() => {
+        this.animationsEnabled = true;
+      }, 100);
+    },
+    error: (error) => {
+      console.error('Error loading products:', error);
+      this.error = 'Failed to load products. Please try again later.';
+      this.loading = false;
+    }
+  });
+}
+
 
   calculatePriceRange(): void {
     if (this.allProducts.length === 0) return;

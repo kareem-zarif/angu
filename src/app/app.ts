@@ -12,13 +12,13 @@ import { SignalrChat } from './components/signalr-chat/signalr-chat';
 import { Chatbot } from './components/chatbot/chatbot';
 import { Auth } from './services/auth';
 // import { HttpClient } from '@microsoft/signalr';
-
+import { MatIconModule } from '@angular/material/icon';  // 👈 ضيف الاستيراد
 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, Header, Footer, AboutUs, RegisterSelection, Recommendation, SignalrChat, Chatbot],
+  imports: [CommonModule, RouterOutlet, Header, Footer,MatIconModule, AboutUs, RegisterSelection, Recommendation, SignalrChat, Chatbot],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })

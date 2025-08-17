@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy,ViewChild,ElementRef,AfterViewInit,Input, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewInit, Input, ChangeDetectorRef } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -7,13 +7,23 @@ import { CartService } from '../../services/cart.service';
 import { WishlistService } from '../../services/wishlistService';
 import { ICartItem } from '../../models/i-cart-item';
 import { HttpClient } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
-import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AddressService } from '../../services/address.service';
 import { IAddress } from '../../models/iaddress';
 import { AddressManagement } from '../../components/address-management/address-management';
+import { FormControl } from '@angular/forms';
+import { Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+
 
 interface Language {
   code: string;
@@ -23,37 +33,31 @@ interface Language {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, CommonModule, FormsModule],
+  imports: [RouterLink, CommonModule, FormsModule, ReactiveFormsModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatAutocompleteModule, MatButtonModule,MatIconModule],
   templateUrl: './header.html',
   styleUrl: './header.css'
 })
-export class Header implements OnInit, OnDestroy,AfterViewInit {
-  // User state
+export class Header implements OnInit, OnDestroy, AfterViewInit {
   currentUser: User | null = null;
   cartCount = 0;
   cartTotal = 0;
   cartItems: ICartItem[] = [];
   wishlistCount = 0;
   selectedLang: Language = { code: 'en', label: 'Eng' };
-@ViewChild('searchInput', { static: false }) searchInput!: ElementRef;
-  searchQuery: string = '';
+  @ViewChild('searchInput', { static: false }) searchInput!: ElementRef;
+  searchQueryControl = new FormControl();
+  searchCategory = new FormControl('all');
+  filteredOptions: Observable<string[]>;
   searchSuggestions: string[] = [];
   private hideTimeout: any;
-
-  // Notification state
-
   notifications: any[] = [];
   notificationCount = 0;
   showNotifications = false;
   currentAddress: IAddress | null = null;
   addressDisplay = 'Select Address';
   isLoadingAddress = false;
-
-  // Subscriptions management
   private subscriptions: Subscription = new Subscription();
-// search
-searchSubject = new Subject<string>();
-showSuggestions = false;
+  showSuggestions = false;
   @Input() addressManagementComponent?: AddressManagement;
 
   constructor(
@@ -65,14 +69,20 @@ showSuggestions = false;
     private unifiedNotificationService: UnifiedNotificationService,
     private addressService: AddressService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    this.filteredOptions = this.searchQueryControl.valueChanges.pipe(
+      startWith(''),
+      debounceTime(300),
+      distinctUntilChanged(),
+      map(value => this._filter(value || ''))
+    );
+  }
 
- ngAfterViewInit() {
-    console.log('searchInput initialized:', this.searchInput); // تتبع
+  ngAfterViewInit() {
+    console.log('searchInput initialized:', this.searchInput);
   }
 
   ngOnInit(): void {
-    // Reactive subscription to current user
     this.subscriptions.add(
       this.authService.currentUser$.subscribe((user: User | null) => {
         this.currentUser = user;
@@ -120,30 +130,47 @@ showSuggestions = false;
     );
 
     this.loadSavedLanguage();
+  }
 
-// search start =>
-     this.subscriptions.add(
-    this.searchSubject
-      .pipe(
-        debounceTime(300), // ينتظر 300ms بعد آخر حرف
-        distinctUntilChanged() // يتأكد إن النص فعلاً اتغير
-      )
-      .subscribe(query => {
-        if (query.length >= 2) {
-          this.getSearchSuggestions(query);
-        } else {
-          this.searchSuggestions = [];
-        }
-      })
-  );
+  private _filter(value: string): string[] {
+    const filterValue = value.toLowerCase();
+    this.getSearchSuggestions(filterValue);
+    return this.searchSuggestions.filter(option => option.toLowerCase().includes(filterValue));
+  }
 
+  private getSearchSuggestions(query: string): void {
+    if (query.length >= 1) {
+      this.http
+        .get<string[]>(`https://localhost:7253/api/product/search?q=${encodeURIComponent(query)}`)
+        .subscribe({
+          next: (data) => {
+            this.searchSuggestions = Array.isArray(data) ? data : [];
+            this.cdr.detectChanges();
+          },
+          error: () => {
+            this.searchSuggestions = [];
+            this.cdr.detectChanges();
+          }
+        });
+    } else {
+      this.searchSuggestions = [];
+    }
+  }
 
-    if (this.addressManagementComponent) {
-      this.subscriptions.add(
-        this.addressManagementComponent.defaultAddressChanged.subscribe(address => {
-          this.setCurrentAddress(address);
-        })
-      );
+  onSearchSelect(event: MatAutocompleteSelectedEvent): void {
+    const value = event.option.value;
+    if (value) {
+      this.searchQueryControl.setValue(value);
+      this.performSearch();
+    }
+  }
+
+  performSearch(): void {
+    const query = this.searchQueryControl.value?.trim();
+    if (query) {
+      this.router.navigate(['/products'], {
+        queryParams: { q: query, category: this.searchCategory.value }
+      });
     }
   }
 
@@ -219,7 +246,6 @@ showSuggestions = false;
         queryParams: { returnUrl: '/address-management' }
       });
     }
-
   }
 
   ngOnDestroy(): void {
@@ -275,72 +301,6 @@ showSuggestions = false;
         document.body.classList.add('ltr-layout');
         document.body.classList.remove('rtl-layout');
       }
-    }
-  }
-
-  // Search methods
-private getSearchSuggestions(query: string): void {
-    this.http
-      .get<string[]>(`https://localhost:7253/api/product/search?q=${encodeURIComponent(query)}`)
-      .subscribe({
-        next: (data) => {
-          console.log('API Response:', data);
-          this.searchSuggestions = Array.isArray(data) ? data : [];
-          this.showSuggestions = this.searchSuggestions.length > 0;
-          console.log('searchSuggestions length:', this.searchSuggestions.length, 'showSuggestions:', this.showSuggestions);
-        },
-        error: (error) => {
-          console.error('Search error:', error);
-          this.searchSuggestions = [];
-          this.showSuggestions = false;
-        }
-      }); 
-  }
-
-
-
-
-
-onSearchInput(): void {
-    console.log('onSearchInput triggered, searchQuery:', this.searchQuery);
-    this.showSuggestions = true;
-    console.log('showSuggestions set to true in onSearchInput');
-    this.searchSubject.next(this.searchQuery);
-  }
-
-  hideSuggestionsWithDelay() {
-    console.log('Hiding suggestions...');
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout); // إلغاء الـ timeout السابق
-    }
-    this.hideTimeout = setTimeout(() => {
-      this.showSuggestions = false;
-      console.log('showSuggestions set to false after delay');
-    }, 5000); // 2 ثانية
-  }
-
-  onDropdownMouseEnter() {
-    this.showSuggestions = true;
-    if (this.hideTimeout) {
-      clearTimeout(this.hideTimeout); // إلغاء الخفاء لما تدخلي فوق الـ dropdown
-    }
-    console.log('Mouse entered dropdown, showSuggestions set to true');
-}
-
-onDropdownMouseLeave() {
-  console.log('Mouse left dropdown, scheduling hide...');
-  this.hideSuggestionsWithDelay();
-}
-selectSuggestion(suggestion: string) {
-  this.searchQuery = suggestion;
-  this.showSuggestions = false;
-}
-
-  performSearch(): void {
-    if (this.searchQuery.trim()) {
-      this.router.navigate(['/products'], {
-        queryParams: { q: this.searchQuery.trim() }
-      });
     }
   }
 

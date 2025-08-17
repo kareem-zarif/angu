@@ -40,3 +40,16 @@
 .dropdown-content li a:hover {
   background-color: #f3f4f6;
 }
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-select {
+  font-size: 14px;
+}
+
+input.mat-input-element {
+  font-size: 14px;
+  padding: 8px 12px;
+}
