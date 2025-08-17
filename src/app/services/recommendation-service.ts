@@ -1,20 +1,26 @@
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IProduct } from '../models/i-product';
 import { environment } from '../../environment/environment';
-@Injectable({
-  providedIn: 'root'
-})
+
 @Injectable({
   providedIn: 'root'
 })
 export class RecommendationService {
-  private baseUrl = environment.apiUrl + '/Recommendation'; // تأكد من الاسم صح
+  private baseUrl = `${environment.apiUrl}/recommendation`;
 
   constructor(private http: HttpClient) {}
 
-  getRecommendations(userId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/${userId}`);
+  getRecommendations(userId: string): Observable<IProduct[]> {
+    return this.http.get<IProduct[]>(`${this.baseUrl}/recommendations/${userId}`);
+  }
+
+  getBestSellers(): Observable<any[]> {
+    return this.http.get<IProduct[]>(`${this.baseUrl}/bestsellers`);
+  }
+
+  getNewReleases(): Observable<IProduct[]> {
+    return this.http.get<IProduct[]>(`${this.baseUrl}/newreleases`);
   }
 }
