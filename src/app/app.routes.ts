@@ -28,6 +28,7 @@ import { NewReleases } from './components/new-releases/new-releases';
 import { ForbiddenComponent } from './components/shared/forbidden/forbidden';
 import { CustomerGuard } from './core/guards/customer.guard';
 import { AddressGuard } from './core/guards/address.guard';
+import { SignalrGuard } from './core/guards/signalr.guard';
 
 
 
@@ -47,6 +48,7 @@ export const routes: Routes = [
   { path: 'products', component: ProductList },
   { path: 'products/:id', component: ProductDetails },
   { path: 'recommendation', component: Recommendation },
+  { path: 'Chatbot', component: Chatbot },
 
   // Customer routes
   {
@@ -55,6 +57,7 @@ export const routes: Routes = [
     children: [
       { path: 'orders', component: OrdersComponent },
       { path: 'checkout', component: CheckoutComponent },
+      { path: 'SignalrChat', component: SignalrChat },
       { path: 'address-management', loadComponent: () => import('./components/address-management/address-management').then(m => m.AddressManagement) }
     ]
   },
@@ -117,6 +120,7 @@ export const routes: Routes = [
     canActivate: [SellerGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'SignalrChat', component: SignalrChat },
       {
         path: 'dashboard',
         loadComponent: () => import('./components/seller-dashboard')
@@ -172,6 +176,13 @@ export const routes: Routes = [
     canActivate: [AddressGuard],
     loadComponent: () => import('./components/address-management/address-management')
       .then(m => m.AddressManagement)
+  },
+
+// SignalR Chat routes
+  {
+    path: 'chat/signalr/:supplierId',
+    component: SignalrChat,
+    canActivate: [SignalrGuard]
   },
 
   // Customer Address Management

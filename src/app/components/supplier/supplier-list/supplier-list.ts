@@ -280,6 +280,6 @@ export class SupplierList implements OnInit, OnDestroy {
 
   navigateToChat(supplierId: string, event?: Event): void {
     if (event) event.stopPropagation();
-    this.router.navigate(['/chat', supplierId]);
+    this.router.navigate(['/chat/signalr', supplierId]);
   }
 }

@@ -8,6 +8,7 @@ import { ISupplier } from '../../models/i-supplier';
 import { HttpClient } from '@angular/common/http';
 import { Auth } from '../../services/auth';
 import { Subscription } from 'rxjs';
+import { environment } from '../../../environment/environment';
 
 @Component({
   selector: 'app-signalr-chat',
@@ -27,12 +28,13 @@ export class SignalrChat implements OnInit, OnDestroy {
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
 
   private subscription: Subscription | null = null;
+  private apiUrl = `${environment.apiUrl}/Supplier`;
 
   constructor(
     private chatService: SignalrService,
     private route: ActivatedRoute,
     private auth: Auth,
-    private http: HttpClient
+    private http: HttpClient,
   ) {}
 
   ngOnInit(): void {
@@ -73,7 +75,7 @@ export class SignalrChat implements OnInit, OnDestroy {
 
   loadSupplier(): void {
     if (this.receiverId && this.senderType === 'Customer') {
-      this.http.get<ISupplier>(`/api/Supplier/${this.receiverId}`).subscribe(supplier => {
+      this.http.get<ISupplier>(`${this.apiUrl}/${this.receiverId}`).subscribe(supplier => {
         this.supplier = supplier;
       });
     }

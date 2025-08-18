@@ -54,7 +54,7 @@ export class ForbiddenComponent implements OnInit {
   getDashboardLink(): string {
     const user = this.auth.getCurrentUser();
     if (user?.roles?.includes(Role.Admin)) return '/admin/dashboard';
-    if (user?.roles?.includes(Role.Seller)) return '/seller/dashboard';
+    if (user?.roles?.includes(Role.Supplier)) return '/seller/dashboard';
     return '/';
   }
 }

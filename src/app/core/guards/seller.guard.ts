@@ -12,13 +12,13 @@ export class SellerGuard implements CanActivate {
   canActivate(): boolean {
     const user = this.auth.getCurrentUser();
 
-    if (user?.roles?.includes(Role.Seller)) {
+    if (user?.roles?.includes(Role.Supplier)) {
       return true;
     }
 
     this.router.navigate(['/forbidden'], {
       queryParams: {
-        requiredRoles: Role.Seller,
+        requiredRoles: Role.Supplier,
         currentRole: user?.roles?.[0] || Role.Guest
       }
     });
