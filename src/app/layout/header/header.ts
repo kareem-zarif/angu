@@ -11,13 +11,12 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UnifiedNotificationService } from '../../services/unified-notification.service';
 import { TranslateService } from '@ngx-translate/core';
 import { TranslateModule } from '@ngx-translate/core';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
 import { AddressService } from '../../services/address.service';
 import { IAddress } from '../../models/iaddress';
 import { AddressManagement } from '../../components/address-management/address-management';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
-import { map, startWith } from 'rxjs/operators';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
@@ -34,9 +33,21 @@ interface Language {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [RouterLink, CommonModule, FormsModule,TranslateModule, ReactiveFormsModule, MatFormFieldModule, MatSelectModule, MatInputModule, MatAutocompleteModule, MatButtonModule,MatIconModule],
+  imports: [
+    RouterLink,
+    CommonModule,
+    FormsModule,
+    TranslateModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+    MatIconModule,
+  ],
   templateUrl: './header.html',
-  styleUrl: './header.css'
+  styleUrl: './header.css',
 })
 export class Header implements OnInit, OnDestroy, AfterViewInit {
   currentUser: User | null = null;
@@ -68,20 +79,17 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     private wishlistService: WishlistService,
     private http: HttpClient,
     private unifiedNotificationService: UnifiedNotificationService,
-    private translate: TranslateService
-  ) {
-        this.translate.addLangs(['en', 'ar']); 
-        this.translate.setDefaultLang('en');
-   }
-
+    private translate: TranslateService,
     private addressService: AddressService,
     private cdr: ChangeDetectorRef
   ) {
+    this.translate.addLangs(['en', 'ar']);
+    this.translate.setDefaultLang('en');
     this.filteredOptions = this.searchQueryControl.valueChanges.pipe(
       startWith(''),
       debounceTime(300),
       distinctUntilChanged(),
-      map(value => this._filter(value || ''))
+      map((value) => this._filter(value || ''))
     );
   }
 
@@ -112,27 +120,27 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     );
 
     this.subscriptions.add(
-      this.cartService.getCartCount().subscribe(count => this.cartCount = count)
+      this.cartService.getCartCount().subscribe((count) => (this.cartCount = count))
     );
 
     this.subscriptions.add(
-      this.cartService.getCartTotal().subscribe(total => this.cartTotal = total)
+      this.cartService.getCartTotal().subscribe((total) => (this.cartTotal = total))
     );
 
     this.subscriptions.add(
-      this.cartService.getCartItems().subscribe(items => this.cartItems = items)
+      this.cartService.getCartItems().subscribe((items) => (this.cartItems = items))
     );
 
     this.subscriptions.add(
-      this.wishlistService.getWishlistObservable().subscribe(products => {
+      this.wishlistService.getWishlistObservable().subscribe((products) => {
         this.wishlistCount = products.length;
       })
     );
 
     this.subscriptions.add(
-      this.unifiedNotificationService.allNotifications$.subscribe(notifications => {
+      this.unifiedNotificationService.allNotifications$.subscribe((notifications) => {
         this.notifications = notifications;
-        this.notificationCount = notifications.filter(n => !n.isRead).length;
+        this.notificationCount = notifications.filter((n) => !n.isRead).length;
       })
     );
 
@@ -142,7 +150,7 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
   private _filter(value: string): string[] {
     const filterValue = value.toLowerCase();
     this.getSearchSuggestions(filterValue);
-    return this.searchSuggestions.filter(option => option.toLowerCase().includes(filterValue));
+    return this.searchSuggestions.filter((option) => option.toLowerCase().includes(filterValue));
   }
 
   private getSearchSuggestions(query: string): void {
@@ -157,7 +165,7 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
           error: () => {
             this.searchSuggestions = [];
             this.cdr.detectChanges();
-          }
+          },
         });
     } else {
       this.searchSuggestions = [];
@@ -176,7 +184,7 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     const query = this.searchQueryControl.value?.trim();
     if (query) {
       this.router.navigate(['/products'], {
-        queryParams: { q: query, category: this.searchCategory.value }
+        queryParams: { q: query, category: this.searchCategory.value },
       });
     }
   }
@@ -187,8 +195,8 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     if (savedAddressId && this.currentUser?.UserId) {
       this.subscriptions.add(
         this.addressService.getAddress(savedAddressId).subscribe({
-          next: address => this.setCurrentAddress(address),
-          error: () => this.resetAddressState()
+          next: (address) => this.setCurrentAddress(address),
+          error: () => this.resetAddressState(),
         })
       );
     } else {
@@ -210,9 +218,9 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     this.isLoadingAddress = true;
     this.subscriptions.add(
       this.addressService.getAddresses(this.currentUser.UserId).subscribe({
-        next: addresses => {
+        next: (addresses) => {
           if (addresses?.length) {
-            const defaultAddress = addresses.find(addr => addr.IsDefault);
+            const defaultAddress = addresses.find((addr) => addr.IsDefault);
             this.setCurrentAddress(defaultAddress || addresses[0]);
           } else {
             this.addressDisplay = 'No address set';
@@ -222,7 +230,7 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
         error: () => {
           this.addressDisplay = 'Error loading address';
           this.isLoadingAddress = false;
-        }
+        },
       })
     );
   }
@@ -243,16 +251,6 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
     return address.city && address.state
       ? `${address.city}, ${address.state}`
       : parts.join(', ').trim();
-  }
-
-  navigateToAddressManagement(): void {
-    if (this.isLoggedIn()) {
-      this.router.navigate(['/address-management']);
-    } else {
-      this.router.navigate(['/login'], {
-        queryParams: { returnUrl: '/address-management' }
-      });
-    }
   }
 
   ngOnDestroy(): void {
@@ -293,11 +291,11 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
         this.applyLanguageDirection(this.selectedLang.code);
       } catch {
         this.selectedLang = { code: 'en', label: 'Eng' };
+        this.translate.use(this.selectedLang.code);
       }
+    } else {
+      this.translate.use(this.selectedLang.code);
     }
-    else {
-    this.translate.use(this.selectedLang.code);
-  }
   }
 
   private applyLanguageDirection(langCode: string): void {

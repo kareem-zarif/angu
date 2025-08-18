@@ -1,45 +1,26 @@
-
-<div class="bg-black">
-  <header class="flex items-center justify-between text-white px-6 py-4 font-sans text-sm lg:px-10">
-    <div class="flex items-center gap-6">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-black font-bold text-sm">
-          B2C
-        </div>
-        <span class="text-orange-500 font-semibold text-lg tracking-wide"> {{ 'HEADER.HORAS' | translate }}</span>
-
 <div class="bg-black font-sans text-sm">
   <!-- Main Header -->
-  <header class="flex items-center justify-between text-white px-4 py-3 lg:px-10">
+  <header class="flex flex-col sm:flex-row items-center justify-between text-white px-4 py-3 lg:px-10">
     <!-- Left: Logo -->
     <div class="flex items-center gap-2">
       <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-black font-bold text-sm">
         B2C
-
       </div>
-       <span class="text-orange-500 font-semibold text-lg tracking-wide"> {{ 'HEADER.HORAS' | translate }}</span>
+      <span class="text-orange-500 font-semibold text-lg tracking-wide">{{ 'HEADER.HORAS' | translate }}</span>
     </div>
 
-
     <!-- Deliver To -->
-    <div class="text-pink-500">
+    <div class="text-pink-500 text-center sm:text-left mt-2 sm:mt-0">
       <div>{{ 'HEADER.DELIVER_TO' | translate }} {{ currentUser?.displayName || 'Guest' }}</div>
-      <button (click)="navigateToAddressManagement()"
+      <button [routerLink]="['/address-management']"
         class="text-white font-semibold text-lg hover:text-orange-400 transition-colors duration-200 cursor-pointer">
         {{ addressDisplay }}
       </button>
     </div>
 
     <!-- Amazon-like Search Bar -->
-    <div class="flex items-center bg-white border border-gray-300 rounded-md shadow-md w-full max-w-lg">
-
-
-
-      <!-- Divider -->
-      <div class="border-l border-gray-300 h-6"></div>
-
-      <!-- Search Input -->
-      <div class="flex w-full max-w-xl mx-auto rounded-md overflow-hidden shadow-sm border border-gray-300">
+    <div class="flex flex-col sm:flex-row items-center w-full max-w-lg mt-3 sm:mt-0">
+      <div class="flex w-full rounded-md overflow-hidden shadow-sm border border-gray-300">
         <!-- Dropdown -->
         <select [formControl]="searchCategory"
           class="bg-gray-100 px-3 text-sm border-r border-gray-300 focus:outline-none text-black">
@@ -49,7 +30,7 @@
 
         <!-- Input -->
         <input type="text" placeholder="Search Horas..." [formControl]="searchQueryControl" [matAutocomplete]="auto"
-          class="flex-1 px-3 py-2 focus:outline-none text-sm text-gray-700" />
+          class="flex-1 px-3 py-2 focus:outline-none text-sm text-white-700" />
 
         <!-- Autocomplete -->
         <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onSearchSelect($event)">
@@ -60,16 +41,14 @@
 
         <!-- Search Button -->
         <button (click)="performSearch()"
-          class="bg-[#febd69] hover:bg-[#f3a847] px-1 flex items-center justify-center text-black font-medium w-20">
-           {{ 'HEADER.SEARCH' | translate }}
+          class="bg-[#febd69] hover:bg-[#f3a847] px-4 py-2 flex items-center justify-center text-black font-medium">
+          {{ 'HEADER.SEARCH' | translate }}
         </button>
       </div>
-
     </div>
 
-
     <!-- Right: Desktop Menu -->
-    <div class="hidden lg:flex items-center gap-6 text-white text-sm font-semibold">
+    <div class="hidden lg:flex items-center gap-6 text-white text-sm font-semibold mt-3 lg:mt-0">
       <!-- Language -->
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="cursor-pointer flex items-center gap-1 hover:text-orange-500">
@@ -78,7 +57,6 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-
         <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 text-neutral-800">
           <li><a (click)="changeLang('en', 'Eng')">{{ 'HEADER.ENGLISH' | translate }}</a></li>
           <li><a (click)="changeLang('ar', 'عربي')">{{ 'HEADER.ARABIC' | translate }}</a></li>
@@ -87,7 +65,7 @@
 
       <!-- Account -->
       <div class="cursor-pointer hover:text-orange-500">
-         {{ 'HEADER.HELLO' | translate }}, {{ currentUser?.displayName || 'Guest' }}<br />
+        {{ 'HEADER.HELLO' | translate }}, {{ currentUser?.displayName || 'Guest' }}<br />
         <span class="font-normal text-gray-400 underline text-xs">{{ 'HEADER.ACCOUNT_LIST' | translate }}</span>
       </div>
 
@@ -104,7 +82,7 @@
       </a>
 
       <!-- Orders -->
-      <a routerLink="/orders" class="hover:text-orange-500"> {{ 'HEADER.ORDERS' | translate }}</a>
+      <a routerLink="/orders" class="hover:text-orange-500">{{ 'HEADER.ORDERS' | translate }}</a>
 
       <!-- Cart -->
       <div class="dropdown dropdown-end">
@@ -119,7 +97,6 @@
           </div>
         </div>
       </div>
-
 
       <!-- Profile -->
       <div class="dropdown dropdown-end">
@@ -148,7 +125,7 @@
     </div>
 
     <!-- Mobile: Burger Menu -->
-    <div class="lg:hidden">
+    <div class="lg:hidden mt-3">
       <div class="dropdown dropdown-end">
         <label tabindex="0" class="btn btn-ghost btn-circle">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,25 +134,46 @@
         </label>
         <ul tabindex="0"
           class="menu menu-sm dropdown-content mt-3 p-2 shadow bg-base-100 rounded-box w-52 text-neutral-800">
-          <li><a routerLink="/orders">Orders</a></li>
+          <li><a routerLink="/orders">{{ 'HEADER.ORDERS' | translate }}</a></li>
           <li><a routerLink="/wishlist">Wishlist</a></li>
           <li><a routerLink="/cart">Cart</a></li>
           <li><a routerLink="/profile">Profile</a></li>
           <li><a routerLink="/settings">Settings</a></li>
+          <li><a (click)="changeLang('en', 'Eng')">{{ 'HEADER.ENGLISH' | translate }}</a></li>
+          <li><a (click)="changeLang('ar', 'عربي')">{{ 'HEADER.ARABIC' | translate }}</a></li>
+          <ng-container *ngIf="!isLoggedIn()">
+            <li><a (click)="navigateToRegister()">Register</a></li>
+            <li><a (click)="navigateToLogin()">Login</a></li>
+          </ng-container>
+          <ng-container *ngIf="isLoggedIn()">
+            <li *ngIf="currentUser?.roles?.includes('Seller')"><a routerLink="/seller-dashboard">Seller Dashboard</a>
+            </li>
+            <li *ngIf="currentUser?.roles?.includes('Admin')"><a routerLink="/admin-dashboard">Management Dashboard</a>
+            </li>
+            <li><a (click)="logout()">Logout</a></li>
+          </ng-container>
         </ul>
       </div>
     </div>
   </header>
 
   <!-- Second Header (Nav Links) -->
-  <nav class="bg-gray-800 text-white py-2 hidden lg:block">
-    <div class="flex justify-between px-20 text-base font-base">
-      <a routerLink="/bestsellers" routerLinkActive="text-orange-500" class="hover:text-orange-500">Best Sellers</a>
-      <a routerLink="/newreleases" routerLinkActive="text-orange-500" class="hover:text-orange-500">New Release</a>
-      <a routerLink="/products" routerLinkActive="text-orange-500" class="hover:text-orange-500">Products</a>
-      <a routerLink="/suppliers" routerLinkActive="text-orange-500" class="hover:text-orange-500">Suppliers</a>
-      <a routerLink="/about-us" routerLinkActive="text-orange-500" class="hover:text-orange-500">About Us</a>
-      <a routerLink="/recommendation" routerLinkActive="text-orange-500" class="hover:text-orange-500">for You</a>
+  <nav class="bg-gray-800 text-white py-2">
+    <div
+      class="flex flex-col lg:flex-row justify-center lg:justify-between px-4 lg:px-20 text-base font-base gap-2 lg:gap-6">
+      <a routerLink="/bestsellers" routerLinkActive="text-orange-500" class="hover:text-orange-500 text-center">Best
+        Sellers</a>
+      <a routerLink="/newreleases" routerLinkActive="text-orange-500" class="hover:text-orange-500 text-center">New
+        Release</a>
+      <a routerLink="/products" routerLinkActive="text-orange-500"
+        class="hover:text-orange-500 text-center">Products</a>
+      <a routerLink="/suppliers" routerLinkActive="text-orange-500"
+        class="hover:text-orange-500 text-center">Suppliers</a>
+      <a routerLink="/about-us" routerLinkActive="text-orange-500" class="hover:text-orange-500 text-center">About
+        Us</a>
+      <a routerLink="/recommendation" routerLinkActive="text-orange-500" class="hover:text-orange-500 text-center">For
+        You</a>
+
     </div>
   </nav>
 </div>

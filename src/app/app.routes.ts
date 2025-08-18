@@ -1,4 +1,8 @@
 import { Routes } from '@angular/router';
+import { Role } from './models/enums/roles';
+import { AuthGuard } from './core/guards/auth.guard';
+import { AdminGuard } from './core/guards/admin.guard';
+import { SellerGuard } from './core/guards/seller.guard';
 import { OrdersComponent } from './components/orders/orders';
 import { AccountManagement } from './components/account-management/account-management';
 import { CheckoutComponent } from './components/checkout/checkout';
@@ -21,51 +25,45 @@ import { PaymentCancel } from './components/payment/payment-cancel/payment-cance
 import { RegisterComponent } from './components/register/register';
 import { BestSellers } from './components/best-sellers/best-sellers';
 import { NewReleases } from './components/new-releases/new-releases';
+import { ForbiddenComponent } from './components/shared/forbidden/forbidden';
+import { CustomerGuard } from './core/guards/customer.guard';
+import { AddressGuard } from './core/guards/address.guard';
 
 
 
 export const routes: Routes = [
-  // Default route
+  // Public routes
   { path: '', redirectTo: 'products', pathMatch: 'full' },
-
-  // Auth routes
   { path: 'login', component: Login },
   { path: 'register', component: RegisterComponent },
   { path: 'register-selection', component: RegisterSelection },
-  { path: 'recommendation', component: Recommendation },
-   { path: 'bestsellers', component: BestSellers },
+  { path: 'about-us', component: AboutUs },
+  { path: 'forbidden', component: ForbiddenComponent },
+  { path: 'bestsellers', component: BestSellers },
   { path: 'newreleases', component: NewReleases },
-
-  { path: 'notification-test', loadComponent: () => import('./components/notification-test/notification-test').then(m => m.NotificationTestComponent) },
-
-
-  // Main content routes
+  { path: 'suppliers', component: SupplierList },
+  { path: 'cart', component: Cart },
+  { path: 'wishlist', component: WishlistComponent },
   { path: 'products', component: ProductList },
   { path: 'products/:id', component: ProductDetails },
-  { path: 'suppliers', component: SupplierList },
-  { path: 'about-us', component: AboutUs },
+  { path: 'recommendation', component: Recommendation },
 
-  // User account routes
-  { path: 'wishlist', component: WishlistComponent },
-  { path: 'orders', component: OrdersComponent },
-  { path: 'account-management', component: AccountManagement },
-  { path: 'address-management', loadComponent: () => import('./components/address-management/address-management').then(m => m.AddressManagement) },
-  { path: 'cart', component: Cart },
-  { path: 'checkout', component: CheckoutComponent },
+  // Customer routes
+  {
+    path: 'customer',
+    canActivate: [CustomerGuard],
+    children: [
+      { path: 'orders', component: OrdersComponent },
+      { path: 'checkout', component: CheckoutComponent },
+      { path: 'address-management', loadComponent: () => import('./components/address-management/address-management').then(m => m.AddressManagement) }
+    ]
+  },
 
-  // Payment Routes
-  { path: 'payment', component: PaymentComponent },
-  { path: 'paymentCancel', component: PaymentCancel },
-
-  //signalr routes
-  { path: 'signalr', component: SignalrChat },
-  { path: 'chat/:supplierId', component: SignalrChat },
-  //chatbot routes
-  { path: 'chatbot', component: Chatbot },
   // Admin routes
   {
     path: 'admin',
     component: AdminLayoutComponent,
+    canActivate: [AdminGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
@@ -116,6 +114,7 @@ export const routes: Routes = [
   {
     path: 'seller',
     component: SellerLayoutComponent,
+    canActivate: [SellerGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
@@ -167,6 +166,30 @@ export const routes: Routes = [
     ]
   },
 
-  // Wildcard route for 404
+  // Address Management Route
+  {
+    path: 'address-management',
+    canActivate: [AddressGuard],
+    loadComponent: () => import('./components/address-management/address-management')
+      .then(m => m.AddressManagement)
+  },
+
+  // Customer Address Management
+  {
+    path: 'customer/address-management',
+    canActivate: [AddressGuard],
+    loadComponent: () => import('./components/address-management/address-management')
+      .then(m => m.AddressManagement)
+  },
+
+  // Seller Address Management
+  {
+    path: 'seller/address-management',
+    canActivate: [AddressGuard],
+    loadComponent: () => import('./components/seller-address-management/seller-address-management')
+      .then(m => m.SellerAddressManagementComponent)
+  },
+
+  // Wildcard route
   { path: '**', redirectTo: 'not-found' }
 ];

@@ -56,7 +56,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
     }
 
     console.log('🔄 SellerAddressManagement: Loading addresses for user:', currentUserId);
-    
+
     this.subscription.add(
       this.addressService.getAddresses(currentUserId).subscribe({
         next: (addresses) => {
@@ -85,7 +85,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
     this.selectedAddress = address;
     this.isEditMode = true;
     this.showForm = true;
-    
+
     this.addressForm.patchValue({
       street: address.street || '',
       city: address.city || '',
@@ -104,7 +104,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
 
     if (confirm('Are you sure you want to delete this address?')) {
       console.log('🔄 SellerAddressManagement: Deleting address:', address);
-      
+
       this.subscription.add(
         this.addressService.deleteAddress(address.id).subscribe({
           next: () => {
@@ -178,7 +178,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
               message: error.message,
               error: error.error
             });
-            
+
             let errorMessage = 'Failed to update address. Please try again.';
             if (error.status === 400) {
               errorMessage = 'Invalid data. Please check your input.';
@@ -187,7 +187,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
             } else if (error.status === 500) {
               errorMessage = 'Server error. Please try again later.';
             }
-            
+
             this.showError(errorMessage);
             this.isSubmitting = false;
           }
@@ -196,12 +196,12 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
     } else {
       // Create new address
       const createData: IAddressCreate = {
-        personId: currentUserId,
-        street: formValue.street,
-        city: formValue.city,
-        state: formValue.state,
-        postalCode: formValue.postalCode,
-        country: formValue.country
+        PersonId: currentUserId,
+        Street: formValue.street,
+        City: formValue.city,
+        State: formValue.state,
+        PostalCode: formValue.postalCode,
+        Country: formValue.country
       };
 
       console.log('🔄 SellerAddressManagement: Creating address with data:', createData);
@@ -230,7 +230,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
             });
             console.error('❌ Full error object:', error);
             console.error('❌ Backend response:', error.error);
-            
+
             let errorMessage = 'Failed to create address. Please try again.';
             if (error.status === 400) {
               errorMessage = 'Invalid data. Please check your input.';
@@ -239,7 +239,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
             } else if (error.status === 500) {
               errorMessage = 'Server error. Please try again later.';
             }
-            
+
             this.showError(errorMessage);
             this.isSubmitting = false;
           }
@@ -265,7 +265,7 @@ export class SellerAddressManagementComponent implements OnInit, OnDestroy {
     this.successMessage = message;
     this.hasError = false;
     this.errorMessage = '';
-    
+
     // Auto-hide success message after 3 seconds
     setTimeout(() => {
       this.successMessage = '';

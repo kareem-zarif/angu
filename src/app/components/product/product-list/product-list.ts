@@ -120,45 +120,45 @@ export class ProductList implements OnInit, OnDestroy {
     });
   }
 
- loadProducts(searchQuery?: string): void {
-  this.loading = true;
-  this.error = null;
+  loadProducts(searchQuery?: string): void {
+    this.loading = true;
+    this.error = null;
 
-  let productsObservable;
+    let productsObservable;
 
-  if (this.supplierFilter) {
-    productsObservable = this.productService.filterBySupplier(this.supplierFilter);
-  } else {
-    productsObservable = this.productService.getProducts();
-  }
-
-  productsObservable.subscribe({
-    next: (products) => {
-      this.allProducts = products;
-
-      // 🆕 فلترة بالكلمة لو موجودة
-      if (searchQuery) {
-        this.allProducts = this.allProducts.filter(p =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-
-      this.calculatePriceRange();
-      this.applyFilters();
-      this.loading = false;
-
-      setTimeout(() => {
-        this.animationsEnabled = true;
-      }, 100);
-    },
-    error: (error) => {
-      console.error('Error loading products:', error);
-      this.error = 'Failed to load products. Please try again later.';
-      this.loading = false;
+    if (this.supplierFilter) {
+      productsObservable = this.productService.filterBySupplier(this.supplierFilter);
+    } else {
+      productsObservable = this.productService.getProducts();
     }
-  });
-}
+
+    productsObservable.subscribe({
+      next: (products) => {
+        this.allProducts = products;
+
+        // 🆕 فلترة بالكلمة لو موجودة
+        if (searchQuery) {
+          this.allProducts = this.allProducts.filter(p =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
+
+        this.calculatePriceRange();
+        this.applyFilters();
+        this.loading = false;
+
+        setTimeout(() => {
+          this.animationsEnabled = true;
+        }, 100);
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+        this.error = 'Failed to load products. Please try again later.';
+        this.loading = false;
+      }
+    });
+  }
 
 
   calculatePriceRange(): void {
@@ -358,5 +358,10 @@ export class ProductList implements OnInit, OnDestroy {
 
   private isCategoryMatch(subCategoryId: string, categoryId: string): boolean {
     return this.subCategoryToCategory.get(subCategoryId) === categoryId;
+  }
+
+  isCustomerOrGuest() {
+    const user = this._auth.getCurrentUser();
+    return !user || user.roles.includes('Customer');
   }
 }

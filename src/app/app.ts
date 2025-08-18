@@ -9,7 +9,12 @@ import { Auth } from './services/auth';
 // import { HttpClient } from '@microsoft/signalr';
 import { TranslateModule } from '@ngx-translate/core';
 import { TranslateService } from '@ngx-translate/core';
-import { MatIconModule } from '@angular/material/icon'; 
+import { MatIconModule } from '@angular/material/icon';
+import { AboutUs } from './components/about-us/about-us';
+import { RegisterSelection } from './components/register-selection/register-selection';
+import { Recommendation } from './components/recommendation/recommendation';
+import { SignalrChat } from './components/signalr-chat/signalr-chat';
+import { Chatbot } from './components/chatbot/chatbot';
 
 
 @Component({
