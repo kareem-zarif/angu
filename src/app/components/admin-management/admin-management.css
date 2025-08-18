@@ -1,0 +1,286 @@
+/* Admin Management Component Styles */
+
+/* Custom scrollbar for modals */
+.modal-backdrop-transparent .bg-white::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-backdrop-transparent .bg-white::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-backdrop-transparent .bg-white::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-backdrop-transparent .bg-white::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Permission checkbox styling */
+.permission-checkbox {
+  transition: all 0.2s ease-in-out;
+}
+
+.permission-checkbox:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* Role badge animations */
+.role-badge {
+  transition: all 0.2s ease-in-out;
+}
+
+.role-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Status indicator animations */
+.status-indicator {
+  transition: all 0.3s ease-in-out;
+}
+
+.status-indicator.active {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Table row hover effects */
+.app-tr-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.app-tr-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Button hover effects */
+.btn-soft-blue,
+.btn-soft-green,
+.btn-soft-red,
+.btn-soft-yellow,
+.btn-soft-purple,
+.btn-soft-gray {
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-soft-blue:hover,
+.btn-soft-green:hover,
+.btn-soft-red:hover,
+.btn-soft-yellow:hover,
+.btn-soft-purple:hover,
+.btn-soft-gray:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Form input focus effects */
+input:focus,
+select:focus {
+  transform: scale(1.02);
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Modal entrance animation */
+.modal-backdrop-transparent .bg-white {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Loading spinner enhancement */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Search input enhancement */
+.search-input-container {
+  position: relative;
+}
+
+.search-input-container input:focus + .search-icon {
+  color: #3b82f6;
+}
+
+.search-icon {
+  transition: color 0.2s ease-in-out;
+}
+
+/* Filter dropdown enhancement */
+select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Pagination button states */
+.pagination-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.pagination-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Admin avatar enhancement */
+.admin-avatar {
+  transition: all 0.2s ease-in-out;
+}
+
+.admin-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Permission tag enhancement */
+.permission-tag {
+  transition: all 0.2s ease-in-out;
+  cursor: default;
+}
+
+.permission-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Form validation styling */
+.form-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Success message animation */
+.success-message {
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 768px) {
+  .permission-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .bg-white {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .text-gray-900 {
+    color: #f9fafb;
+  }
+  
+  .text-gray-700 {
+    color: #d1d5db;
+  }
+  
+  .text-gray-500 {
+    color: #9ca3af;
+  }
+  
+  .border-gray-300 {
+    border-color: #4b5563;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible improvements */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn-soft-blue,
+  .btn-soft-green,
+  .btn-soft-red,
+  .btn-soft-yellow,
+  .btn-soft-purple,
+  .btn-soft-gray {
+    border-width: 2px;
+  }
+  
+  .permission-tag {
+    border: 1px solid currentColor;
+  }
+}
+
+
+
