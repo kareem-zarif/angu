@@ -1,0 +1,61 @@
+<div class="max-w-2xl mx-auto p-4 bg-gray-50 min-h-screen">
+  <h2 class="text-2xl font-bold mb-4">Contact Supplier</h2>
+  <div class="flex items-center mb-4">
+    <div>
+      <h3 class="font-semibold">{{ supplier?.firstName || 'Hossam' }}</h3>
+      <p class="text-sm text-gray-600">{{ supplier?.description || 'High-quality plastic bags and pouches' }}</p>
+      <p class="text-xs text-gray-500">{{ supplier?.phoneNumber || '01208734123' }}, {{ supplier?.city || 'Nasr City,
+        Cairo' }}</p>
+    </div>
+  </div>
+
+  <div #chatContainer class="flex-1 overflow-y-auto p-2 space-y-2">
+    <div *ngFor="let msg of messages" class="flex" [ngClass]="isMyMessage(msg) ? 'justify-end' : 'justify-start'">
+      <div class="relative max-w-[70%] p-3 break-words" [ngClass]="
+           isMyMessage(msg)
+           ? 'bg-green-500 text-white rounded-br-none shadow-md text-right'
+           : 'bg-gray-200 text-gray-800 rounded-bl-none shadow-sm text-left'
+         ">
+        <div class="text-sm">{{ msg.body }}</div>
+        <small class="block text-xs text-gray-300 mt-1">
+          {{ getSenderType(msg) }} •
+          {{ msg.senderType === 'customer' ? msg.customerName : msg.supplierName }} •
+          {{ msg.messageDateTime | date:'dd/MM/yyyy HH:mm' }}
+        </small>
+        <button *ngIf="msg.id" (click)="deleteMessage(msg.id)"
+          class="absolute top-1 right-1 text-red-500 bg-white rounded-full p-1 text-xs">🗑</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="mt-6 space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Quantity:</label>
+      <select [(ngModel)]="quantity" class="mt-1 block w-full rounded-md border border-gray-300 p-2">
+        <option *ngFor="let q of [100, 200, 300, 400, 500]" [value]="q">{{ q }}</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Detailed Requirements:</label>
+      <textarea [(ngModel)]="messageBody" placeholder="Type your message..." class="w-full p-2 border rounded h-20">
+      </textarea>
+    </div>
+    <div class="flex space-x-2">
+      <button (click)="onQuestionClick('What is your best price for bulk orders?')"
+        class="bg-gray-200 px-2 py-1 rounded">Best Price?</button>
+      <button (click)="onQuestionClick('What are the available shipping options?')"
+        class="bg-gray-200 px-2 py-1 rounded">Shipping?</button>
+      <button (click)="onQuestionClick('What is the typical delivery time?')"
+        class="bg-gray-200 px-2 py-1 rounded">Delivery Time?</button>
+      <button (click)="onQuestionClick('Can you provide material certificates?')"
+        class="bg-gray-200 px-2 py-1 rounded">Certificates?</button>
+      <button (click)="onQuestionClick('What quality control measures do you have?')"
+        class="bg-gray-200 px-2 py-1 rounded">Quality Control?</button>
+    </div>
+    <div class="flex justify-between">
+      <button (click)="messageBody = ''" class="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+      <button (click)="sendMessage()" class="bg-green-500 text-white px-4 py-2 rounded">Send a Message</button>
+    </div>
+  </div>
+</div>

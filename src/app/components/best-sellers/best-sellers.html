@@ -1,0 +1,24 @@
+<h2 class="text-xl font-bold mb-4">best Sellers</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-6 gap-4 ms-5">
+  <div *ngFor="let item of bestSellers" class="p-4 shadow rounded-lg bg-white flex flex-col items-center text-center
+                transform transition duration-300 hover:scale-102 hover:shadow-lg">
+
+    <!-- category badge -->
+    <span class="ml-auto mb-3 text-xs px-3 py-1 bg-orange-200 text-orange-600 rounded-full font-medium shadow-sm">
+      {{ item.categoryName }}
+    </span>
+
+    <img [src]="getProductImage(item.product)" alt="{{item.product.name}}" class="h-40 object-cover rounded mb-2">
+
+
+    <h3 class="font-semibold text-lg">{{ item.product.name }}</h3>
+    <p class="text-sm text-gray-600">{{ item.product.description }}</p>
+    <p class="text-blue-600 font-bold mt-2">
+      {{ item.product.price | currency:'USD' }}
+    </p>
+    <p class="text-xs text-gray-500 mt-1">
+      No Of Sell: <span class=" font-bold text-base">{{item.salesCount }}</span>
+    </p>
+  </div>
+</div>
