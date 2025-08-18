@@ -1,0 +1,155 @@
+<div class="p-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div class="flex items-center gap-4">
+      <button 
+        (click)="goBack()" 
+        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 flex items-center gap-2"
+      >
+        ← Back to Suppliers
+      </button>
+      <h1 class="text-2xl font-bold text-gray-800">Supplier Details</h1>
+    </div>
+    <button 
+      *ngIf="supplier"
+      (click)="editSupplier()" 
+      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    >
+      Edit Supplier
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="flex justify-center items-center py-12">
+    <div class="loading-spinner"></div>
+    <span class="ml-3 text-gray-600">Loading supplier details...</span>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+    {{ error }}
+  </div>
+
+  <!-- Supplier Details -->
+  <div *ngIf="supplier && !loading" class="bg-white rounded-lg shadow-lg overflow-hidden">
+    <!-- Supplier Header -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-3xl font-bold">{{ getFullName() }}</h2>
+          <p class="text-blue-100 mt-2">{{ supplier.factoryName }}</p>
+        </div>
+        <div class="text-right">
+          <div class="bg-blue-400 bg-opacity-30 rounded-full px-4 py-2">
+            <span class="text-sm font-semibold">{{ getProductSuppliersCount() }} Products</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Supplier Information -->
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Basic Information -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Basic Information</h3>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Full Name:</span>
+              <span class="text-gray-800">{{ getFullName() }}</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Factory Name:</span>
+              <span class="text-gray-800">{{ supplier.factoryName }}</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Phone:</span>
+              <span class="text-gray-800">{{ supplier.phone }}</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Location:</span>
+              <span class="text-gray-800">{{ getLocation() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Additional Information</h3>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Supplier ID:</span>
+              <span class="text-gray-800 font-mono text-sm">{{ supplier.id }}</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Products Count:</span>
+              <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-semibold">
+                {{ getProductSuppliersCount() }}
+              </span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="font-medium text-gray-600">Status:</span>
+              <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-semibold">
+                Active
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-3">Description</h3>
+        <div class="bg-gray-50 rounded-lg p-4">
+          <p class="text-gray-700 leading-relaxed">
+            {{ supplier.description || 'No description available for this supplier.' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Products List -->
+      <div class="mt-8">
+        <h3 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Supplied Products</h3>
+        
+        <div *ngIf="supplier.productSuppliers && supplier.productSuppliers.length > 0" class="overflow-x-auto app-table-card">
+          <table class="app-table">
+            <thead class="app-thead">
+              <tr>
+                <th class="app-th text-left">Product Name</th>
+                <th class="app-th text-left">Description</th>
+                <th class="app-th text-left">Price Per Piece</th>
+              </tr>
+            </thead>
+            <tbody class="app-tbody">
+              <tr *ngFor="let product of supplier.productSuppliers" class="app-tr-hover">
+                <td class="px-6 py-4 text-sm text-gray-900">{{ product.productName || 'N/A' }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ product.description || 'N/A' }}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  <span *ngIf="product.pricePerPiece" class="font-medium">${{ product.pricePerPiece.toFixed(2) }}</span>
+                  <span *ngIf="!product.pricePerPiece" class="text-gray-400">N/A</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div *ngIf="!supplier.productSuppliers || supplier.productSuppliers.length === 0" class="text-center py-8">
+          <div class="text-gray-400">
+            <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No products</h3>
+            <p class="mt-1 text-sm text-gray-500">This supplier doesn't have any products yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 
