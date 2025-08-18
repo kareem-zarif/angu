@@ -178,7 +178,14 @@ export const routes: Routes = [
       .then(m => m.AddressManagement)
   },
 
-// SignalR Chat routes
+  //orders
+  {
+    path: 'orders',
+    redirectTo: 'customer/orders',
+    pathMatch: 'full'
+  },
+
+  // SignalR Chat routes
   {
     path: 'chat/signalr/:supplierId',
     component: SignalrChat,

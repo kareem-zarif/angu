@@ -6,6 +6,7 @@ import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from
 import { IOrder } from '../models/i-order';
 import { environment } from '../../environment/environment';
 import { UnifiedNotificationService } from './unified-notification.service';
+import { Auth } from './auth';
 
 export interface SellerOrderNotification {
   id: string;
@@ -48,6 +49,18 @@ export interface SellerOrderUpdateDto {
   notes?: string;
 }
 
+// Add this interface for the response
+export interface OrderItemResDto {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  pricePerPiece: number;
+  totalPrice: number;
+  orderId: string;
+  supplierId: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -64,17 +77,63 @@ export class SellerOrdersService {
     private http: HttpClient,
     private ordersService: OrdersService,
     private orderStatusHistoryService: OrderStatusHistoryService,
-    private unifiedNotificationService: UnifiedNotificationService
-  ) {}
+    private unifiedNotificationService: UnifiedNotificationService,
+    private auth: Auth
+  ) { }
 
   // Get all seller orders with status history
   getSellerOrders(filter?: SellerOrderFilter): Observable<IOrder[]> {
     console.log('🔍 SellerOrdersService: Getting seller orders...');
-    
-    // For now, return empty array to prevent infinite loading
-    // TODO: Implement proper seller-specific order fetching
-    console.log('⚠️ SellerOrdersService: Returning empty orders array (to be implemented)');
-    return of([]);
+
+    // Get current supplier ID from auth service
+    const currentUser = this.auth.getCurrentUser();
+    if (!currentUser?.UserId) {
+      console.error('❌ SellerOrdersService: No supplier ID found');
+      return of([]);
+    }
+
+    // Fix: Remove the $ and https:// since we're using environment.apiUrl
+    return this.http.get<OrderItemResDto[]>(`${environment.apiUrl}/OrderItem/bySupplier/${currentUser.UserId}`).pipe(
+      map(orderItems => {
+        // Group order items by orderId
+        const orderMap = new Map<string, IOrder>();
+
+        orderItems.forEach(item => {
+          if (!orderMap.has(item.orderId)) {
+            orderMap.set(item.orderId, {
+              id: item.orderId,
+              totalAmount: 0, // Will be calculated
+              customerId: '', // Will be filled from order details if needed
+              customerName: '', // Will be filled from order details if needed
+              createdOn: new Date(),
+              orderItems: [],
+              orderStatusHistory: [] // Will be filled if needed
+            });
+          }
+
+          const order = orderMap.get(item.orderId)!;
+          order.orderItems.push({
+            id: item.id,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            pricePerPiece: item.pricePerPiece,
+            totalPrice: item.totalPrice,
+            orderId: item.orderId
+          });
+
+          // Update total amount
+          order.totalAmount += item.totalPrice;
+        });
+
+        console.log('✅ SellerOrdersService: Orders mapped:', Array.from(orderMap.values()));
+        return Array.from(orderMap.values());
+      }),
+      catchError(error => {
+        console.error('❌ SellerOrdersService: Error fetching orders:', error);
+        return of([]);
+      })
+    );
   }
 
   // Get seller order by ID with status history
@@ -132,11 +191,11 @@ export class SellerOrdersService {
         this.notifyAdmin('order_status_changed', 'Order Status Updated',
           `Order #${orderUpdate.orderId} status changed to ${orderUpdate.status}`,
           '/admin/orders', {
-            orderId: orderUpdate.orderId,
-            newStatus: orderUpdate.status,
-            trackingNumber: orderUpdate.trackingNumber,
-            notes: orderUpdate.notes
-          });
+          orderId: orderUpdate.orderId,
+          newStatus: orderUpdate.status,
+          trackingNumber: orderUpdate.trackingNumber,
+          notes: orderUpdate.notes
+        });
       }),
       map(() => {
         // Return a mock IOrder since we don't have the full order data
@@ -161,7 +220,7 @@ export class SellerOrdersService {
   // Get seller order statistics
   getSellerOrderStats(): Observable<SellerOrderStats> {
     console.log('🔍 SellerOrdersService: Getting seller order stats...');
-    
+
     // For now, return empty stats to prevent infinite loading
     // TODO: Implement proper seller-specific order stats
     console.log('⚠️ SellerOrdersService: Returning empty order stats (to be implemented)');
@@ -270,10 +329,10 @@ export class SellerOrdersService {
         this.notifyAdmin('order_shipped', 'Order Shipped',
           `Order #${orderId} has been shipped${trackingNumber ? ` with tracking #${trackingNumber}` : ''}`,
           '/admin/orders', {
-            orderId,
-            trackingNumber,
-            status: 'Shipped'
-          });
+          orderId,
+          trackingNumber,
+          status: 'Shipped'
+        });
       })
     );
   }
@@ -289,9 +348,9 @@ export class SellerOrdersService {
         this.notifyAdmin('order_delivered', 'Order Delivered',
           `Order #${orderId} has been delivered successfully`,
           '/admin/orders', {
-            orderId,
-            status: 'Delivered'
-          });
+          orderId,
+          status: 'Delivered'
+        });
       })
     );
   }
@@ -308,10 +367,10 @@ export class SellerOrdersService {
         this.notifyAdmin('order_cancelled', 'Order Cancelled',
           `Order #${orderId} has been cancelled. Reason: ${reason}`,
           '/admin/orders', {
-            orderId,
-            status: 'Cancelled',
-            reason
-          });
+          orderId,
+          status: 'Cancelled',
+          reason
+        });
       })
     );
   }
@@ -357,7 +416,7 @@ export class SellerOrdersService {
 
   // Private method to create and emit notifications for admin
   private notifyAdmin(type: SellerOrderNotification['type'], title: string, message: string,
-                     actionUrl: string, metadata?: any): void {
+    actionUrl: string, metadata?: any): void {
     const notification: SellerOrderNotification = {
       id: `seller-order-${Date.now()}-${Math.random()}`,
       title,
@@ -396,5 +455,6 @@ export class SellerOrdersService {
   clearAdminNotifications(): void {
     this.adminNotificationsSubject.next([]);
   }
+
 }
 
