@@ -33,7 +33,7 @@
             <!-- Main product image -->
             <div class="bg-gray-100 rounded-lg overflow-hidden h-80 flex items-center justify-center mb-4">
               <img *ngIf="product?.productPicsPathes?.length" [src]="product.productPicsPathes[selectedImageIndex]"
-                [alt]="product.name">
+                [alt]="product.name" class="h-full">
 
               <!-- Wishlist heart icon -->
               <button
@@ -52,7 +52,7 @@
                 class="w-16 h-16 rounded-md overflow-hidden border-2 transition-all"
                 [ngClass]="{'border-[#483C21]': selectedImageIndex === i, 'border-gray-200': selectedImageIndex !== i}"
                 (click)="selectImage(i)">
-                <img [src]="image" [alt]="product.name + ' thumbnail ' + i" class="w-full h-full object-cover" />
+                <img [src]="image" [alt]="product.name + ' thumbnail ' + i" class="mx-auto h-full object-cover" />
               </button>
             </div>
           </div>
@@ -84,7 +84,7 @@
             <!-- Discount badge -->
             <div *ngIf="product.pricePer50Piece && product.pricePerPiece" class="mb-2">
               <span class="bg-orange-100 text-orange-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                {{ calculateDiscountPercentage(product.pricePerPiece, product.pricePer50Piece) }}% {{ 'PRODUCT_DETIALS.DISCOUNT' | translate }} 
+                {{ calculateDiscountPercentage(product.pricePerPiece, product.pricePer50Piece) }}% {{ 'PRODUCT_DETIALS.DISCOUNT' | translate }}
               </span>
             </div>
 
@@ -92,10 +92,10 @@
             <div class="mb-6 w-full">
               <div class="flex items-baseline">
                 <div *ngIf="product.pricePer50Piece && product.pricePerPiece" class="text-gray-400 line-through mr-2">
-                  {{ product.pricePerPiece }} {{ 'PRODUCT_DETIALS.EGP' | translate }} 
+                  {{ product.pricePerPiece }} {{ 'PRODUCT_DETIALS.EGP' | translate }}
                 </div>
                 <div class="text-3xl font-bold text-[#483C21]">
-                  {{ product.pricePer50Piece || product.pricePerPiece }} {{ 'PRODUCT_DETIALS.EGP' | translate }} 
+                  {{ product.pricePer50Piece || product.pricePerPiece }} {{ 'PRODUCT_DETIALS.EGP' | translate }}
                 </div>
               </div>
 
@@ -185,7 +185,7 @@
             <div class="mt-auto w-full">
               <button (click)="addToCart()"
                 class="w-full bg-[#483C21] hover:bg-[#362d19] text-white font-bold py-3 px-4 rounded-lg transition-colors">
-                {{ 'PRODUCT_DETIALS.ADD_TO_CART' | translate }} 
+                {{ 'PRODUCT_DETIALS.ADD_TO_CART' | translate }}
               </button>
             </div>
           </div>
@@ -198,7 +198,7 @@
 
   <div *ngIf="product?.reviews?.length; else noReviews">
     <div *ngFor="let review of product.reviews" class="mb-6 p-4 bg-[#f9f9f9] rounded-lg shadow-sm border border-gray-200">
-      
+
       <div class="flex items-center justify-between mb-2">
         <h3 class="text-lg font-semibold text-gray-800">
           <i class="fas fa-user-circle mr-2 text-[#483C21]"></i>

@@ -346,7 +346,7 @@ export class ProductList implements OnInit, OnDestroy {
     event.stopPropagation();
     this.cartService.addToCart(product, undefined, this.currentUserId);
     // Show toast notification
-    this.showToast(`تمت إضافة ${product.name} إلى السلة`);
+    this.showToast(` ${product.name} added to cart`);
   }
 
   showToast(message: string): void {

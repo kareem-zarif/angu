@@ -11,6 +11,7 @@ import { PaymentService } from '../../services/payment-service';
 import { IOrder } from '../../models/i-order';
 import { IPaymentMethod } from '../../models/i-payment-method';
 import { PaymentMethodService } from '../../services/payment-method-service';
+import { Role } from '../../models/enums/roles';
 
 @Component({
   selector: 'app-cart',
@@ -42,7 +43,7 @@ export class Cart implements OnInit, OnDestroy {
     private ordersService: OrdersService,
     private paymentService: PaymentService,
     private paymentMethodService: PaymentMethodService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // ✅ Subscribe to currentUser$
@@ -141,9 +142,26 @@ export class Cart implements OnInit, OnDestroy {
       this.showToast('Your cart is empty');
       return;
     }
+
+    // Check login first
     if (!this._auth.isLoggedIn()) {
       this.showToast('Please login to proceed to checkout');
-      this.router.navigate(['/login'], { queryParams: { returnUrl: '/checkout' } });
+      this.router.navigate(['/login'], { queryParams: { returnUrl: '/customer/checkout' } });
+      return;
+    }
+
+    // Check if user is customer
+    const user = this._auth.getCurrentUser();
+    if (!user?.roles?.includes(Role.Customer) ||
+      user.roles.includes(Role.Admin) ||
+      user.roles.includes(Role.Supplier)) {
+      this.router.navigate(['/forbidden'], {
+        queryParams: {
+          requiredRoles: Role.Customer,
+          currentRole: user?.roles?.[0] || 'Guest',
+          message: 'Only customers can proceed to checkout'
+        }
+      });
       return;
     }
 

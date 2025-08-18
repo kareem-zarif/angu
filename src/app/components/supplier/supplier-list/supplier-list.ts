@@ -13,6 +13,7 @@ import { SubCategoryService } from '../../../services/sub-category.service';
 import { WishlistService } from '../../../services/wishlistService';
 import { Auth } from '../../../services/auth';
 import { TranslateModule } from '@ngx-translate/core';
+import { Role } from '../../../models/enums/roles';
 
 @Component({
   selector: 'app-supplier-list',
@@ -280,6 +281,21 @@ export class SupplierList implements OnInit, OnDestroy {
 
   navigateToChat(supplierId: string, event?: Event): void {
     if (event) event.stopPropagation();
-    this.router.navigate(['/chat/signalr', supplierId]);
+
+    const user = this._auth.getCurrentUser();
+    if (!user?.roles?.includes(Role.Customer) ||
+        user.roles.includes(Role.Admin) ||
+        user.roles.includes(Role.Supplier)) {
+      this.router.navigate(['/forbidden'], {
+        queryParams: {
+          requiredRoles: Role.Customer,
+          currentRole: user?.roles?.[0] || 'Guest',
+          message: 'Only customers can contact suppliers'
+        }
+      });
+      return;
+    }
+
+    this.router.navigate(['/customer/chat/signalr', supplierId]);
   }
 }

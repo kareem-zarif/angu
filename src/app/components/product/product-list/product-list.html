@@ -82,7 +82,7 @@
                   <span class="text-sm text-gray-500 line-through">{{ product.pricePerPiece |
                     currency:'EGP':'symbol':'1.0-0' }}</span>
                   <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
-                    {{ (100 - (product.pricePer50Piece / product.pricePerPiece * 100)) | number:'1.0-0' }}                  
+                    {{ (100 - (product.pricePer50Piece / product.pricePerPiece * 100)) | number:'1.0-0' }}
                        {{ 'PRODUCT_LIST.DISCOUNT_PERCENT' | translate }}
 
                   </span>
@@ -130,6 +130,6 @@
 
 <!-- Add this toast notification div near the top of the template -->
 <div *ngIf="toastMessage"
-  class="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50">
+  class="fixed right-0 top-3/4  transform bg-green-600 text-white px-6 py-2 rounded shadow-lg z-50 transition">
   {{ toastMessage }}
 </div>

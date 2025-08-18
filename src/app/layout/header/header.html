@@ -86,7 +86,7 @@
 
       <!-- Cart -->
       <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-circle">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-circle" routerLink="/cart">
           <div class="indicator">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
               stroke="currentColor">
@@ -94,6 +94,33 @@
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             <span class="badge badge-sm indicator-item">{{ cartCount }}</span>
+          </div>
+        </div>
+        <!-- Add dropdown content -->
+        <div tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+          <div class="p-4">
+            <h3 class="font-semibold mb-2 text-neutral-800">Cart Items ({{cartCount}})</h3>
+            <div *ngIf="cartItems.length > 0">
+              <div *ngFor="let item of cartItems" class="flex items-center gap-2 mb-2 text-sm text-neutral-800">
+                <img *ngIf="item.Product?.productPicsPathes; else defaultImage" [src]="item.Product.productPicsPathes"
+                  alt="{{item.Product.name}}" class="w-10 h-10 object-cover rounded">
+                <ng-template #defaultImage>
+                  <img src="assets/images/placeholder-product.png" alt="Product placeholder"
+                    class="w-10 h-10 object-cover rounded">
+                </ng-template>
+                <div>
+                  <p class="font-medium">{{item.Product.name}}</p>
+                  <p class="text-xs text-neutral-600">{{item.Product.pricePerPiece}} x {{item.quantity}}</p>
+                </div>
+              </div>
+              <div class="border-t pt-2 mt-2">
+                <p class="text-sm font-semibold text-neutral-800">Total: EGP {{cartTotal}}</p>
+              </div>
+              <button routerLink="/cart" class="btn btn-primary w-full mt-2">View Cart</button>
+            </div>
+            <div *ngIf="cartItems.length === 0" class="text-center text-sm text-neutral-600">
+              Your cart is empty
+            </div>
           </div>
         </div>
       </div>
@@ -113,8 +140,8 @@
           </ng-container>
           <ng-container *ngIf="isLoggedIn()">
             <li><a routerLink="/profile">Profile</a></li>
-            <li><a routerLink="/settings">Settings</a></li>
-            <li *ngIf="currentUser?.roles?.includes('Seller')"><a routerLink="/seller-dashboard">Seller Dashboard</a>
+            <li><a routerLink="/Chatbot">Chatbot</a></li>
+            <li *ngIf="currentUser?.roles?.includes('Supplier')"><a routerLink="/seller-dashboard">Seller Dashboard</a>
             </li>
             <li *ngIf="currentUser?.roles?.includes('Admin')"><a routerLink="/admin-dashboard">Management Dashboard</a>
             </li>

@@ -27,13 +27,11 @@ import { BestSellers } from './components/best-sellers/best-sellers';
 import { NewReleases } from './components/new-releases/new-releases';
 import { ForbiddenComponent } from './components/shared/forbidden/forbidden';
 import { CustomerGuard } from './core/guards/customer.guard';
-import { AddressGuard } from './core/guards/address.guard';
-import { SignalrGuard } from './core/guards/signalr.guard';
 
 
 
 export const routes: Routes = [
-  // Public routes
+  // -----------Public routes
   { path: '', redirectTo: 'products', pathMatch: 'full' },
   { path: 'login', component: Login },
   { path: 'register', component: RegisterComponent },
@@ -47,22 +45,23 @@ export const routes: Routes = [
   { path: 'wishlist', component: WishlistComponent },
   { path: 'products', component: ProductList },
   { path: 'products/:id', component: ProductDetails },
-  { path: 'recommendation', component: Recommendation },
   { path: 'Chatbot', component: Chatbot },
 
-  // Customer routes
+  //------------ Customer routes
   {
     path: 'customer',
     canActivate: [CustomerGuard],
     children: [
       { path: 'orders', component: OrdersComponent },
       { path: 'checkout', component: CheckoutComponent },
-      { path: 'SignalrChat', component: SignalrChat },
+      { path: 'chat/signalr/:supplierId', component: SignalrChat },
+      { path: 'orders', component: OrdersComponent },
+      { path: 'recommendation', component: Recommendation },
       { path: 'address-management', loadComponent: () => import('./components/address-management/address-management').then(m => m.AddressManagement) }
     ]
   },
 
-  // Admin routes
+  //-------- Admin routes
   {
     path: 'admin',
     component: AdminLayoutComponent,
@@ -113,17 +112,17 @@ export const routes: Routes = [
     ]
   },
 
-  // Seller routes
+  //----------------- Seller routes
   {
     path: 'seller',
     component: SellerLayoutComponent,
     canActivate: [SellerGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'SignalrChat', component: SignalrChat },
+      { path: 'chat/signalr/:customerId', component: SignalrChat },
       {
         path: 'dashboard',
-        loadComponent: () => import('./components/seller-dashboard')
+        loadComponent: () => import('./components/seller-dashboard/seller-dashboard')
           .then(m => m.SellerDashboardComponent)
       },
       {
@@ -170,40 +169,63 @@ export const routes: Routes = [
     ]
   },
 
-  // Address Management Route
+  //+++++++++++++Customer Redirection */
   {
-    path: 'address-management',
-    canActivate: [AddressGuard],
-    loadComponent: () => import('./components/address-management/address-management')
-      .then(m => m.AddressManagement)
+    path: 'customer',
+    canActivate: [CustomerGuard],
+    children: [
+      // ...other customer routes...
+      {
+        path: 'checkout',
+        component: CheckoutComponent
+      }
+    ]
+  },  {
+    path: 'checkout',
+    redirectTo: 'customer/checkout',
+    pathMatch: 'full'
   },
 
-  //orders
+
   {
+    path: 'customer/address-management',
+    canActivate: [CustomerGuard], // This ensures only customers can access
+    loadComponent: () => import('./components/address-management/address-management')
+    .then(m => m.AddressManagement)
+  },
+  {
+    path: 'address-management',
+    redirectTo: 'customer/address-management',
+    pathMatch: 'full'
+  },
+
+
+  {
+    path: 'customer/recommendation',
+    canActivate: [CustomerGuard],
+    component: Recommendation
+  },
+  {
+    path: 'recommendation',
+    redirectTo: 'customer/recommendation',
+    pathMatch: 'full'
+  },
+
+
+  {
+    path: 'customer/checkout',
+    canActivate: [CustomerGuard],
+    component: CheckoutComponent
+  }, {
     path: 'orders',
     redirectTo: 'customer/orders',
     pathMatch: 'full'
   },
 
-  // SignalR Chat routes
-  {
-    path: 'chat/signalr/:supplierId',
-    component: SignalrChat,
-    canActivate: [SignalrGuard]
-  },
-
-  // Customer Address Management
-  {
-    path: 'customer/address-management',
-    canActivate: [AddressGuard],
-    loadComponent: () => import('./components/address-management/address-management')
-      .then(m => m.AddressManagement)
-  },
-
   // Seller Address Management
   {
     path: 'seller/address-management',
-    canActivate: [AddressGuard],
+    canActivate: [SellerGuard],
     loadComponent: () => import('./components/seller-address-management/seller-address-management')
       .then(m => m.SellerAddressManagementComponent)
   },
