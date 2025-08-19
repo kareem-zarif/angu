@@ -42,7 +42,7 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Fields</option>
-            <option value="customer">Customer Name</option>
+            <!-- <option value="customer">Customer Name</option> -->
             <option value="orderId">Order ID</option>
             <option value="status">Status</option>
           </select>
@@ -58,7 +58,7 @@
             <tr>
               <th class="app-th text-left">#</th>
               <th class="app-th text-left">Order ID</th>
-              <th class="app-th text-left">Customer</th>
+              <!-- <th class="app-th text-left">Customer</th> -->
               <th class="app-th text-left">Amount</th>
               <th class="app-th text-left">Items</th>
               <th class="app-th text-left">Date</th>
@@ -70,7 +70,7 @@
             <tr *ngFor="let order of getPaginatedOrders(); let i = index" class="app-tr-hover">
               <td class="px-3 py-3">{{ i + 1 }}</td>
               <td class="px-3 py-3">{{ order.id }}</td>
-              <td class="px-3 py-3">{{ order.customerName || 'N/A' }}</td>
+              <!-- <td class="px-3 py-3">{{ order.customerName || 'N/A' }}</td> -->
               <td class="px-3 py-3">${{ (order.totalAmount || 0) | number:'1.2-2' }}</td>
               <td class="px-3 py-3">
                 <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">{{ getOrderItemsCount(order) }}</span>
@@ -129,10 +129,10 @@
             <p class="text-sm font-medium text-gray-500">Order ID</p>
             <p class="text-sm text-gray-900">#{{ selectedOrder.id }}</p>
           </div>
-          <div>
+          <!-- <div>
             <p class="text-sm font-medium text-gray-500">Customer</p>
             <p class="text-sm text-gray-900">{{ selectedOrder.customerName || 'N/A' }}</p>
-          </div>
+          </div> -->
           <div>
             <p class="text-sm font-medium text-gray-500">Date</p>
             <p class="text-sm text-gray-900">{{ selectedOrder.createdOn ? formatDate(selectedOrder.createdOn) : 'N/A' }}</p>
