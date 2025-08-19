@@ -20,8 +20,8 @@ export class LogoutComponent implements OnInit {
     try {
       this.auth.logout();
     } catch {}
-    // Small timeout to allow subscribers to react
-    setTimeout(() => this.router.navigate(['/products']), 0);
+    // Small timeout to allow subscribers to react, then hard refresh
+    setTimeout(() => { location.href = '/products'; }, 0);
   }
 }
 

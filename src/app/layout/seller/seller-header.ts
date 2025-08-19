@@ -342,7 +342,8 @@ export class SellerHeaderComponent implements OnInit, OnDestroy {
     this.auth.logout();
     this.showUserMenu = false;
     this.showNotifications = false;
-    this.router.navigate(['/products']);
+    // Hard refresh to fully reset state and reload public products
+    location.href = '/products';
   }
 
   goToProducts() {

@@ -15,6 +15,7 @@ export class SellerSidebarComponent {
 
   logout(): void {
     this.auth.logout();
-    this.router.navigate(['/products']);
+    // Hard refresh to ensure clean state
+    location.href = '/products';
   }
 }
