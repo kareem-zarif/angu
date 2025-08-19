@@ -9,7 +9,7 @@ import { Auth } from './auth';
   providedIn: 'root'
 })
 export class SignalrService {
-  private hubConnection!: signalR.HubConnection;
+  public hubConnection!: signalR.HubConnection;
   private baseUrl = `${environment}`;
 
   private messagesSource = new BehaviorSubject<MessageReadDto[]>([]);

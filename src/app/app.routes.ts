@@ -137,6 +137,11 @@ export const routes: Routes = [
           .then(m => m.SellerOrdersComponent)
       },
       {
+        path: 'messages',
+        loadComponent: () => import('./components/seller-messages/seller-messages')
+          .then(m => m.SellerMessagesComponent)
+      },
+      {
         path: 'reports',
         loadComponent: () => import('./components/seller-reports/seller-reports')
           .then(m => m.SellerReportsComponent)

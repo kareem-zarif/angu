@@ -16,5 +16,6 @@ export interface MessageReadDto {
   supplierName: string;
   senderType: string;
   messageDateTime: string;
+  isRead?: boolean;
 
 }
