@@ -71,7 +71,7 @@
               <td class="px-3 py-3">{{ i + 1 }}</td>
               <td class="px-3 py-3">{{ order.id }}</td>
               <td class="px-3 py-3">{{ order.customerName || 'N/A' }}</td>
-              <td class="px-3 py-3">${{ order.totalAmount.toFixed(2) || '0.00' }}</td>
+              <td class="px-3 py-3">${{ (order.totalAmount || 0) | number:'1.2-2' }}</td>
               <td class="px-3 py-3">
                 <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">{{ getOrderItemsCount(order) }}</span>
               </td>
@@ -214,4 +214,4 @@
       </div>
     </div>
   </div>
-</div> 
+</div>

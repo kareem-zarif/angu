@@ -153,7 +153,13 @@ export class SellerDashboardService {
               status.orderStatus === 5
             )
           ).length,
-          totalRevenue: data.orders.reduce((sum, order) => sum + order.totalAmount, 0),
+          totalRevenue: data.orders.reduce((sum, order: any) => {
+            const itemsTotal = Array.isArray(order.orderItems)
+              ? order.orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+              : 0;
+            const safeTotal = (typeof order.totalAmount === 'number' && !isNaN(order.totalAmount)) ? order.totalAmount : itemsTotal;
+            return sum + safeTotal;
+          }, 0),
           monthlyRevenue: this.calculateMonthlyRevenue(data.orders),
           weeklyRevenue: this.calculateWeeklyRevenue(data.orders),
           totalCustomers: this.getUniqueCustomers(data.orders),
@@ -231,7 +237,13 @@ export class SellerDashboardService {
         const monthlyOrders = this.groupOrdersByMonth(orders);
         const revenueByMonth = this.groupRevenueByMonth(orders);
         const averageOrderValue = orders.length > 0 
-          ? orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length 
+          ? orders.reduce((sum, order: any) => {
+              const itemsTotal = Array.isArray(order.orderItems)
+                ? order.orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+                : 0;
+              const safeTotal = (typeof order.totalAmount === 'number' && !isNaN(order.totalAmount)) ? order.totalAmount : itemsTotal;
+              return sum + safeTotal;
+            }, 0) / orders.length 
           : 0;
 
         const orderStats = {
@@ -311,7 +323,13 @@ export class SellerDashboardService {
         const revenueByWeek = this.groupRevenueByWeek(orders);
 
         return {
-          totalRevenue: orders.reduce((sum, order) => sum + order.totalAmount, 0),
+          totalRevenue: orders.reduce((sum, order: any) => {
+            const itemsTotal = Array.isArray(order.orderItems)
+              ? order.orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+              : 0;
+            const safeTotal = (typeof order.totalAmount === 'number' && !isNaN(order.totalAmount)) ? order.totalAmount : itemsTotal;
+            return sum + safeTotal;
+          }, 0),
           monthlyRevenue: this.calculateMonthlyRevenue(orders),
           weeklyRevenue: this.calculateWeeklyRevenue(orders),
           revenueByMonth,
@@ -344,8 +362,14 @@ export class SellerDashboardService {
           )
         ).length;
         
-        // Calculate total earnings
-        const totalEarnings = data.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+        // Calculate total earnings using quantity * unitPrice with fallback to totalAmount
+        const totalEarnings = data.orders.reduce((sum, order: any) => {
+          const itemsTotal = Array.isArray(order.orderItems)
+            ? order.orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+            : 0;
+          const safeTotal = (typeof order.totalAmount === 'number' && !isNaN(order.totalAmount)) ? order.totalAmount : itemsTotal;
+          return sum + safeTotal;
+        }, 0);
         
         // Calculate monthly growth (placeholder for now)
         const monthlyGrowth = 12.5; // This would need proper calculation logic
@@ -510,7 +534,13 @@ export class SellerDashboardService {
 
     return orders
       .filter(order => new Date(order.createdOn || '') >= firstDayOfMonth)
-      .reduce((sum, order) => sum + order.totalAmount, 0);
+      .reduce((sum, order: any) => {
+        const itemsTotal = Array.isArray(order.orderItems)
+          ? order.orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+          : 0;
+        const safeTotal = (typeof order.totalAmount === 'number' && !isNaN(order.totalAmount)) ? order.totalAmount : itemsTotal;
+        return sum + safeTotal;
+      }, 0);
   }
 
   private calculateWeeklyRevenue(orders: any[]): number {
@@ -519,7 +549,13 @@ export class SellerDashboardService {
 
     return orders
       .filter(order => new Date(order.createdOn || '') >= oneWeekAgo)
-      .reduce((sum, order) => sum + order.totalAmount, 0);
+      .reduce((sum, order: any) => {
+        const itemsTotal = Array.isArray(order.orderItems)
+          ? order.orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+          : 0;
+        const safeTotal = (typeof order.totalAmount === 'number' && !isNaN(order.totalAmount)) ? order.totalAmount : itemsTotal;
+        return sum + safeTotal;
+      }, 0);
   }
 
   private getUniqueCustomers(orders: any[]): number {
@@ -598,7 +634,11 @@ export class SellerDashboardService {
     orders.forEach(order => {
       const date = new Date(order.createdOn || '');
       const week = `Week ${Math.ceil(date.getDate() / 7)} ${date.toLocaleDateString('en-US', { month: 'short' })}`;
-      weekMap.set(week, (weekMap.get(week) || 0) + order.totalAmount);
+      const itemsTotal = Array.isArray((order as any).orderItems)
+        ? (order as any).orderItems.reduce((s: number, it: any) => s + ((Number(it.unitPrice) || Number(it.pricePerPiece) || 0) * (Number(it.quantity) || 0)), 0)
+        : 0;
+      const safeTotal = (typeof (order as any).totalAmount === 'number' && !isNaN((order as any).totalAmount)) ? (order as any).totalAmount : itemsTotal;
+      weekMap.set(week, (weekMap.get(week) || 0) + safeTotal);
     });
 
     return Array.from(weekMap.entries()).map(([week, revenue]) => ({ week, revenue }));

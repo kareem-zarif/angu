@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, of, BehaviorSubject, tap, catchError } from 'rxjs';
+import { Observable, forkJoin, map, of, BehaviorSubject, tap, catchError, switchMap } from 'rxjs';
 import { OrdersService } from './orders-service';
 import { OrderStatusHistoryService, OrderStatusHistoryResDto, OrderStatus } from './order-status-history.service';
 import { IOrder } from '../models/i-order';
@@ -55,10 +55,10 @@ export interface OrderItemResDto {
   productId: string;
   productName: string;
   quantity: number;
-  pricePerPiece: number;
-  totalPrice: number;
+  unitPrice: number;
   orderId: string;
-  supplierId: string;
+  productImage?: string;
+  supplierId?: string;
 }
 
 @Injectable({
@@ -92,42 +92,65 @@ export class SellerOrdersService {
       return of([]);
     }
 
-    // Fix: Remove the $ and https:// since we're using environment.apiUrl
+    // Fetch order items for current supplier and group them into orders
     return this.http.get<OrderItemResDto[]>(`${environment.apiUrl}/OrderItem/bySupplier/${currentUser.UserId}`).pipe(
       map(orderItems => {
-        // Group order items by orderId
         const orderMap = new Map<string, IOrder>();
 
         orderItems.forEach(item => {
           if (!orderMap.has(item.orderId)) {
             orderMap.set(item.orderId, {
               id: item.orderId,
-              totalAmount: 0, // Will be calculated
-              customerId: '', // Will be filled from order details if needed
-              customerName: '', // Will be filled from order details if needed
+              totalAmount: 0,
+              customerId: '',
+              customerName: '',
               createdOn: new Date(),
               orderItems: [],
-              orderStatusHistory: [] // Will be filled if needed
+              orderStatusHistory: []
             });
           }
 
           const order = orderMap.get(item.orderId)!;
+          const unitPrice = Number(item.unitPrice) || 0;
+          const quantity = Number(item.quantity) || 0;
+          const lineTotal = unitPrice * quantity;
+
           order.orderItems.push({
             id: item.id,
             productId: item.productId,
             productName: item.productName,
-            quantity: item.quantity,
-            pricePerPiece: item.pricePerPiece,
-            totalPrice: item.totalPrice,
-            orderId: item.orderId
+            quantity: quantity,
+            pricePerPiece: unitPrice,
+            totalPrice: lineTotal,
+            orderId: item.orderId,
+            productImage: item.productImage,
+            unitPrice: unitPrice
           });
 
-          // Update total amount
-          order.totalAmount += item.totalPrice;
+          order.totalAmount += lineTotal;
         });
 
-        console.log('✅ SellerOrdersService: Orders mapped:', Array.from(orderMap.values()));
-        return Array.from(orderMap.values());
+        const grouped = Array.from(orderMap.values());
+        console.log('✅ SellerOrdersService: Orders mapped from items:', grouped);
+        return grouped;
+      }),
+      // Enrich orders with details (e.g., customerName) from the Order endpoint
+      switchMap(groupedOrders => {
+        if (groupedOrders.length === 0) return of([]);
+        const detailRequests = groupedOrders.map(o =>
+          this.ordersService.getOrderById(o.id).pipe(
+            map(full => ({
+              ...o,
+              customerId: full.customerId || o.customerId,
+              customerName: full.customerName || o.customerName || '',
+              createdOn: full.createdOn ? new Date(full.createdOn as any) : o.createdOn,
+              // Prefer server totalAmount if present; otherwise keep computed
+              totalAmount: (typeof full.totalAmount === 'number' && !isNaN(full.totalAmount)) ? full.totalAmount : o.totalAmount
+            } as IOrder)),
+            catchError(() => of(o))
+          )
+        );
+        return forkJoin(detailRequests);
       }),
       catchError(error => {
         console.error('❌ SellerOrdersService: Error fetching orders:', error);

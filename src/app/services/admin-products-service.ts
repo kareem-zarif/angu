@@ -22,8 +22,8 @@ export interface AdminNotification {
   providedIn: 'root'
 })
 export class AdminProductsService {
-  // Try admin endpoint first, fallback to regular endpoint
-  private apiUrl = `${environment.apiUrl}/admin/Product`;
+  // Use the actual backend controller route
+  private apiUrl = `${environment.apiUrl}/Product`;
   private fallbackApiUrl = `${environment.apiUrl}/Product`;
   private _imageBaseUrl = environment.imgUrl;
 
