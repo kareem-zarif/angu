@@ -121,13 +121,14 @@ export class NestedCategoryDropdown implements OnInit {
   }
 
   // Handle category name click - ONLY for filtering
-  onCategoryNameClick(categoryId: string, event: Event): void {
+  onCategoryNameClick(categoryId: string, categoryName: string, event: Event): void {
     // Stop event propagation to prevent container click
     event.stopPropagation();
 
     this.selectedCategoryId = categoryId;
     this.selectedSubCategoryId = null;
-    this.categorySelected.emit(categoryId);
+    // Emit category NAME so parent filtering (which uses categoryName) works correctly
+    this.categorySelected.emit(categoryName);
   }
 
   // Add method to force expand category
@@ -136,7 +137,7 @@ export class NestedCategoryDropdown implements OnInit {
   }
 
   // Modify click handler to always show subcategories
-  onCategoryContainerClick(categoryId: string): void {
+  onCategoryContainerClick(categoryId: string, categoryName: string): void {
     // If already expanded, collapse it
     if (this.expandedCategoryId === categoryId) {
       this.expandedCategoryId = null;
@@ -144,7 +145,7 @@ export class NestedCategoryDropdown implements OnInit {
     }
 
     // If subcategories aren't loaded yet, load them
-    if (!this.subCategoriesByCategory[categoryId]) {
+    if (!this.subCategoriesByCategory[categoryName]) {
       this.loadSubCategories();
     }
 

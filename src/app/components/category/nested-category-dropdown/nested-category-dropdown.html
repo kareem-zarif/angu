@@ -22,9 +22,9 @@
     <!-- Categories -->
     <div *ngFor="let category of categories" class="border-b border-gray-200 last:border-b-0">
       <!-- Category header - always shows dropdown arrow -->
-      <div (click)="onCategoryContainerClick(category.id)"
+      <div (click)="onCategoryContainerClick(category.id, category.name)"
         class="p-3 cursor-pointer hover:bg-gray-50 flex justify-between items-center">
-        <span (click)="onCategoryNameClick(category.id, $event)"
+        <span (click)="onCategoryNameClick(category.id, category.name, $event)"
           [class.font-medium]="selectedCategoryId === category.id"
           [style.color]="selectedCategoryId === category.id ? '#483C21' : ''">
           {{ category.name }}
@@ -46,7 +46,7 @@
 
         <!-- Subcategories list -->
         <ng-container *ngIf="!loading">
-          <div *ngFor="let subCategory of subCategoriesByCategory[category.id]"
+          <div *ngFor="let subCategory of subCategoriesByCategory[category.name]"
             (click)="onSubCategoryClick(subCategory.id, $event)" class="pr-6 pl-3 py-2 cursor-pointer hover:bg-gray-100"
             [class.font-medium]="selectedSubCategoryId === subCategory.id"
             [style.background-color]="selectedSubCategoryId === subCategory.id ? '#f8f4f0' : ''"
@@ -55,7 +55,7 @@
           </div>
 
           <!-- Empty state -->
-          <div *ngIf="subCategoriesByCategory[category.id]?.length === 0" class="p-3 text-center text-sm text-gray-500">
+          <div *ngIf="subCategoriesByCategory[category.name]?.length === 0" class="p-3 text-center text-sm text-gray-500">
             No subcategories available
           </div>
         </ng-container>
