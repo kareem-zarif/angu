@@ -17,7 +17,7 @@
         </svg>
         {{ loading ? 'Loading...' : 'Refresh' }}
       </button>
-      <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" (click)="openAdd()">+ Add Supplier</button>
+      <!-- <button class="bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed" disabled title="Supplier creation is not available">+ Add Supplier</button> -->
     </div>
   </div>
 
@@ -52,7 +52,7 @@
           <option value="all">All Fields</option>
           <option value="name">Name</option>
           <option value="factory">Factory Name</option>
-          <option value="phone">Phone</option>
+          <option value="phoneNumber">Phone</option>
         </select>
       </div>
 
@@ -87,7 +87,7 @@
           <tr *ngFor="let supplier of getPaginatedSuppliers(); let i = index" class="app-tr-hover">
             <td class="px-3 py-2">{{ i + 1 }}</td>
             <td class="px-3 py-2">{{ getFullName(supplier) }}</td>
-            <td class="px-3 py-2">{{ supplier.phone }}</td>
+            <td class="px-3 py-2">{{ supplier.phoneNumber }}</td>
             <td class="px-3 py-2">{{ supplier.factoryName }}</td>
             <td class="px-3 py-2">{{ supplier.description || 'N/A' }}</td>
             <td class="px-3 py-2">
@@ -104,15 +104,13 @@
             <td class="px-3 py-2 flex gap-2">
               <button class="btn-soft-green" (click)="openEdit(supplier)">Edit</button>
               <button class="btn-soft-blue" (click)="viewDetails(supplier.id)">View</button>
-              <button 
-                class="btn-soft-red"
-                [ngClass]="!canDeleteSupplier(supplier) ? 'btn-soft-disabled' : ''"
-                (click)="deleteSupplier(supplier.id)"
-                [disabled]="!canDeleteSupplier(supplier)"
-                [title]="getDeleteButtonTooltip(supplier)"
-              >
-                {{ canDeleteSupplier(supplier) ? 'Delete' : 'Has Products' }}
-              </button>
+                             <button 
+                 class="btn-soft-red"
+                 (click)="deleteSupplier(supplier.id)"
+                 [title]="getDeleteButtonTooltip(supplier)"
+               >
+                 Delete
+               </button>
             </td>
           </tr>
         </tbody>
@@ -199,14 +197,14 @@
           <input 
             type="tel" 
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            [ngClass]="{'form-error': formErrors['phone']}"
-            [(ngModel)]="form.phone" 
-            name="phone" 
+            [ngClass]="{'form-error': formErrors['phoneNumber']}"
+            [(ngModel)]="form.phoneNumber" 
+            name="phoneNumber" 
             required 
-            (input)="clearError('phone')"
+            (input)="clearError('phoneNumber')"
             [disabled]="isSubmitting"
           />
-          <div *ngIf="formErrors['phone']" class="text-red-500 text-sm mt-1">{{ formErrors['phone'] }}</div>
+          <div *ngIf="formErrors['phoneNumber']" class="text-red-500 text-sm mt-1">{{ formErrors['phoneNumber'] }}</div>
         </div>
         
         <div class="mb-4">

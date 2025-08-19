@@ -260,9 +260,20 @@ export class AdminProductsComponent implements OnInit {
     if (!this.selectedProduct) return;
 
     this.isSubmitting = true;
-    const updateData: IProduct = {
-      ...this.selectedProduct,
-      approvalStatus: this.newApprovalStatus
+    const updateData: ProductUpdateDto = {
+      id: this.selectedProduct.id,
+      name: this.selectedProduct.name,
+      description: this.selectedProduct.description,
+      pricePerPiece: this.selectedProduct.pricePerPiece,
+      pricePer50Piece: this.selectedProduct.pricePer50Piece,
+      pricePer100Piece: this.selectedProduct.pricePer100Piece,
+      noINStock: this.selectedProduct.noINStock,
+      minNumToFactoryOrder: this.selectedProduct.minNumToFactoryOrder,
+      approvalStatus: this.newApprovalStatus,
+      shipping: this.selectedProduct.shipping,
+      subCategoryId: this.selectedProduct.subCategoryId,
+      warrantyNMonths: this.selectedProduct.warrantyNMonths,
+      images: null
     };
 
     this.productService.updateProduct(updateData).subscribe({
@@ -309,9 +320,20 @@ export class AdminProductsComponent implements OnInit {
     if (!this.selectedProduct) return;
 
     this.isSubmitting = true;
-    const updateData: IProduct = {
-      ...this.selectedProduct,
-      approvalStatus: ProductApprovalStatus.Rejected
+    const updateData: ProductUpdateDto = {
+      id: this.selectedProduct.id,
+      name: this.selectedProduct.name,
+      description: this.selectedProduct.description,
+      pricePerPiece: this.selectedProduct.pricePerPiece,
+      pricePer50Piece: this.selectedProduct.pricePer50Piece,
+      pricePer100Piece: this.selectedProduct.pricePer100Piece,
+      noINStock: this.selectedProduct.noINStock,
+      minNumToFactoryOrder: this.selectedProduct.minNumToFactoryOrder,
+      approvalStatus: ProductApprovalStatus.Rejected,
+      shipping: this.selectedProduct.shipping,
+      subCategoryId: this.selectedProduct.subCategoryId,
+      warrantyNMonths: this.selectedProduct.warrantyNMonths,
+      images: null
     };
 
     this.productService.updateProduct(updateData).subscribe({

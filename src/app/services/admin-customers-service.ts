@@ -8,7 +8,7 @@ export interface Customer {
   id: string;
   firstName: string;
   lastName: string;
-  PhoneNumber: string;
+  phoneNumber: string;
   ordersCount: number;
   orders: any[];
   paymentMethods: any[];
@@ -23,38 +23,27 @@ export interface Customer {
 export interface CustomerCreateDto {
   firstName: string;
   lastName: string;
-  phone: string;
+  phoneNumber: string;
 }
 
 export interface CustomerUpdateDto {
   id: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phoneNumber: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AdminCustomersService {
   // Try admin endpoint first, fallback to regular endpoint
-  private apiUrl = `${environment.apiUrl}/admin/Customer`;
+  private apiUrl = `${environment.apiUrl}/Customer`;
   private fallbackApiUrl = `${environment.apiUrl}/Customer`;
 
   constructor(private http: HttpClient) {}
 
   getCustomers(): Observable<Customer[]> {
-    console.log('🔍 AdminCustomersService: Trying admin endpoint:', this.apiUrl);
     return this.http.get<Customer[]>(this.apiUrl).pipe(
-      tap(customers => console.log('✅ Admin endpoint successful, got customers:', customers.length)),
-      catchError(error => {
-        console.log('⚠️ Admin endpoint failed, trying fallback:', this.fallbackApiUrl);
-        return this.http.get<Customer[]>(this.fallbackApiUrl).pipe(
-          tap(customers => console.log('✅ Fallback endpoint successful, got customers:', customers.length)),
-          catchError(fallbackError => {
-            console.error('❌ Both endpoints failed:', error, fallbackError);
-            throw fallbackError;
-          })
-        );
-      })
+      tap(customers => console.log('✅ Customers fetched:', customers.length))
     );
   }
 
@@ -63,16 +52,24 @@ export class AdminCustomersService {
   }
 
   createCustomer(customer: CustomerCreateDto): Observable<Customer> {
-    const formData = new FormData();
-    formData.append('firstName', customer.firstName);
-    formData.append('lastName', customer.lastName);
-    formData.append('phone', customer.phone);
-
-    return this.http.post<Customer>(this.apiUrl, formData);
+    // Backend create is commented out; keeping JSON shape aligned in case it's enabled later
+    const payload = {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phoneNumber: customer.phoneNumber
+    };
+    return this.http.post<Customer>(this.apiUrl, payload);
   }
 
   updateCustomer(customer: CustomerUpdateDto): Observable<Customer> {
-    return this.http.put<Customer>(this.apiUrl, customer);
+    // Ensure payload uses phoneNumber to match backend CustomerUpdateDto
+    const payload = {
+      id: customer.id,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phoneNumber: customer.phoneNumber
+    };
+    return this.http.put<Customer>(this.apiUrl, payload);
   }
 
   deleteCustomer(id: string): Observable<Customer> {

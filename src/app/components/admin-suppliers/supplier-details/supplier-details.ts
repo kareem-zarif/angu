@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AdminSuppliersService } from '../../../services/admin-suppliers.service';
 import { SupplierResDto } from '../../../models/supplier';
-
+ 
 @Component({
   selector: 'app-supplier-details',
   templateUrl: './supplier-details.html',
@@ -15,17 +15,17 @@ export class SupplierDetailsComponent implements OnInit {
   supplier: SupplierResDto | null = null;
   loading = true;
   error = '';
-
+ 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private supplierService: AdminSuppliersService
   ) {}
-
+ 
   ngOnInit(): void {
     this.loadSupplierDetails();
   }
-
+ 
   loadSupplierDetails() {
     const supplierId = this.route.snapshot.paramMap.get('id');
     if (!supplierId) {
@@ -33,7 +33,7 @@ export class SupplierDetailsComponent implements OnInit {
       this.loading = false;
       return;
     }
-
+ 
     this.supplierService.getById(supplierId).subscribe({
       next: (supplier) => {
         this.supplier = supplier;
@@ -46,22 +46,22 @@ export class SupplierDetailsComponent implements OnInit {
       }
     });
   }
-
+ 
   goBack() {
     this.router.navigate(['/admin/suppliers']);
   }
-
+ 
   editSupplier() {
     if (this.supplier) {
       this.router.navigate(['/admin/suppliers/edit', this.supplier.id]);
     }
   }
-
+ 
   getFullName(): string {
     if (!this.supplier) return '';
     return `${this.supplier.firstName} ${this.supplier.lastName}`;
   }
-
+ 
   getLocation(): string {
     if (!this.supplier) return 'N/A';
     if (this.supplier.city && this.supplier.state) {
@@ -73,14 +73,14 @@ export class SupplierDetailsComponent implements OnInit {
     }
     return 'N/A';
   }
-
+ 
   getProductSuppliersCount(): number {
     return this.supplier?.productSuppliers?.length || 0;
   }
-
+ 
   formatDate(date: Date | string): string {
     if (!date) return 'N/A';
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     return dateObj.toLocaleDateString();
   }
-} 
+}

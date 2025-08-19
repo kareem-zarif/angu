@@ -6,7 +6,7 @@
         Comprehensive customer management with order tracking
       </div>
     </div>
-    <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" (click)="openAdd()">+ Add Customer</button>
+    <!-- <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" (click)="openAdd()">+ Add Customer</button> -->
   </div>
 
   <!-- Search and Filter Section -->
@@ -72,7 +72,7 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ i + 1 }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getFullName(customer) }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              <span *ngIf="customer.PhoneNumber; else noPhone">{{ customer.PhoneNumber }}</span>
+              <span *ngIf="customer.phoneNumber; else noPhone">{{ customer.phoneNumber }}</span>
               <ng-template #noPhone>
                 <span class="text-red-500 text-xs">No phone data</span>
               </ng-template>
@@ -121,7 +121,7 @@
 
   <!-- Modal for Add/Edit -->
   <div *ngIf="showModal" class="modal-backdrop-transparent">
-    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto relative">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600" (click)="showModal = false">&times;</button>
       <h3 class="text-lg font-bold mb-4">{{ editCustomer ? 'Edit Customer' : 'Add Customer' }}</h3>
 
@@ -164,8 +164,8 @@
           <input
             class="border rounded px-3 py-1 w-full"
             [ngClass]="{'border-red-500': formErrors['phone']}"
-            [(ngModel)]="form.PhoneNumber"
-            name="phone"
+            [(ngModel)]="form.phoneNumber"
+            name="phoneNumber"
             required
             placeholder="e.g., 01012345678"
             (input)="clearError('phone')"
@@ -199,7 +199,7 @@
 
   <!-- Customer Details Modal -->
   <div *ngIf="showDetailsModal" class="modal-backdrop-transparent">
-    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto relative">
       <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl" (click)="closeDetails()">&times;</button>
 
       <div *ngIf="selectedCustomer" class="space-y-6">
@@ -213,7 +213,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600">Phone Number</label>
-              <p class="text-lg">{{ selectedCustomer.PhoneNumber || 'N/A' }}</p>
+              <p class="text-lg">{{ selectedCustomer.phoneNumber || 'N/A' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600">Customer ID</label>

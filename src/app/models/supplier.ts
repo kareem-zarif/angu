@@ -2,7 +2,7 @@ export interface Supplier {
   id: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phoneNumber: string; // Changed from 'phone' to 'phoneNumber' to match backend
   factoryName: string;
   description?: string;
   state?: string;
@@ -13,7 +13,7 @@ export interface Supplier {
 export interface SupplierCreateDto {
   firstName: string;
   lastName: string;
-  phone: string;
+  phoneNumber: string; // Changed from 'phone' to 'phoneNumber' to match backend
   factoryName: string;
   description?: string;
 }
@@ -22,7 +22,7 @@ export interface SupplierResDto {
   id: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phoneNumber: string; // Changed from 'phone' to 'phoneNumber' to match backend
   factoryName: string;
   description: string;
   state?: string;
@@ -35,7 +35,7 @@ export interface SupplierUpdateDto {
   id: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phoneNumber: string; // Changed from 'phone' to 'phoneNumber' to match backend
   factoryName: string;
   description?: string;
 }

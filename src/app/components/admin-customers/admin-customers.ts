@@ -72,12 +72,12 @@ export class AdminCustomersComponent implements OnInit {
         case 'name':
           return this.getFullName(customer).toLowerCase().includes(searchLower);
         case 'phone':
-          return customer.PhoneNumber.toLowerCase().includes(searchLower);
+          return customer.phoneNumber.toLowerCase().includes(searchLower);
         case 'all':
         default:
           return (
             this.getFullName(customer).toLowerCase().includes(searchLower) ||
-            customer.PhoneNumber.toLowerCase().includes(searchLower)
+            customer.phoneNumber.toLowerCase().includes(searchLower)
           );
       }
     });
@@ -166,11 +166,11 @@ export class AdminCustomersComponent implements OnInit {
     }
 
     // Phone validation
-    if (!this.form.PhoneNumber || this.form.PhoneNumber.trim() === '') {
+    if (!this.form.phoneNumber || this.form.phoneNumber.trim() === '') {
       this.formErrors['phone'] = 'Phone number is required';
     } else {
       const phoneRegex = /^(010|011|012|15)\d{8,10}$/;
-      if (!phoneRegex.test(this.form.PhoneNumber.trim())) {
+      if (!phoneRegex.test(this.form.phoneNumber.trim())) {
         this.formErrors['phone'] = 'Phone number must start with 010, 011, 012, or 15 and be between 11 and 13 digits';
       }
     }
@@ -191,7 +191,7 @@ export class AdminCustomersComponent implements OnInit {
         id: this.editCustomer.id,
         firstName: this.form.firstName!.trim(),
         lastName: this.form.lastName!.trim(),
-        phone: this.form.PhoneNumber!.trim(),
+        phoneNumber: this.form.phoneNumber!.trim(),
       };
       console.log('Updating customer with data:', updateDto);
       this.customersService.updateCustomer(updateDto).subscribe({
@@ -213,7 +213,7 @@ export class AdminCustomersComponent implements OnInit {
       const createDto: CustomerCreateDto = {
         firstName: this.form.firstName!.trim(),
         lastName: this.form.lastName!.trim(),
-        phone: this.form.PhoneNumber!.trim(),
+        phoneNumber: this.form.phoneNumber!.trim(),
       };
       console.log('Creating customer with data:', createDto);
       this.customersService.createCustomer(createDto).subscribe({

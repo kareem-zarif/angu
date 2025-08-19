@@ -102,65 +102,17 @@ export class AdminHeaderComponent implements OnInit, OnDestroy {
   }
 
   loadHeaderStats(): void {
-    console.log('🔄 AdminHeader: Loading header stats...');
-    console.log('🌐 Environment API URL: https://localhost:7253/api');
+    console.log('🔄 AdminHeader: Loading header stats (combined)...');
     this.isLoading = true;
-    
-    // Test each service individually to identify which one is failing
-    console.log('🔍 Testing individual services...');
-    
-    // Test orders service first
-    this.adminOrdersService.getOrders().subscribe({
-      next: (orders) => {
-        console.log('✅ Orders service working, received:', orders.length, 'orders');
-        console.log('📋 Sample order data:', orders.slice(0, 2));
-        
-        // Test products service
-        this.adminProductsService.getAllProducts().subscribe({
-          next: (products) => {
-            console.log('✅ Products service working, received:', products.length, 'products');
-            
-            // Test customers service
-            this.adminCustomersService.getCustomers().subscribe({
-              next: (customers) => {
-                console.log('✅ Customers service working, received:', customers.length, 'customers');
-                
-                // Calculate stats
-                const totalOrders = orders.length;
-                const totalRevenue = orders.reduce((sum: number, o: Order) => sum + (o.totalAmount || 0), 0);
-                
-                // Calculate actual pending orders (status 1 or 2)
-                const pendingOrders = orders.filter(order => 
-                  order.currentStatus === 1 || order.currentStatus === 2
-                ).length;
-                
-                const activeCustomers = customers.length;
-                
-                this.headerStats = {
-                  totalOrders,
-                  pendingOrders,
-                  totalRevenue,
-                  activeCustomers
-                };
-                
-                console.log('📈 AdminHeader: Final calculated stats:', this.headerStats);
-                this.isLoading = false;
-              },
-              error: (error) => {
-                console.error('❌ Customers service failed:', error);
-                this.isLoading = false;
-              }
-            });
-          },
-          error: (error) => {
-            console.error('❌ Products service failed:', error);
-            this.isLoading = false;
-          }
-        });
+
+    this.adminDashboardService.getHeaderStats().subscribe({
+      next: stats => {
+        this.headerStats = stats;
+        console.log('📈 AdminHeader: Header stats loaded:', this.headerStats);
+        this.isLoading = false;
       },
-      error: (error) => {
-        console.error('❌ Orders service failed:', error);
-        console.error('🔧 Orders service error details:', error);
+      error: error => {
+        console.error('❌ AdminHeader: Failed to load header stats:', error);
         this.isLoading = false;
       }
     });

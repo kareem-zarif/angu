@@ -14,7 +14,7 @@ import { ProductSupplierService, ProductSupplierCreateDto } from './product-supp
 })
 export class ProductService {
   // Try admin endpoint first, fallback to regular endpoint
-  private _baseUrl = `${environment.apiUrl}/admin/Product`;
+  private _baseUrl = `${environment.apiUrl}/Product`;
   private _fallbackBaseUrl = `${environment.apiUrl}/Product`;
   private _imageBaseUrl = 'https://localhost:7253';
 
@@ -281,44 +281,37 @@ export class ProductService {
 
   // Add new product via API
   add(product: IProduct, images?: File[]): Observable<IProduct> {
-    let requestData: any;
+    // Always use FormData because backend expects [FromForm] ProductCreateDto
+    const formData = new FormData();
+    formData.append('Name', product.name);
+    formData.append('Description', product.description);
+    formData.append('PricePerPiece', product.pricePerPiece.toString());
+    if (product.pricePer50Piece) {
+      formData.append('PricePer50Piece', product.pricePer50Piece.toString());
+    }
+    if (product.pricePer100Piece) {
+      formData.append('PricePer100Piece', product.pricePer100Piece.toString());
+    }
+    formData.append('NoINStock', product.noINStock.toString());
+    formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
+    formData.append('ApprovalStatus', product.approvalStatus.toString());
+    formData.append('Shipping', product.shipping.toString());
+    formData.append('SubCategoryId', product.subCategoryId);
+    if (product.warrantyNMonths) {
+      formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
+    }
 
+    // Add images if any
     if (images && images.length > 0) {
-      // Use FormData for image uploads
-      const formData = new FormData();
-      formData.append('Name', product.name);
-      formData.append('Description', product.description);
-      formData.append('PricePerPiece', product.pricePerPiece.toString());
-      if (product.pricePer50Piece) {
-        formData.append('PricePer50Piece', product.pricePer50Piece.toString());
-      }
-      if (product.pricePer100Piece) {
-        formData.append('PricePer100Piece', product.pricePer100Piece.toString());
-      }
-      formData.append('NoINStock', product.noINStock.toString());
-      formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
-      formData.append('ApprovalStatus', product.approvalStatus.toString());
-      formData.append('Shipping', product.shipping.toString());
-      formData.append('SubCategoryId', product.subCategoryId);
-      if (product.warrantyNMonths) {
-        formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
-      }
-
-      // Add images
       images.forEach((image) => {
         formData.append('Images', image);
       });
-
-      requestData = formData;
-    } else {
-      // Use JSON for products without images
-      requestData = { ...product };
     }
 
     console.log('Sending create request to:', `${this._baseUrl}`);
-    console.log('Request data:', requestData);
+    console.log('Request data: FormData with keys:', Array.from(formData.keys()));
 
-    return this.http.post<IProduct>(`${this._baseUrl}`, requestData).pipe(
+    return this.http.post<IProduct>(`${this._baseUrl}`, formData).pipe(
       switchMap(newProduct => {
         // After creating the product, create the ProductSupplier relationship
         const currentSellerId = this.auth.getCurrentUser()?.UserId;
@@ -350,67 +343,48 @@ export class ProductService {
       }),
       catchError(error => {
         console.error('Error creating product:', error);
-        return throwError(() => new Error('Failed to create product'));
+        // Re-throw the original HttpErrorResponse so callers can inspect status/message
+        return throwError(() => error);
       })
     );
   }
 
   // Update product via API
   update(product: IProduct, images?: File[]): Observable<IProduct> {
-    let requestData: any;
-
     console.log('ProductService.update called with:', { product, images });
 
+    // Always use FormData because backend expects [FromForm] ProductUpdateDto
+    const formData = new FormData();
+    formData.append('Id', product.id);
+    formData.append('Name', product.name);
+    formData.append('Description', product.description);
+    formData.append('PricePerPiece', product.pricePerPiece.toString());
+    if (product.pricePer50Piece) {
+      formData.append('PricePer50Piece', product.pricePer50Piece.toString());
+    }
+    if (product.pricePer100Piece) {
+      formData.append('PricePer100Piece', product.pricePer100Piece.toString());
+    }
+    formData.append('NoINStock', product.noINStock.toString());
+    formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
+    formData.append('ApprovalStatus', product.approvalStatus.toString());
+    formData.append('Shipping', product.shipping.toString());
+    formData.append('SubCategoryId', product.subCategoryId);
+    if (product.warrantyNMonths) {
+      formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
+    }
+
+    // Add images if any
     if (images && images.length > 0) {
-      // Use FormData for image uploads
-      const formData = new FormData();
-      formData.append('Id', product.id);
-      formData.append('Name', product.name);
-      formData.append('Description', product.description);
-      formData.append('PricePerPiece', product.pricePerPiece.toString());
-      if (product.pricePer50Piece) {
-        formData.append('PricePer50Piece', product.pricePer50Piece.toString());
-      }
-      if (product.pricePer100Piece) {
-        formData.append('PricePer100Piece', product.pricePer100Piece.toString());
-      }
-      formData.append('NoINStock', product.noINStock.toString());
-      formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
-      formData.append('ApprovalStatus', product.approvalStatus.toString());
-      formData.append('Shipping', product.shipping.toString());
-      formData.append('SubCategoryId', product.subCategoryId);
-      if (product.warrantyNMonths) {
-        formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
-      }
-
-      // Add supplier ID to associate product with seller
-      const currentSellerId = this.auth.getCurrentUser()?.UserId;
-      if (currentSellerId) {
-        formData.append('SupplierId', currentSellerId);
-      }
-
-      // Add images
       images.forEach((image) => {
         formData.append('Images', image);
       });
-
-      requestData = formData;
-      console.log('Using FormData for update with images');
-    } else {
-      // Use JSON for products without images
-      requestData = { ...product };
-      // Add supplier ID to associate product with seller
-      const currentSellerId = this.auth.getCurrentUser()?.UserId;
-      if (currentSellerId) {
-        requestData.supplierId = currentSellerId;
-      }
-      console.log('Using JSON for update without images');
     }
 
-    console.log('Sending update request to:', `${this._baseUrl}/${product.id}`);
-    console.log('Request data:', requestData);
+    console.log('Sending update request to:', `${this._baseUrl}`);
+    console.log('Request data: FormData with keys:', Array.from(formData.keys()));
 
-    return this.http.put<IProduct>(`${this._baseUrl}/${product.id}`, requestData).pipe(
+    return this.http.put<IProduct>(`${this._baseUrl}`, formData).pipe(
       map(updatedProduct => {
         console.log('Product update response received:', updatedProduct);
         return this.processProductImage(updatedProduct);
