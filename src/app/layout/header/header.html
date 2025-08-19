@@ -141,7 +141,7 @@
           <ng-container *ngIf="isLoggedIn()">
             <li><a routerLink="/profile">Profile</a></li>
             <li><a routerLink="/Chatbot">Chatbot</a></li>
-            <li *ngIf="currentUser?.roles?.includes('Supplier')"><a routerLink="/seller-dashboard">Seller Dashboard</a>
+            <li *ngIf="currentUser?.roles?.includes('Supplier')"><a routerLink="/seller/dashboard">Seller Dashboard</a>
             </li>
             <li *ngIf="currentUser?.roles?.includes('Admin')"><a routerLink="/admin-dashboard">Management Dashboard</a>
             </li>
@@ -173,7 +173,7 @@
             <li><a (click)="navigateToLogin()">Login</a></li>
           </ng-container>
           <ng-container *ngIf="isLoggedIn()">
-            <li *ngIf="currentUser?.roles?.includes('Seller')"><a routerLink="/seller-dashboard">Seller Dashboard</a>
+            <li *ngIf="currentUser?.roles?.includes('Supplier')"><a routerLink="/seller/dashboard">Seller Dashboard</a>
             </li>
             <li *ngIf="currentUser?.roles?.includes('Admin')"><a routerLink="/admin-dashboard">Management Dashboard</a>
             </li>

@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Auth, User } from '../../services/auth';
+import { Role } from '../../models/enums/roles';
 import { CommonModule } from '@angular/common';
 import { Subscription, Subject } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
@@ -174,14 +175,14 @@ export class Login implements OnInit, OnDestroy {
 
     console.log('Redirecting user with roles:', currentUser.roles);
 
-    if (currentUser.roles.includes('Admin')) {
+    if (currentUser.roles.includes(Role.Admin)) {
       this.router.navigate(['/admin']);
-    } else if (currentUser.roles.includes('Seller')) {
+    } else if (currentUser.roles.includes(Role.Supplier)) {
       this.router.navigate(['/seller/dashboard']);
-    } else if (currentUser.roles.includes('Customer')) {
+    } else if (currentUser.roles.includes(Role.Customer)) {
       this.router.navigate(['/products']);
     } else {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/']);
     }
   }
 
