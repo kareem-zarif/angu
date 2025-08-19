@@ -180,24 +180,6 @@ export class ProductList implements OnInit, OnDestroy {
     }
   }
 
-  updatePriceRangeForFilteredProducts(): void {
-    if (this.filteredProducts.length === 0) return;
-
-    // Get all possible prices from filtered products
-    const filteredPrices = this.filteredProducts.flatMap(product => {
-      const prices = [];
-      if (product.pricePerPiece) prices.push(product.pricePerPiece);
-      if (product.pricePer50Piece) prices.push(product.pricePer50Piece);
-      if (product.pricePer100Piece) prices.push(product.pricePer100Piece);
-      return prices;
-    }).filter(price => price !== null && price !== undefined) as number[];
-
-    if (filteredPrices.length > 0) {
-      this.minPrice = Math.floor(Math.min(...filteredPrices));
-      this.maxPrice = Math.ceil(Math.max(...filteredPrices));
-    }
-  }
-
   onCategorySelected(categoryId: string | null): void {
     this.selectedCategory = categoryId;
     this.selectedSubCategory = null;
@@ -213,11 +195,16 @@ export class ProductList implements OnInit, OnDestroy {
   }
 
   onFilterChange(filters: any): void {
+    // Update filter states from sidebar
     this.selectedRating = filters.rating;
     this.priceRange = filters.priceRange || this.priceRange;
     this.selectedSuppliers = filters.suppliers || [];
     this.includeOutOfStock = filters.includeOutOfStock !== undefined ? filters.includeOutOfStock : true;
-    this.filteredProducts = filters.filteredProducts || this.allProducts;
+    
+    // Don't use filteredProducts from sidebar - we'll apply our own filtering
+    // this.filteredProducts = filters.filteredProducts || this.allProducts;
+    
+    // Apply filters to get the correct filtered products
     this.applyFilters();
   }
 
@@ -239,20 +226,11 @@ export class ProductList implements OnInit, OnDestroy {
         return false;
       }
 
-      // Price filter - check all price types
-      const productPrices = [
-        product.pricePerPiece,
-        product.pricePer50Piece,
-        product.pricePer100Piece
-      ].filter(price => price !== null && price !== undefined) as number[];
-
-      // If any price is within range, include the product
-      const anyPriceInRange = productPrices.some(
-        price => price >= this.priceRange[0] && price <= this.priceRange[1]
-      );
-
-      if (!anyPriceInRange) {
-        return false;
+      // Simplified price filter - only check pricePerPiece
+      if (product.pricePerPiece !== null && product.pricePerPiece !== undefined) {
+        if (product.pricePerPiece > this.priceRange[1]) {
+          return false;
+        }
       }
 
       // Supplier filter
@@ -279,7 +257,6 @@ export class ProductList implements OnInit, OnDestroy {
     // Reset to first page when filters change
     this.currentPage = 1;
     this.updateDisplayedProducts();
-    this.updatePriceRangeForFilteredProducts();
   }
 
   updateDisplayedProducts(): void {
@@ -357,7 +334,9 @@ export class ProductList implements OnInit, OnDestroy {
   }
 
   private isCategoryMatch(subCategoryId: string, categoryId: string): boolean {
-    return this.subCategoryToCategory.get(subCategoryId) === categoryId;
+    const mappedCategory = this.subCategoryToCategory.get(subCategoryId);
+    const matches = mappedCategory === categoryId;
+    return matches;
   }
 
   isCustomerOrGuest() {

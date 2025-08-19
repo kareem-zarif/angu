@@ -44,7 +44,7 @@ export class Sidebar implements OnChanges, OnInit {
   error: string | null = null;
 
   // Add new property to track filtered products from other filters
-  @Input() filteredProductsFromOtherFilters: IProduct[] = [];
+  // @Input() filteredProductsFromOtherFilters: IProduct[] = [];
 
   constructor(
     private categoryService: CategoryService,
@@ -56,8 +56,8 @@ export class Sidebar implements OnChanges, OnInit {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Update price range when min/max inputs change
-    if (changes['minPrice'] || changes['maxPrice']) {
+    // Update price range when min/max inputs change - but only if not already set by user
+    if ((changes['minPrice'] || changes['maxPrice']) && this.priceRange[1] === 108) {
       this.priceRange = [this.minPrice, this.maxPrice];
       // No need to emit here as this is just initializing from parent
     }
@@ -67,9 +67,9 @@ export class Sidebar implements OnChanges, OnInit {
       this.updateSuppliersList();
     }
 
-    if (changes['filteredProductsFromOtherFilters']) {
-      this.updateSuppliersList();
-    }
+    // if (changes['filteredProductsFromOtherFilters']) {
+    //   this.updateSuppliersList();
+    // }
   }
 
   // Handle category selection from nested dropdown
@@ -109,30 +109,19 @@ export class Sidebar implements OnChanges, OnInit {
 
   // Update price range
   updatePriceRange(event: Event) {
-    console.log('updatePriceRange called');
     const value = (event.target as HTMLInputElement).value;
     this.priceRange[1] = parseInt(value);
 
-    // Filter products within the price range
-    this.filteredProducts = this.products.filter(product => {
-      const price = product.pricePerPiece;
-      return price !== undefined && price !== null &&
-        price >= this.priceRange[0] &&
-        price <= this.priceRange[1];
-    }).sort((a, b) => {
-      // Sort by price ascending
-      return (a.pricePerPiece || 0) - (b.pricePerPiece || 0);
-    });
-
-    console.log('filteredProducts:', this.filteredProducts);
+    // Don't filter products here - just emit the filter change
+    // Let the parent component handle all filtering
     this.emitFilterChange();
   }
 
   // Toggle supplier selection
-  // Toggle supplier selection
   toggleSupplier(index: number) {
     this.suppliers[index].checked = !this.suppliers[index].checked;
-    this.updateFilteredProducts();
+    // Don't filter products here - just emit the filter change
+    this.emitFilterChange();
   }
 
   // Toggle out of stock products
@@ -175,7 +164,7 @@ export class Sidebar implements OnChanges, OnInit {
     this.categorySelected.emit();
     this.subCategorySelected.emit();
 
-    // Emit reset filter state with forceRefresh
+    // Emit reset filter state
     this.filterChange.emit({
       rating: null,
       suppliers: [],
@@ -188,13 +177,16 @@ export class Sidebar implements OnChanges, OnInit {
 
   // Emit all filter changes to parent component
   emitFilterChange() {
-    this.filterChange.emit({
+    const filterData = {
       rating: this.selectedRating,
       suppliers: this.suppliers.filter(s => s.checked).map(s => s.name),
       includeOutOfStock: this.includeOutOfStock,
       lastViewedActive: this.lastViewedActive,
       priceRange: this.priceRange,
-    });
+      // Don't include filteredProducts - let parent handle filtering
+    };
+    
+    this.filterChange.emit(filterData);
   }
 
   // Update suppliers list to only include suppliers of current products
@@ -204,9 +196,7 @@ export class Sidebar implements OnChanges, OnInit {
     const uniqueSupplierNames = new Set<string>();
 
     // Use filteredProductsFromOtherFilters if available, otherwise use all products
-    const productsToFilter = this.filteredProductsFromOtherFilters.length > 0
-      ? this.filteredProductsFromOtherFilters
-      : this.products;
+    const productsToFilter = this.products;
 
     productsToFilter.forEach(product => {
       if (product.supplierNames?.length) {
@@ -225,32 +215,7 @@ export class Sidebar implements OnChanges, OnInit {
         checked: this.suppliers.find(s => s.name === name)?.checked || false
       }));
 
-    // Update filtered products based on selected suppliers
-    this.updateFilteredProducts();
-  }
-
-  // Add new method to handle filtered products update
-  private updateFilteredProducts(): void {
-    const selectedSuppliers = this.suppliers.filter(s => s.checked);
-
-    if (selectedSuppliers.length === 0) {
-      this.filteredProducts = this.filteredProductsFromOtherFilters.length > 0
-        ? this.filteredProductsFromOtherFilters
-        : this.products;
-    } else {
-      const productsToFilter = this.filteredProductsFromOtherFilters.length > 0
-        ? this.filteredProductsFromOtherFilters
-        : this.products;
-
-      this.filteredProducts = productsToFilter.filter(product => {
-        const productSuppliers = [
-          ...(product.supplierNames || []),
-          ...(product.suppliers || [])
-        ];
-        return selectedSuppliers.some(s => productSuppliers.includes(s.name));
-      });
-    }
-
-    this.emitFilterChange();
+    // Don't filter products here - just update the supplier list
+    // The parent component will handle filtering when needed
   }
 }

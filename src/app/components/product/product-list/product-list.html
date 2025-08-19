@@ -2,7 +2,7 @@
   <!-- Fixed width Sidebar -->
   <aside class="sidebar-fixed w-72 flex-shrink-0">
     <div class="bg-white border border-gray-200 rounded-lg shadow p-4 h-full sticky top-4">
-      <app-sidebar [minPrice]="minPrice" [maxPrice]="maxPrice" [products]="filteredProducts"
+      <app-sidebar [minPrice]="minPrice" [maxPrice]="maxPrice" [products]="allProducts"
         (filterChange)="onFilterChange($event)" (categorySelected)="onCategorySelected($event)"
         (subCategorySelected)="onSubCategorySelected($event)">
       </app-sidebar>

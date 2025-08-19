@@ -150,8 +150,7 @@
   <!-- Price Range Slider -->
   <div class="mb-6">
     <h3 class="font-bold text-lg mb-2" style="color: #483C21;"> {{ 'PRODUCT_SIDEBAR.PRICE' | translate }}</h3>
-    <div class="text-sm mb-2">{{ priceRange[0] }}
-       {{ 'PRODUCT_SIDEBAR.EGP' | translate }} - {{ priceRange[1] }}   {{ 'PRODUCT_SIDEBAR.EGP' | translate }}  &  {{ 'PRODUCT_SIDEBAR.ABOVE' | translate }}</div>
+    <div class="text-sm mb-2">Show products up to {{ priceRange[1] }} {{ 'PRODUCT_SIDEBAR.EGP' | translate }}</div>
 
     <input type="range" [min]="minPrice" [max]="maxPrice" [value]="priceRange[1]" class="range range-xs"
       (input)="updatePriceRange($event)" />
