@@ -1,14 +1,13 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+// address__managebt.ts
+import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AddressService } from '../../services/address.service';
-import { Auth } from '../../services/auth';
+import { Auth, User } from '../../services/auth';
 import { LocalStorageNotificationService } from '../../services/local-storage-notification.service';
 import { IAddress, IAddressCreate, IAddressUpdate } from '../../models/iaddress';
-import { User } from '../../services/auth';
-import { Subscription } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-address-management',
@@ -27,7 +26,10 @@ export class AddressManagement implements OnInit, OnDestroy {
   defaultAddressId: string | null = null;
   isLoading = false;
   formSubmitting = false;
-  private userSubscription: Subscription = new Subscription();
+  @Output() defaultAddressChanged = new EventEmitter<IAddress>();
+
+  // destroy$ used to clean subscriptions on destroy
+  private destroy$ = new Subject<void>();
 
   constructor(
     private addressService: AddressService,
@@ -35,28 +37,39 @@ export class AddressManagement implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private notificationService: LocalStorageNotificationService
   ) {
+    // بناء الفورم مع Validators
     this.addressForm = this.fb.group({
       street: ['', [Validators.maxLength(200)]],
-      city: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      state: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      city: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+      state: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       postalCode: ['', [Validators.pattern('^[0-9]{5}(-[0-9]{4})?$')]],
       country: ['Egypt', [Validators.required, Validators.maxLength(100)]]
     });
   }
 
   ngOnInit(): void {
-    this.userSubscription = this.authService.currentUser$.subscribe(user => {
-      this.currentUser = user;
-      if (user?.UserId) {
-        console.log('Current user ID:', user.UserId);
-        this.loadAddresses();
-        this.loadDefaultAddressFromLocalStorage();
-      }
-    });
+    // الاشتراك في currentUser$ للتعامل مع تغيّر حالة الدخول خلال عمر الكمبوننت
+    this.authService.currentUser$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(user => {
+        this.currentUser = user;
+        if (user?.UserId) {
+          console.log('Current user ID:', user.UserId);
+          this.loadAddresses();
+          this.loadDefaultAddressFromLocalStorage();
+        } else {
+          // Reset list when no user
+          this.addresses = [];
+          this.defaultAddressId = null;
+          this.removeDefaultAddressFromLocalStorage();
+        }
+      });
   }
 
   ngOnDestroy(): void {
-    this.userSubscription.unsubscribe();
+    // تنظيف كل الاشتراكات
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadAddresses(): void {
@@ -67,55 +80,45 @@ export class AddressManagement implements OnInit, OnDestroy {
 
     this.isLoading = true;
     console.log('Loading addresses for user:', this.currentUser.UserId);
-    
-    // Since the backend doesn't have a specific endpoint for getting addresses by person ID,
-    // we'll get all addresses and the service will filter them by person ID
+
     this.addressService.getAddresses(this.currentUser.UserId).subscribe({
       next: (addresses) => {
         console.log('Addresses loaded successfully:', addresses);
         this.addresses = addresses || [];
-        
-        // If no default is set and we have addresses, set first as default
-        if (!this.defaultAddressId && this.addresses.length > 0) {
-          this.setFirstAddressAsDefault();
+
+        // Set default address based on IsDefault from backend
+        const defaultAddress = this.addresses.find(addr => addr.IsDefault);
+        if (defaultAddress && defaultAddress.id) {
+          this.defaultAddressId = defaultAddress.id;
+          this.saveDefaultAddressToLocalStorage(defaultAddress.id);
+          // silent set/notify (catch to avoid unhandled promise)
+          this.addressService.setDefaultAddress(defaultAddress, { persist: false, saveLocal: true }).catch(() => {});
+        } else if (this.addresses.length > 0 && this.addresses[0].id) {
+          this.setAsDefault(this.addresses[0].id, false); // Set first address as default silently
         }
-        
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading addresses:', error);
-        console.error('Error status:', error.status);
-        console.error('Error message:', error.message);
-        
-        // If the main endpoint fails, there are no real alternative endpoints
-        // based on your backend controller
         this.notificationService.showError('Failed to load addresses');
         this.isLoading = false;
       }
     });
   }
 
-  tryAlternativeEndpoints(): void {
-    // Based on your backend controller, there are no alternative endpoints
-    // The service will fall back to the same method
-    console.log('No alternative endpoints available based on backend controller');
-    this.notificationService.showError('Failed to load addresses');
-    this.isLoading = false;
-  }
-
-  // Local storage methods for default address management
+  // Local storage helper methods
   private getDefaultAddressKey(): string {
-    return `defaultAddress_${this.currentUser?.UserId}`;
+    return `defaultAddress_${this.currentUser?.UserId || 'anonymous'}`;
   }
 
   private saveDefaultAddressToLocalStorage(addressId: string): void {
-    if (typeof Storage !== 'undefined') {
+    if (typeof Storage !== 'undefined' && this.currentUser?.UserId) {
       localStorage.setItem(this.getDefaultAddressKey(), addressId);
     }
   }
 
   private loadDefaultAddressFromLocalStorage(): void {
-    if (typeof Storage !== 'undefined') {
+    if (typeof Storage !== 'undefined' && this.currentUser?.UserId) {
       const savedDefault = localStorage.getItem(this.getDefaultAddressKey());
       if (savedDefault) {
         this.defaultAddressId = savedDefault;
@@ -125,7 +128,7 @@ export class AddressManagement implements OnInit, OnDestroy {
   }
 
   private removeDefaultAddressFromLocalStorage(): void {
-    if (typeof Storage !== 'undefined') {
+    if (typeof Storage !== 'undefined' && this.currentUser?.UserId) {
       localStorage.removeItem(this.getDefaultAddressKey());
     }
   }
@@ -145,15 +148,17 @@ export class AddressManagement implements OnInit, OnDestroy {
       postalCode: '',
       country: 'Egypt'
     });
-    // Clear all validation states
     this.addressForm.markAsUntouched();
     this.addressForm.markAsPristine();
   }
 
   onSubmit(): void {
+    // Force update form validation/values (helps with autofill edge-cases)
+    this.addressForm.updateValueAndValidity();
+    this.markFormGroupTouched();
+
     if (!this.addressForm.valid) {
       console.log('Form is invalid:', this.getFormErrors());
-      this.markFormGroupTouched();
       this.notificationService.showError('Please fill in all required fields correctly');
       return;
     }
@@ -166,15 +171,29 @@ export class AddressManagement implements OnInit, OnDestroy {
 
     this.formSubmitting = true;
 
+    // Trim values and prepare data
+    const streetVal = this.addressForm.get('street')?.value?.trim() || null;
+    const cityVal = this.addressForm.get('city')?.value?.trim();
+    const stateVal = this.addressForm.get('state')?.value?.trim();
+    const postalVal = this.addressForm.get('postalCode')?.value?.trim() || null;
+    const countryVal = this.addressForm.get('country')?.value?.trim() || 'Egypt';
+
+    if (!cityVal || !stateVal) {
+      this.notificationService.showError('City and State cannot be empty');
+      this.formSubmitting = false;
+      return;
+    }
+
     const addressData: IAddressCreate = {
-      personId: this.currentUser.UserId,
-      street: this.addressForm.get('street')?.value?.trim() || null,
-      city: this.addressForm.get('city')?.value?.trim(),
-      state: this.addressForm.get('state')?.value?.trim(),
-      postalCode: this.addressForm.get('postalCode')?.value?.trim() || null,
-      country: this.addressForm.get('country')?.value?.trim() || 'Egypt'
+      PersonId: this.currentUser.UserId,
+      Street: streetVal,
+      City: cityVal,
+      State: stateVal,
+      PostalCode: postalVal,
+      Country: countryVal
     };
 
+    // If editing, call update; else create
     if (this.isEditing && this.editingAddressId) {
       this.updateAddress(this.editingAddressId, addressData);
     } else {
@@ -200,69 +219,82 @@ export class AddressManagement implements OnInit, OnDestroy {
     return errors;
   }
 
+  // ---------- CREATE (modified to send createPayload explicitly) ----------
   createAddress(addressData: IAddressCreate): void {
-    console.log('Creating address:', addressData);
-    
-    this.addressService.createAddress(addressData).subscribe({
+    console.log('Creating address (component) - original data:', addressData);
+
+    // Build payload that matches backend DTO exactly
+    const createPayload = {
+      PersonId: addressData.PersonId,
+      Street: addressData.Street,
+      City: addressData.City,
+      State: addressData.State,
+      PostalCode: addressData.PostalCode,
+      Country: addressData.Country || 'Egypt'
+    };
+
+    // Diagnostic log - check what we're about to send (Network tab should match this)
+    console.log('Sending payload to AddressService:', JSON.stringify(createPayload, null, 2));
+
+    // Call service with the explicit payload (service should send JSON)
+    this.addressService.createAddress(createPayload).subscribe({
       next: (newAddress) => {
         console.log('Address created successfully:', newAddress);
+        // Push to local list
         this.addresses.push(newAddress);
-        
-        // If this is the first address, set it as default
+
+        // If first address -> set default silently
         if (this.addresses.length === 1 && newAddress.id) {
-          this.setAsDefault(newAddress.id, false); // Don't show success message for auto-default
+          this.setAsDefault(newAddress.id, false);
+          this.addressService.setDefaultAddress(newAddress, { persist: true, saveLocal: true }).catch(() => {});
         }
-        
+
         this.cancelForm();
         this.notificationService.showSuccess('Address added successfully');
         this.formSubmitting = false;
       },
       error: (error) => {
-        console.error('=== ADDRESS CREATION ERROR ===');
-        console.error('Error creating address:', error);
+        console.error('=== ADDRESS CREATION ERROR (component) ===');
+        console.error(error);
         this.handleApiError(error, 'Failed to add address');
         this.formSubmitting = false;
       }
     });
   }
 
+  // ---------- UPDATE (keeps original behavior but ensures payload shape) ----------
   updateAddress(id: string, addressData: IAddressCreate): void {
     console.log('Updating address with ID:', id);
-    console.log('Update data:', addressData);
-    
-    // Create the update payload that matches IAddressUpdate interface
     const updatePayload: IAddressUpdate = {
       id: id,
-      personId: addressData.personId,
-      street: addressData.street,
-      city: addressData.city,
-      state: addressData.state,
-      postalCode: addressData.postalCode,
-      country: addressData.country
+      personId: addressData.PersonId,
+      street: addressData.Street,
+      city: addressData.City,
+      state: addressData.State,
+      postalCode: addressData.PostalCode,
+      country: addressData.Country || 'Egypt'
     };
 
-    console.log('Update payload:', updatePayload);
+    console.log('Update payload (component):', updatePayload);
 
     this.addressService.updateAddress(id, updatePayload).subscribe({
       next: (updatedAddress) => {
         console.log('Address updated successfully:', updatedAddress);
-        
-        // Update the address in the local array
+
         const index = this.addresses.findIndex(addr => addr.id === id);
         if (index !== -1) {
           this.addresses[index] = updatedAddress;
         } else {
-          // If not found, refresh the list
           this.loadAddresses();
         }
-        
+
         this.cancelForm();
         this.notificationService.showSuccess('Address updated successfully');
         this.formSubmitting = false;
       },
       error: (error) => {
-        console.error('=== ADDRESS UPDATE ERROR ===');
-        console.error('Error updating address:', error);
+        console.error('=== ADDRESS UPDATE ERROR (component) ===');
+        console.error(error);
         this.handleApiError(error, 'Failed to update address');
         this.formSubmitting = false;
       }
@@ -271,18 +303,17 @@ export class AddressManagement implements OnInit, OnDestroy {
 
   editAddress(address: IAddress): void {
     console.log('Editing address:', address);
-    
+
     if (!address.id) {
       console.error('Address ID is missing');
       this.notificationService.showError('Cannot edit address: ID missing');
       return;
     }
-    
+
     this.isEditing = true;
     this.isAdding = false;
     this.editingAddressId = address.id;
-    
-    // Populate the form with current address values
+
     this.addressForm.patchValue({
       street: address.street || '',
       city: address.city || '',
@@ -290,11 +321,10 @@ export class AddressManagement implements OnInit, OnDestroy {
       postalCode: address.postalCode || '',
       country: address.country || 'Egypt'
     });
-    
-    // Mark form as pristine after patching values
+
     this.addressForm.markAsPristine();
     this.addressForm.markAsUntouched();
-    
+
     console.log('Form populated with values:', this.addressForm.value);
   }
 
@@ -305,34 +335,33 @@ export class AddressManagement implements OnInit, OnDestroy {
       return;
     }
 
-    if (confirm('Are you sure you want to delete this address?')) {
-      console.log('Deleting address with ID:', id);
-      
-      this.addressService.deleteAddress(id).subscribe({
-        next: () => {
-          console.log('Address deleted successfully');
-          
-          // Remove from addresses array
-          this.addresses = this.addresses.filter(addr => addr.id !== id);
-          
-          // If we deleted the default address, set a new default or clear it
-          if (id === this.defaultAddressId) {
-            if (this.addresses.length > 0) {
-              this.setAsDefault(this.addresses[0].id || '', false);
-            } else {
-              this.defaultAddressId = null;
-              this.removeDefaultAddressFromLocalStorage();
-            }
-          }
-          
-          this.notificationService.showSuccess('Address deleted successfully');
-        },
-        error: (error) => {
-          console.error('Error deleting address:', error);
-          this.handleApiError(error, 'Failed to delete address');
-        }
-      });
+    if (!confirm('Are you sure you want to delete this address?')) {
+      return;
     }
+
+    console.log('Deleting address with ID:', id);
+
+    this.addressService.deleteAddress(id).subscribe({
+      next: () => {
+        console.log('Address deleted successfully');
+        this.addresses = this.addresses.filter(addr => addr.id !== id);
+
+        if (id === this.defaultAddressId) {
+          if (this.addresses.length > 0) {
+            this.setAsDefault(this.addresses[0].id || '', false);
+          } else {
+            this.defaultAddressId = null;
+            this.removeDefaultAddressFromLocalStorage();
+          }
+        }
+
+        this.notificationService.showSuccess('Address deleted successfully');
+      },
+      error: (error) => {
+        console.error('Error deleting address:', error);
+        this.handleApiError(error, 'Failed to delete address');
+      }
+    });
   }
 
   setDefaultAddress(addressId: string): void {
@@ -346,7 +375,6 @@ export class AddressManagement implements OnInit, OnDestroy {
       return;
     }
 
-    // Check if the address exists in our list
     const addressExists = this.addresses.some(addr => addr.id === addressId);
     if (!addressExists) {
       console.error('Address not found in current list');
@@ -354,17 +382,55 @@ export class AddressManagement implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('Setting address as default:', addressId);
-    
-    // Set as default locally
+    // Find the previous default address
+    const previousDefault = this.addresses.find(addr => addr.id === this.defaultAddressId);
+
+    // Update all addresses locally
+    this.addresses = this.addresses.map(addr => ({
+      ...addr,
+      IsDefault: addr.id === addressId
+    }));
+
     this.defaultAddressId = addressId;
     this.saveDefaultAddressToLocalStorage(addressId);
-    
+
     if (showSuccessMessage) {
       this.notificationService.showSuccess('Default address updated successfully');
     }
-    
-    console.log('Default address set successfully (locally)');
+
+    console.log('Default address set successfully (locally)', addressId);
+
+    // Update backend for the new default and previous default
+    const newDefault = this.addresses.find(addr => addr.id === addressId);
+    if (newDefault) {
+      this.updateBackendDefault(newDefault);
+      this.addressService.setDefaultAddress(newDefault, { persist: true, saveLocal: true }).catch(() => {});
+    }
+    if (previousDefault && previousDefault.id !== addressId) {
+      previousDefault.IsDefault = false;
+      this.updateBackendDefault(previousDefault);
+    }
+
+    if (showSuccessMessage) {
+      this.notificationService.showSuccess('Default address updated successfully');
+    }
+  }
+
+  private updateBackendDefault(address: IAddress): void {
+    const payload: IAddressUpdate = {
+      id: address.id || '',
+      personId: this.currentUser?.UserId || '',
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country || 'Egypt',
+      IsDefault: address.IsDefault || false
+    };
+    this.addressService.updateAddress(address.id || '', payload).subscribe({
+      next: () => console.log(`Updated IsDefault for address ${address.id}`),
+      error: (error) => console.error(`Error updating IsDefault for address ${address.id}:`, error)
+    });
   }
 
   setFirstAddressAsDefault(): void {
@@ -383,13 +449,9 @@ export class AddressManagement implements OnInit, OnDestroy {
 
   private handleApiError(error: any, defaultMessage: string): void {
     console.error('API Error:', error);
-    console.error('Error status:', error.status);
-    console.error('Error message:', error.message);
-    console.error('Error response:', error.error);
-    
     let errorMessage = defaultMessage;
-    
-    if (error.error) {
+
+    if (error?.error) {
       if (typeof error.error === 'string') {
         errorMessage += ': ' + error.error;
       } else if (error.error.message) {
@@ -397,24 +459,19 @@ export class AddressManagement implements OnInit, OnDestroy {
       } else if (error.error.title) {
         errorMessage += ': ' + error.error.title;
       }
-      
-      // Log detailed validation errors if available
+
       if (error.error.errors) {
-        console.error('Validation errors:');
-        Object.keys(error.error.errors).forEach(key => {
-          console.error(`  ${key}:`, error.error.errors[key]);
-        });
-        
-        // Show validation errors to user
         const validationErrors = Object.values(error.error.errors).flat();
         if (validationErrors.length > 0) {
           errorMessage += ': ' + validationErrors.join(', ');
         }
+        // Log validation details
+        console.error('Validation errors details:', error.error.errors);
       }
-    } else if (error.message) {
+    } else if (error?.message) {
       errorMessage += ': ' + error.message;
     }
-    
+
     this.notificationService.showError(errorMessage);
   }
 
@@ -449,5 +506,9 @@ export class AddressManagement implements OnInit, OnDestroy {
       'country': 'Country'
     };
     return labels[fieldName] || fieldName;
+  }
+
+  get sortedAddresses(): IAddress[] {
+    return [...this.addresses].sort((b, a) => (b.IsDefault === a.IsDefault ? 0 : b.IsDefault ? -1 : 1));
   }
 }

@@ -3,7 +3,8 @@ import { RecommendationService } from '../../services/recommendation-service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { DecJwt } from '../../services/dec-jwt';
-import { RecItems } from '../../models/rec-items';
+import { IProduct } from '../../models/i-product';
+import { environment } from '../../../environment/environment';
 
 @Component({
   selector: 'app-recommendation',
@@ -12,7 +13,8 @@ import { RecItems } from '../../models/rec-items';
   styleUrl: './recommendation.css'
 })
 export class Recommendation implements OnInit {
-recommendations: RecItems[] = [];
+recommendations: IProduct[] = [];
+   baseImgUrl=`${environment.imgUrl}`;
 
   constructor(
     private recService: RecommendationService,
@@ -29,5 +31,10 @@ recommendations: RecItems[] = [];
     } else {
       console.warn('User not logged in or token missing');
     }
+  }
+  getProductImage(product: any): string {
+    return product.productPicsPathes && product.productPicsPathes.length > 0
+    ? this.baseImgUrl + product.productPicsPathes[0]
+    : 'https://via.placeholder.com/150';
   }
 }

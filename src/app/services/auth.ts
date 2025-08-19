@@ -275,11 +275,11 @@ export class Auth {
   getUserId(): string | null {
     return this.currentUserSource.value?.UserId ?? null;
   }
-  
+
   getSellerName(): string | null {
     return this.currentUserSource.value?.sellerName ?? null;
   }
-  
+
   getRoles(): string[] {
     return this.currentUserSource.value?.roles ?? [];
   }
