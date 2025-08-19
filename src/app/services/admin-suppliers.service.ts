@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, forkJoin, map, switchMap, catchError } from 'rxjs';
 import { Supplier, SupplierCreateDto, SupplierResDto, SupplierUpdateDto } from '../models/supplier';
 import { ProductSupplierService } from './product-supplier.service';
+import { of } from 'rxjs';
+import { environment } from '../../environment/environment';
 
 export interface AdminSupplierNotification {
   id: string;
@@ -21,7 +23,8 @@ export interface AdminSupplierNotification {
   providedIn: 'root'
 })
 export class AdminSuppliersService {
-  private apiUrl = 'https://localhost:7253/api/Supplier';
+  private apiUrl = `${environment.apiUrl}/Supplier`;
+  private orderApiUrl = `${environment.apiUrl}/Order`; // Use environment configuration
 
   // Notification subjects for real-time updates
   private supplierNotificationsSubject = new BehaviorSubject<AdminSupplierNotification[]>([]);
@@ -103,11 +106,12 @@ export class AdminSuppliersService {
   }
 
   update(data: SupplierUpdateDto): Observable<SupplierResDto> {
+    // Backend expects [FromForm] so send FormData with exact DTO property names
     const formData = new FormData();
     formData.append('Id', data.id);
     formData.append('FirstName', data.firstName);
     formData.append('LastName', data.lastName);
-    formData.append('Phone', data.phone);
+    formData.append('PhoneNumber', data.phoneNumber); // Use the correct property name
     formData.append('FactoryName', data.factoryName);
     if (data.description) {
       formData.append('Description', data.description);
@@ -128,65 +132,21 @@ export class AdminSuppliersService {
   delete(id: string): Observable<SupplierResDto> {
     console.log(`AdminSuppliersService.delete() called for supplier ID: ${id}`);
     
-    // First, get the supplier details to know what we're deleting
-    return this.getById(id).pipe(
-      switchMap(supplier => {
-        console.log(`Retrieved supplier details for deletion:`, supplier);
-        
-        // If supplier has products, we need to handle them first
-        if (supplier.productSuppliers && supplier.productSuppliers.length > 0) {
-          console.log(`Supplier ${supplier.factoryName} has ${supplier.productSuppliers.length} products. Cleaning up...`);
-          
-          // Delete all ProductSupplier relationships for this supplier
-          const deleteProductSupplierRequests = supplier.productSuppliers.map(ps => 
-            this.productSupplierService.delete(ps.id)
-          );
-          
-          return forkJoin(deleteProductSupplierRequests).pipe(
-            switchMap(() => {
-              console.log(`Deleted ${supplier.productSuppliers.length} ProductSupplier relationships for supplier ${supplier.factoryName}`);
-              
-              // Now delete the supplier
-              console.log(`Now deleting supplier ${supplier.factoryName} (ID: ${id})`);
-              return this.http.delete<SupplierResDto>(`${this.apiUrl}/${id}`).pipe(
-                tap(response => {
-                  console.log(`Supplier deletion successful. Response:`, response);
-                  // Send notification to supplier about deletion
-                  this.notifySupplier('supplier_deleted', 'Account Deleted', 
-                    `Your supplier account has been deleted from our platform.`, 
-                    id, '/supplier/dashboard', { 
-                      supplierName: response.firstName ? `${response.firstName} ${response.lastName}` : 'Unknown',
-                      factoryName: response.factoryName 
-                    });
-                })
-              );
-            }),
-            catchError(error => {
-              console.error('Error cleaning up ProductSupplier relationships:', error);
-              throw new Error(`Failed to clean up supplier's products: ${error.message}`);
-            })
-          );
-        } else {
-          // No products, safe to delete supplier directly
-          console.log(`Supplier ${supplier.factoryName} has no products. Safe to delete.`);
-          console.log(`Deleting supplier ${supplier.factoryName} (ID: ${id}) directly`);
-          
-          return this.http.delete<SupplierResDto>(`${this.apiUrl}/${id}`).pipe(
-            tap(response => {
-              console.log(`Supplier deletion successful. Response:`, response);
-              // Send notification to supplier about deletion
-              this.notifySupplier('supplier_deleted', 'Account Deleted', 
-                `Your supplier account has been deleted from our platform.`, 
-                id, '/supplier/dashboard', { 
-                  supplierName: response.firstName ? `${response.firstName} ${response.lastName}` : 'Unknown',
-                  factoryName: response.factoryName 
-                });
-            })
-          );
-        }
+    // Simplified delete - just delete the supplier directly
+    // The backend should handle any cleanup if needed
+    return this.http.delete<SupplierResDto>(`${this.apiUrl}/${id}`).pipe(
+      tap(response => {
+        console.log(`Supplier deletion successful. Response:`, response);
+        // Send notification to supplier about deletion
+        this.notifySupplier('supplier_deleted', 'Account Deleted', 
+          `Your supplier account has been deleted from our platform.`, 
+          id, '/supplier/dashboard', { 
+            supplierName: response.firstName ? `${response.firstName} ${response.lastName}` : 'Unknown',
+            factoryName: response.factoryName 
+          });
       }),
       catchError(error => {
-        console.error('Error in supplier deletion process:', error);
+        console.error('Error deleting supplier:', error);
         throw error;
       })
     );
@@ -218,6 +178,31 @@ export class AdminSuppliersService {
   // Method to get supplier notifications (for supplier components to subscribe to)
   getSupplierNotifications(): Observable<AdminSupplierNotification[]> {
     return this.supplierNotifications$;
+  }
+
+  // Method to get orders for a specific supplier
+  getSupplierOrders(supplierId: string): Observable<any[]> {
+    console.log(`🔍 AdminSuppliersService: Getting orders for supplier ${supplierId}`);
+    return this.http.get<any[]>(`${this.orderApiUrl}/supplier/${supplierId}`).pipe(
+      tap(orders => {
+        console.log(`✅ AdminSuppliersService: Got ${orders.length} orders for supplier ${supplierId}`);
+      }),
+      catchError(error => {
+        console.error(`❌ AdminSuppliersService: Error getting orders for supplier ${supplierId}:`, error);
+        return of([]); // Return empty array on error
+      })
+    );
+  }
+
+  // Method to calculate supplier revenue
+  getSupplierRevenue(supplierId: string): Observable<number> {
+    return this.getSupplierOrders(supplierId).pipe(
+      map(orders => {
+        const revenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        console.log(`💰 AdminSuppliersService: Supplier ${supplierId} revenue: ${revenue}`);
+        return revenue;
+      })
+    );
   }
 
   // Method to mark notification as read

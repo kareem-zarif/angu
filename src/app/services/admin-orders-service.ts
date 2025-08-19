@@ -85,8 +85,8 @@ export interface OrderStatusHistoryUpdateDto {
 
 @Injectable({ providedIn: 'root' })
 export class AdminOrdersService {
-  // Try admin endpoint first, fallback to regular endpoint
-  private apiUrl = `${environment.apiUrl}/admin/Order`;
+  // Base path should match controller route: [Route("api/[controller]")]
+  private apiUrl = `${environment.apiUrl}/Order`;
   private fallbackApiUrl = `${environment.apiUrl}/Order`;
 
   // No longer needed - using LocalStorageNotificationService instead
@@ -100,17 +100,67 @@ export class AdminOrdersService {
 
   getOrders(): Observable<Order[]> {
     console.log('🔍 AdminOrdersService: Trying admin endpoint:', this.apiUrl);
-    return this.http.get<Order[]>(this.apiUrl).pipe(
-      tap(orders => console.log('✅ Admin endpoint successful, got orders:', orders.length)),
+    return this.http.get<Order[]>(`${this.apiUrl}/admin/all`).pipe(
+      tap(orders => {
+        console.log('✅ Admin endpoint successful, got orders:', orders.length);
+        console.log('🔍 AdminOrdersService: Raw orders response:', orders);
+        if (orders.length > 0) {
+          console.log('🔍 AdminOrdersService: Sample order structure:', {
+            id: orders[0].id,
+            totalAmount: orders[0].totalAmount,
+            hasOrderItems: !!orders[0].orderItems,
+            orderItemsType: typeof orders[0].orderItems,
+            orderItemsLength: orders[0].orderItems?.length || 0,
+            sampleOrderItem: orders[0].orderItems?.[0],
+            fullOrder: orders[0]
+          });
+        }
+      }),
       catchError(error => {
         console.log('⚠️ Admin endpoint failed, trying fallback:', this.fallbackApiUrl);
-        return this.http.get<Order[]>(this.fallbackApiUrl).pipe(
-          tap(orders => console.log('✅ Fallback endpoint successful, got orders:', orders.length)),
+        console.log('⚠️ Admin endpoint error details:', error);
+        return this.http.get<Order[]>(`${this.fallbackApiUrl}/admin/all`).pipe(
+          tap(orders => {
+            console.log('✅ Fallback endpoint successful, got orders:', orders.length);
+            console.log('🔍 AdminOrdersService: Raw orders response (fallback):', orders);
+            if (orders.length > 0) {
+              console.log('🔍 AdminOrdersService: Sample order structure (fallback):', {
+                id: orders[0].id,
+                totalAmount: orders[0].totalAmount,
+                hasOrderItems: !!orders[0].orderItems,
+                orderItemsType: typeof orders[0].orderItems,
+                orderItemsLength: orders[0].orderItems?.length || 0,
+                sampleOrderItem: orders[0].orderItems?.[0],
+                fullOrder: orders[0]
+              });
+            }
+          }),
           catchError(fallbackError => {
             console.error('❌ Both endpoints failed:', error, fallbackError);
             throw fallbackError;
           })
         );
+      })
+    );
+  }
+
+  // New method to get orders for a specific supplier
+  getOrdersBySupplier(supplierId: string): Observable<Order[]> {
+    console.log(`🔍 AdminOrdersService: Getting orders for supplier ${supplierId}`);
+    return this.http.get<Order[]>(`${this.apiUrl}/supplier/${supplierId}`).pipe(
+      tap(orders => {
+        console.log(`✅ AdminOrdersService: Got ${orders.length} orders for supplier ${supplierId}`);
+        if (orders.length > 0) {
+          console.log('🔍 AdminOrdersService: Sample supplier order:', {
+            id: orders[0].id,
+            totalAmount: orders[0].totalAmount,
+            orderItemsCount: orders[0].orderItems?.length || 0
+          });
+        }
+      }),
+      catchError(error => {
+        console.error(`❌ AdminOrdersService: Error getting orders for supplier ${supplierId}:`, error);
+        throw error;
       })
     );
   }

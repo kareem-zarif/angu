@@ -22,8 +22,8 @@ export interface AdminNotification {
   providedIn: 'root'
 })
 export class AdminProductsService {
-  // Try admin endpoint first, fallback to regular endpoint
-  private apiUrl = `${environment.apiUrl}/admin/Product`;
+  // Base path should match controller route: [Route("api/[controller]")]
+  private apiUrl = `${environment.apiUrl}/Product`;
   private fallbackApiUrl = `${environment.apiUrl}/Product`;
   private _imageBaseUrl = environment.imgUrl;
 
@@ -121,7 +121,7 @@ export class AdminProductsService {
     );
   }
 
-  // Update existing product - matches PUT /api/Product with [FromForm]
+  // Update existing product - try admin endpoint first, then fallback to /api/Product
   updateProduct(productData: ProductUpdateDto): Observable<IProduct> {
     const formData = new FormData();
 
@@ -157,9 +157,15 @@ export class AdminProductsService {
     for (let [key, value] of formData.entries()) {
       console.log(`${key}: ${value}`);
     }
-    console.log('Admin Update - API URL:', this.apiUrl);
+    console.log('Admin Update - API URL (primary):', this.apiUrl);
 
-    return this.http.put<IProduct>(this.apiUrl, formData).pipe(
+    const attemptAdmin$ = this.http.put<IProduct>(this.apiUrl, formData);
+    const attemptFallback$ = () => {
+      console.log('Admin Update - Falling back to:', this.fallbackApiUrl);
+      return this.http.put<IProduct>(this.fallbackApiUrl, formData);
+    };
+
+    return attemptAdmin$.pipe(
       tap(updated => {
         console.log('Admin Update - Success response:', updated);
         // Send notification to seller about approval/rejection if status changed
@@ -182,8 +188,17 @@ export class AdminProductsService {
         }
       }),
       catchError(error => {
-        console.error('Admin Update - HTTP Error:', error);
-        throw error;
+        console.error('Admin Update - HTTP Error (primary):', error);
+        // Fallback to non-admin endpoint if admin route fails
+        return attemptFallback$().pipe(
+          tap(updated => {
+            console.log('Admin Update - Success via fallback:', updated);
+          }),
+          catchError(fallbackError => {
+            console.error('Admin Update - Fallback HTTP Error:', fallbackError);
+            throw fallbackError;
+          })
+        );
       })
     );
   }

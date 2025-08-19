@@ -135,15 +135,27 @@ export class AdminDashboardComponent implements OnInit, OnDestroy, AfterViewInit
       }
     });
 
-    // Load supplier stats
-    this.adminDashboardService.getSupplierStats().subscribe({
+    // Load detailed supplier stats with individual order data
+    this.adminDashboardService.getDetailedSupplierStats().subscribe({
       next: (stats) => {
         this.supplierStats = stats;
         this.isChartsLoading = false;
+        console.log('✅ AdminDashboardComponent: Detailed supplier stats loaded:', stats);
       },
       error: (error) => {
-        console.error('Error loading supplier stats:', error);
-        this.isChartsLoading = false;
+        console.error('Error loading detailed supplier stats:', error);
+        // Fallback to regular supplier stats if detailed method fails
+        this.adminDashboardService.getSupplierStats().subscribe({
+          next: (fallbackStats) => {
+            this.supplierStats = fallbackStats;
+            this.isChartsLoading = false;
+            console.log('⚠️ AdminDashboardComponent: Using fallback supplier stats');
+          },
+          error: (fallbackError) => {
+            console.error('Error loading fallback supplier stats:', fallbackError);
+            this.isChartsLoading = false;
+          }
+        });
       }
     });
   }

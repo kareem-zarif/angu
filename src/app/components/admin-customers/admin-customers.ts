@@ -18,7 +18,7 @@ export class AdminCustomersComponent implements OnInit {
 
   showModal = false;
   editCustomer: Customer | null = null;
-  form: Partial<Customer> = {};
+  form: { firstName?: string; lastName?: string; PhoneNumber?: string } = {};
 
   // Pagination properties
   currentPage = 1;
@@ -72,12 +72,12 @@ export class AdminCustomersComponent implements OnInit {
         case 'name':
           return this.getFullName(customer).toLowerCase().includes(searchLower);
         case 'phone':
-          return customer.PhoneNumber.toLowerCase().includes(searchLower);
+          return customer.phoneNumber.toLowerCase().includes(searchLower);
         case 'all':
         default:
           return (
             this.getFullName(customer).toLowerCase().includes(searchLower) ||
-            customer.PhoneNumber.toLowerCase().includes(searchLower)
+            customer.phoneNumber.toLowerCase().includes(searchLower)
           );
       }
     });
@@ -129,7 +129,11 @@ export class AdminCustomersComponent implements OnInit {
 
   openEdit(customer: Customer) {
     this.editCustomer = customer;
-    this.form = { ...customer };
+    this.form = { 
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      PhoneNumber: customer.phoneNumber
+    };
     this.formErrors = {};
     this.showModal = true;
   }
@@ -188,10 +192,10 @@ export class AdminCustomersComponent implements OnInit {
     if (this.editCustomer) {
       // Update
       const updateDto: CustomerUpdateDto = {
-        id: this.editCustomer.id,
-        firstName: this.form.firstName!.trim(),
-        lastName: this.form.lastName!.trim(),
-        phone: this.form.PhoneNumber!.trim(),
+        Id: this.editCustomer.id,
+        FirstName: this.form.firstName!.trim(),
+        LastName: this.form.lastName!.trim(),
+        PhoneNumber: this.form.PhoneNumber!.trim(),
       };
       console.log('Updating customer with data:', updateDto);
       this.customersService.updateCustomer(updateDto).subscribe({
@@ -211,9 +215,9 @@ export class AdminCustomersComponent implements OnInit {
     } else {
       // Create
       const createDto: CustomerCreateDto = {
-        firstName: this.form.firstName!.trim(),
-        lastName: this.form.lastName!.trim(),
-        phone: this.form.PhoneNumber!.trim(),
+        FirstName: this.form.firstName!.trim(),
+        LastName: this.form.lastName!.trim(),
+        PhoneNumber: this.form.PhoneNumber!.trim(),
       };
       console.log('Creating customer with data:', createDto);
       this.customersService.createCustomer(createDto).subscribe({

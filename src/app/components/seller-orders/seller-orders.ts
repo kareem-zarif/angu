@@ -70,6 +70,15 @@ export class SellerOrdersComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // Test supplier ID retrieval for debugging
+    this.sellerOrdersService.testSupplierIdRetrieval();
+    
+    // Test get all orders for debugging
+    this.sellerOrdersService.testGetAllOrders();
+    
+    // Test regular Order endpoint for debugging
+    this.sellerOrdersService.testRegularOrderEndpoint();
+    
     this.loadOrders();
     this.loadOrderStats();
   }
@@ -102,15 +111,38 @@ export class SellerOrdersComponent implements OnInit {
   }
 
   loadOrderStats(): void {
-    this.sellerOrdersService.getSellerOrderStats()
-      .subscribe({
-        next: (stats) => {
-          this.orderStats = stats;
-        },
-        error: (error) => {
-          console.error('Error loading order stats:', error);
-        }
-      });
+    this.sellerOrdersService.getSellerOrderStats().subscribe({
+      next: (stats) => {
+        this.orderStats = stats;
+        console.log('✅ SellerOrdersComponent: Order stats loaded:', stats);
+        
+        // Update the component's orderStats property
+        this.orderStats = {
+          totalOrders: stats.totalOrders,
+          pendingOrders: stats.pendingOrders,
+          processingOrders: stats.processingOrders,
+          shippedOrders: stats.shippedOrders,
+          deliveredOrders: stats.deliveredOrders,
+          cancelledOrders: stats.cancelledOrders,
+          totalRevenue: stats.totalRevenue,
+          averageOrderValue: stats.averageOrderValue
+        };
+      },
+      error: (error) => {
+        console.error('Error loading order stats:', error);
+        // Set default values on error
+        this.orderStats = {
+          totalOrders: 0,
+          pendingOrders: 0,
+          processingOrders: 0,
+          shippedOrders: 0,
+          deliveredOrders: 0,
+          cancelledOrders: 0,
+          totalRevenue: 0,
+          averageOrderValue: 0
+        };
+      }
+    });
   }
 
   applyFilters() {
@@ -300,7 +332,7 @@ export class SellerOrdersComponent implements OnInit {
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'EGP'
     }).format(amount);
   }
 
@@ -383,5 +415,19 @@ export class SellerOrdersComponent implements OnInit {
       return this.getStatusName(lastStatus);
     }
     return 'Pending';
+  }
+
+
+
+  // Add method to get status color for better UI
+  getStatusColor(status: number): string {
+    switch (status) {
+      case 1: return 'text-orange-600 bg-orange-100';
+      case 2: return 'text-blue-600 bg-blue-100';
+      case 3: return 'text-purple-600 bg-purple-100';
+      case 4: return 'text-green-600 bg-green-100';
+      case 5: return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
   }
 } 

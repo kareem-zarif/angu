@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, forkJoin, map, catchError, of, BehaviorSubject, tap } from 'rxjs';
+import { Observable, forkJoin, map, catchError, of, BehaviorSubject, tap, switchMap } from 'rxjs';
 import { environment } from '../../environment/environment';
 import { AdminProductsService } from './admin-products-service';
 import { AdminOrdersService } from './admin-orders-service';
@@ -77,7 +77,7 @@ export interface SupplierStats {
   totalSuppliers: number;
   activeSuppliers: number;
   suppliersByCategory: { category: string; count: number }[];
-  topSuppliers: { name: string; productCount: number; revenue: number }[];
+  topSuppliers: { name: string; productCount: number; revenue: number; ordersCount?: number }[];
 }
 
 @Injectable({
@@ -286,17 +286,95 @@ export class AdminDashboardService {
   // Get supplier statistics with charts data
   getSupplierStats(): Observable<SupplierStats> {
     return forkJoin({
-      suppliers: this.adminSuppliersService.getAll(),
+      suppliers: this.adminSuppliersService.getAllWithProductCounts(), // ← Use this method to get suppliers with product counts
       products: this.adminProductsService.getAllProducts(),
       orders: this.adminOrdersService.getOrders()
     }).pipe(
       map(data => {
+        console.log('🔍 AdminDashboardService: getSupplierStats data received:', {
+          suppliersCount: data.suppliers.length,
+          productsCount: data.products.length,
+          ordersCount: data.orders.length,
+          sampleOrder: data.orders[0] // Log first order for debugging
+        });
+        
+        // Debug order structure
+        if (data.orders.length > 0) {
+          const sampleOrder = data.orders[0];
+          console.log('🔍 AdminDashboardService: Sample order structure:', {
+            id: sampleOrder.id,
+            totalAmount: sampleOrder.totalAmount,
+            hasOrderItems: !!sampleOrder.orderItems,
+            orderItemsCount: sampleOrder.orderItems?.length || 0,
+            sampleOrderItem: sampleOrder.orderItems?.[0],
+            orderKeys: Object.keys(sampleOrder) // See all available properties
+          });
+          
+          // Check if orderItems might be named differently
+          if (sampleOrder.orderItems) {
+            console.log('🔍 AdminDashboardService: OrderItems structure:', sampleOrder.orderItems);
+            if (sampleOrder.orderItems.length > 0) {
+              console.log('🔍 AdminDashboardService: First orderItem structure:', {
+                keys: Object.keys(sampleOrder.orderItems[0]),
+                productId: sampleOrder.orderItems[0].productId,
+                quantity: sampleOrder.orderItems[0].quantity
+              });
+            }
+          }
+        }
+        
         const suppliersByCategory = this.groupSuppliersByCategory(data.suppliers);
         const topSuppliers = this.getTopSuppliers(data.suppliers, data.products, data.orders);
 
+        console.log('🔍 AdminDashboardService: Top suppliers calculated:', topSuppliers);
+
         return {
           totalSuppliers: data.suppliers.length,
-          activeSuppliers: data.suppliers.length, // Assuming all suppliers are active
+          activeSuppliers: data.suppliers.length,
+          suppliersByCategory,
+          topSuppliers
+        };
+      })
+    );
+  }
+
+  // New method to get detailed supplier stats with individual order data
+  getDetailedSupplierStats(): Observable<SupplierStats> {
+    return this.adminSuppliersService.getAllWithProductCounts().pipe(
+      switchMap(suppliers => {
+        // Get orders for each supplier individually
+        const supplierStatsPromises = suppliers.map(supplier => 
+          this.adminSuppliersService.getSupplierOrders(supplier.id).pipe(
+            map(orders => ({
+              supplier,
+              orders,
+              revenue: orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+            }))
+          )
+        );
+        
+        return forkJoin(supplierStatsPromises);
+      }),
+      map(supplierStats => {
+        console.log('🔍 AdminDashboardService: Detailed supplier stats calculated:', supplierStats);
+        
+        const topSuppliers = supplierStats
+          .map(stat => ({
+            name: `${stat.supplier.firstName} ${stat.supplier.lastName}`,
+            productCount: stat.supplier.productSuppliers ? stat.supplier.productSuppliers.length : 0,
+            revenue: stat.revenue,
+            ordersCount: stat.orders.length
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+
+        // Get suppliers from the first stat to calculate categories
+        const suppliers = supplierStats.map(stat => stat.supplier);
+        const suppliersByCategory = this.groupSuppliersByCategory(suppliers);
+
+        return {
+          totalSuppliers: suppliers.length,
+          activeSuppliers: suppliers.length,
           suppliersByCategory,
           topSuppliers
         };
@@ -310,7 +388,7 @@ export class AdminDashboardService {
       products: this.adminProductsService.getAllProducts(),
       orders: this.adminOrdersService.getOrders(),
       customers: this.adminCustomersService.getCustomers(),
-      suppliers: this.adminSuppliersService.getAll()
+      suppliers: this.adminSuppliersService.getAllWithProductCounts() // ← Use this method for consistency
     }).pipe(
       map(data => {
         const activities: RecentActivity[] = [];
@@ -526,21 +604,102 @@ export class AdminDashboardService {
   }
 
   private getTopSuppliers(suppliers: any[], products: any[], orders: any[]): { name: string; productCount: number; revenue: number }[] {
-    return suppliers.map(supplier => {
-      const supplierProducts = products.filter(p => p.supplierId === supplier.id);
-      const supplierOrders = orders.filter(o => 
-                o.orderItems?.some((item: any) =>
-          supplierProducts.some(sp => sp.id === item.productId)
-        )
-      );
-      
-      const revenue = supplierOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-      
-      return {
-        name: `${supplier.firstName} ${supplier.lastName}`,
-        productCount: supplierProducts.length,
-        revenue
+    console.log('🔍 getTopSuppliers: Starting calculation with:', {
+      suppliersCount: suppliers.length,
+      productsCount: products.length,
+      ordersCount: orders.length
+    });
+    
+    // Debug: Log all orders to see their structure
+    console.log('🔍 getTopSuppliers: All orders received:', orders);
+    
+    // Test: Create a sample order to test the logic
+    if (orders.length === 0) {
+      console.log('⚠️ getTopSuppliers: No orders received, creating test data to verify logic');
+      const testOrder = {
+        id: 'test-order-1',
+        totalAmount: 100,
+        orderItems: [
+          { productId: 'test-product-1', quantity: 2, pricePerPiece: 50 }
+        ]
       };
+      orders = [testOrder];
+      console.log('🔍 getTopSuppliers: Test order created:', testOrder);
+    }
+    
+    return suppliers.map(supplier => {
+      try {
+        // Use the productSuppliers data that's already included in the supplier object
+        const supplierProductCount = supplier.productSuppliers ? supplier.productSuppliers.length : 0;
+        
+        // Get the actual product IDs for this supplier
+        const supplierProductIds = supplier.productSuppliers ? supplier.productSuppliers.map((ps: any) => ps.productId) : [];
+        
+        console.log(`🔍 getTopSuppliers: Supplier ${supplier.firstName} ${supplier.lastName}:`, {
+          productCount: supplierProductCount,
+          productIds: supplierProductIds,
+          supplierId: supplier.id
+        });
+        
+        // Debug: Check if we have any orders at all
+        if (orders.length === 0) {
+          console.log('⚠️ getTopSuppliers: No orders received from backend');
+          return {
+            name: `${supplier.firstName} ${supplier.lastName}`,
+            productCount: supplierProductCount,
+            revenue: 0
+          };
+        }
+        
+        // Calculate revenue from orders containing this supplier's products
+        const supplierOrders = orders.filter(o => {
+          // Check if order has orderItems and they're valid
+          if (!o.orderItems || !Array.isArray(o.orderItems)) {
+            console.log(`⚠️ getTopSuppliers: Order ${o.id} has no orderItems or invalid structure:`, o.orderItems);
+            return false;
+          }
+          
+          // Debug: Log the order being processed
+          console.log(`🔍 getTopSuppliers: Processing order ${o.id}:`, {
+            orderItems: o.orderItems,
+            totalAmount: o.totalAmount
+          });
+          
+          return o.orderItems.some((item: any) => {
+            if (!item || !item.productId) {
+              console.log(`⚠️ getTopSuppliers: OrderItem has no productId:`, item);
+              return false;
+            }
+            
+            const isMatch = supplierProductIds.includes(item.productId);
+            console.log(`🔍 getTopSuppliers: Checking if productId ${item.productId} matches supplier ${supplier.firstName}: ${isMatch}`);
+            return isMatch;
+          });
+        });
+        
+        console.log(`🔍 getTopSuppliers: Supplier ${supplier.firstName} orders found:`, supplierOrders.length);
+        
+        const revenue = supplierOrders.reduce((sum, order) => {
+          const amount = order.totalAmount || 0;
+          console.log(`🔍 getTopSuppliers: Processing order ${order.id} with totalAmount: ${amount}`);
+          return sum + amount;
+        }, 0);
+        
+        console.log(`🔍 getTopSuppliers: Supplier ${supplier.firstName} final revenue: ${revenue}`);
+        
+        return {
+          name: `${supplier.firstName} ${supplier.lastName}`,
+          productCount: supplierProductCount,
+          revenue
+        };
+      } catch (error) {
+        console.error(`❌ getTopSuppliers: Error processing supplier ${supplier.firstName}:`, error);
+        return {
+          name: `${supplier.firstName} ${supplier.lastName}`,
+          productCount: 0,
+          revenue: 0
+        };
+      }
     }).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   }
 
@@ -573,7 +732,7 @@ export class AdminDashboardService {
       products: this.adminProductsService.getAllProducts(),
       orders: this.adminOrdersService.getOrders(),
       customers: this.adminCustomersService.getCustomers(),
-      suppliers: this.adminSuppliersService.getAll()
+      suppliers: this.adminSuppliersService.getAllWithProductCounts() // ← Use this method for consistency
     }).pipe(
       map(data => {
         const results: any[] = [];

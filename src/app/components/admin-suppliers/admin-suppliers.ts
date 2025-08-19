@@ -82,13 +82,13 @@ export class AdminSuppliersComponent implements OnInit {
         case 'factory':
           return supplier.factoryName.toLowerCase().includes(searchLower);
         case 'phone':
-          return supplier.phone.toLowerCase().includes(searchLower);
+          return supplier.phoneNumber.toLowerCase().includes(searchLower);
         case 'all':
         default:
           return (
             this.getFullName(supplier).toLowerCase().includes(searchLower) ||
             supplier.factoryName.toLowerCase().includes(searchLower) ||
-            supplier.phone.toLowerCase().includes(searchLower) ||
+            supplier.phoneNumber.toLowerCase().includes(searchLower) ||
             (supplier.description && supplier.description.toLowerCase().includes(searchLower))
           );
       }
@@ -146,7 +146,7 @@ export class AdminSuppliersComponent implements OnInit {
     this.form = {
       firstName: supplier.firstName,
       lastName: supplier.lastName,
-      phone: supplier.phone,
+      phoneNumber: supplier.phoneNumber,
       factoryName: supplier.factoryName,
       description: supplier.description
     };
@@ -165,8 +165,8 @@ export class AdminSuppliersComponent implements OnInit {
       this.formErrors['lastName'] = 'Last name is required';
     }
 
-    if (!this.form.phone?.trim()) {
-      this.formErrors['phone'] = 'Phone number is required';
+    if (!this.form.phoneNumber?.trim()) {
+      this.formErrors['phoneNumber'] = 'Phone number is required';
     }
 
     if (!this.form.factoryName?.trim()) {
@@ -188,7 +188,7 @@ export class AdminSuppliersComponent implements OnInit {
         id: this.editingId,
         firstName: this.form.firstName!,
         lastName: this.form.lastName!,
-        phone: this.form.phone!,
+        phoneNumber: this.form.phoneNumber!, // Use phoneNumber to match backend DTO
         factoryName: this.form.factoryName!,
         description: this.form.description
       };
@@ -209,7 +209,7 @@ export class AdminSuppliersComponent implements OnInit {
       const createDto: SupplierCreateDto = {
         firstName: this.form.firstName!,
         lastName: this.form.lastName!,
-        phone: this.form.phone!,
+        phoneNumber: this.form.phoneNumber!, // Use phoneNumber to match backend DTO
         factoryName: this.form.factoryName!,
         description: this.form.description
       };

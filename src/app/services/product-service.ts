@@ -281,59 +281,57 @@ export class ProductService {
 
   // Add new product via API
   add(product: IProduct, images?: File[]): Observable<IProduct> {
-    let requestData: any;
+    // Always use FormData as backend expects [FromForm]
+    const form = new FormData();
+    form.append('Name', product.name);
+    form.append('Description', product.description);
+    form.append('PricePerPiece', String(product.pricePerPiece));
+    if (product.pricePer50Piece) form.append('PricePer50Piece', String(product.pricePer50Piece));
+    if (product.pricePer100Piece) form.append('PricePer100Piece', String(product.pricePer100Piece));
+    form.append('NoINStock', String(product.noINStock));
+    form.append('MinNumToFactoryOrder', String(product.minNumToFactoryOrder ?? 1));
+    form.append('ApprovalStatus', String(product.approvalStatus ?? 1)); // Pending by default
+    form.append('Shipping', String(product.shipping ?? 1));
+    form.append('SubCategoryId', product.subCategoryId);
+    if (product.warrantyNMonths) form.append('WarrantyNMonths', String(product.warrantyNMonths));
+    (images || []).forEach(img => form.append('Images', img));
 
-    if (images && images.length > 0) {
-      // Use FormData for image uploads
-      const formData = new FormData();
-      formData.append('Name', product.name);
-      formData.append('Description', product.description);
-      formData.append('PricePerPiece', product.pricePerPiece.toString());
-      if (product.pricePer50Piece) {
-        formData.append('PricePer50Piece', product.pricePer50Piece.toString());
-      }
-      if (product.pricePer100Piece) {
-        formData.append('PricePer100Piece', product.pricePer100Piece.toString());
-      }
-      formData.append('NoINStock', product.noINStock.toString());
-      formData.append('MinNumToFactoryOrder', product.minNumToFactoryOrder.toString());
-      formData.append('ApprovalStatus', product.approvalStatus.toString());
-      formData.append('Shipping', product.shipping.toString());
-      formData.append('SubCategoryId', product.subCategoryId);
-      if (product.warrantyNMonths) {
-        formData.append('WarrantyNMonths', product.warrantyNMonths.toString());
-      }
+    // Use admin endpoint only if user has Admin role; otherwise use public Product endpoint
+    const isAdmin = !!this.auth.getCurrentUser()?.roles?.includes('Admin');
+    const postUrl = isAdmin ? this._baseUrl : this._fallbackBaseUrl;
 
-      // Add images
-      images.forEach((image) => {
-        formData.append('Images', image);
-      });
+    console.log('Sending create request to:', postUrl);
 
-      requestData = formData;
-    } else {
-      // Use JSON for products without images
-      requestData = { ...product };
-    }
-
-    console.log('Sending create request to:', `${this._baseUrl}`);
-    console.log('Request data:', requestData);
-
-    return this.http.post<IProduct>(`${this._baseUrl}`, requestData).pipe(
+    return this.http.post<IProduct>(postUrl, form).pipe(
       switchMap(newProduct => {
         // After creating the product, create the ProductSupplier relationship
-        const currentSellerId = this.auth.getCurrentUser()?.UserId;
-        if (currentSellerId && newProduct.id) {
+        // Determine supplierId from storage/token/userId
+        const supplierIdFromStorage = localStorage.getItem('supplierId');
+        const token = this.auth.getToken();
+        let supplierIdFromToken: string | undefined;
+        try {
+          if (token) {
+            const decoded: any = this.auth.jwtHelper.decodeToken(token);
+            supplierIdFromToken = decoded?.supplierId || decoded?.SupplierId;
+          }
+        } catch {}
+        const supplierId = supplierIdFromStorage || supplierIdFromToken || this.auth.getCurrentUser()?.UserId;
+
+        if (supplierId && newProduct.id) {
           const productSupplierData: ProductSupplierCreateDto = {
             productId: newProduct.id,
-            supplierId: currentSellerId
+            supplierId
           };
-          
           return this.productSupplierService.create(productSupplierData).pipe(
-            map(() => newProduct) // Return the product after creating the relationship
+            map(() => newProduct),
+            // Do not fail the whole flow if linking fails
+            catchError(err => {
+              console.warn('Product created, but ProductSupplier link failed:', err);
+              return of(newProduct);
+            })
           );
-        } else {
-          return of(newProduct); // Return the product if no seller ID
         }
+        return of(newProduct);
       }),
       map(newProduct => this.processProductImage(newProduct)),
       tap(newProduct => {
@@ -349,7 +347,12 @@ export class ProductService {
         }
       }),
       catchError(error => {
-        console.error('Error creating product:', error);
+        console.error('Error creating product:', {
+          status: error?.status,
+          statusText: error?.statusText,
+          url: error?.url,
+          body: error?.error
+        });
         return throwError(() => new Error('Failed to create product'));
       })
     );

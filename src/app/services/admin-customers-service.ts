@@ -8,7 +8,7 @@ export interface Customer {
   id: string;
   firstName: string;
   lastName: string;
-  PhoneNumber: string;
+  phoneNumber: string;
   ordersCount: number;
   orders: any[];
   paymentMethods: any[];
@@ -16,21 +16,21 @@ export interface Customer {
   reviews: any[];
   wishlist: any;
   cart: any;
-  notifications: any[];
+  personNotification: any[];
   reports: any[];
 }
 
 export interface CustomerCreateDto {
-  firstName: string;
-  lastName: string;
-  phone: string;
+  FirstName: string;
+  LastName: string;
+  PhoneNumber: string;
 }
 
 export interface CustomerUpdateDto {
-  id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
+  Id: string;
+  FirstName: string;
+  LastName: string;
+  PhoneNumber: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,18 +64,18 @@ export class AdminCustomersService {
 
   createCustomer(customer: CustomerCreateDto): Observable<Customer> {
     const formData = new FormData();
-    formData.append('firstName', customer.firstName);
-    formData.append('lastName', customer.lastName);
-    formData.append('phone', customer.phone);
+    formData.append('FirstName', customer.FirstName);
+    formData.append('LastName', customer.LastName);
+    formData.append('PhoneNumber', customer.PhoneNumber);
 
-    return this.http.post<Customer>(this.apiUrl, formData);
+    return this.http.post<Customer>(this.fallbackApiUrl, formData);
   }
 
   updateCustomer(customer: CustomerUpdateDto): Observable<Customer> {
-    return this.http.put<Customer>(this.apiUrl, customer);
+    return this.http.put<Customer>(this.fallbackApiUrl, customer);
   }
 
   deleteCustomer(id: string): Observable<Customer> {
-    return this.http.delete<Customer>(`${this.apiUrl}/${id}`);
+    return this.http.delete<Customer>(`${this.fallbackApiUrl}/${id}`);
   }
 }

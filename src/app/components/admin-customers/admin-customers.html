@@ -72,7 +72,7 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ i + 1 }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ getFullName(customer) }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              <span *ngIf="customer.PhoneNumber; else noPhone">{{ customer.PhoneNumber }}</span>
+              <span *ngIf="customer.phoneNumber; else noPhone">{{ customer.phoneNumber }}</span>
               <ng-template #noPhone>
                 <span class="text-red-500 text-xs">No phone data</span>
               </ng-template>
@@ -213,7 +213,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600">Phone Number</label>
-              <p class="text-lg">{{ selectedCustomer.PhoneNumber || 'N/A' }}</p>
+              <p class="text-lg">{{ selectedCustomer.phoneNumber || 'N/A' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-600">Customer ID</label>
@@ -323,9 +323,9 @@
 
         <!-- Notifications Section -->
         <div class="border-b pb-4">
-                     <h4 class="text-xl font-semibold mb-3 text-gray-700">Notifications ({{ selectedCustomer.notifications.length || 0 }})</h4>
-          <div *ngIf="selectedCustomer.notifications && selectedCustomer.notifications.length > 0" class="space-y-2">
-            <div *ngFor="let notification of selectedCustomer.notifications" class="bg-gray-50 p-3 rounded">
+                     <h4 class="text-xl font-semibold mb-3 text-gray-700">Notifications ({{ selectedCustomer.personNotification.length || 0 }})</h4>
+          <div *ngIf="selectedCustomer.personNotification && selectedCustomer.personNotification.length > 0" class="space-y-2">
+            <div *ngFor="let notification of selectedCustomer.personNotification" class="bg-gray-50 p-3 rounded">
               <div class="flex justify-between items-center">
                 <span class="font-medium">{{ notification.title || 'No Title' }}</span>
                 <span class="text-sm text-gray-600">{{ notification.isRead ? 'Read' : 'Unread' }}</span>
@@ -335,7 +335,7 @@
               </div>
             </div>
           </div>
-          <div *ngIf="!selectedCustomer.notifications || selectedCustomer.notifications.length === 0" class="text-gray-500 italic">
+          <div *ngIf="!selectedCustomer.personNotification || selectedCustomer.personNotification.length === 0" class="text-gray-500 italic">
             No notifications found
           </div>
         </div>

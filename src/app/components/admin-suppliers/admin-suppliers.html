@@ -87,7 +87,7 @@
           <tr *ngFor="let supplier of getPaginatedSuppliers(); let i = index" class="app-tr-hover">
             <td class="px-3 py-2">{{ i + 1 }}</td>
             <td class="px-3 py-2">{{ getFullName(supplier) }}</td>
-            <td class="px-3 py-2">{{ supplier.phone }}</td>
+            <td class="px-3 py-2">{{ supplier.phoneNumber }}</td>
             <td class="px-3 py-2">{{ supplier.factoryName }}</td>
             <td class="px-3 py-2">{{ supplier.description || 'N/A' }}</td>
             <td class="px-3 py-2">
@@ -199,14 +199,14 @@
           <input 
             type="tel" 
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            [ngClass]="{'form-error': formErrors['phone']}"
-            [(ngModel)]="form.phone" 
+            [ngClass]="{'form-error': formErrors['phoneNumber']}"
+            [(ngModel)]="form.phoneNumber" 
             name="phone" 
             required 
             (input)="clearError('phone')"
             [disabled]="isSubmitting"
           />
-          <div *ngIf="formErrors['phone']" class="text-red-500 text-sm mt-1">{{ formErrors['phone'] }}</div>
+          <div *ngIf="formErrors['phoneNumber']" class="text-red-500 text-sm mt-1">{{ formErrors['phoneNumber'] }}</div>
         </div>
         
         <div class="mb-4">
