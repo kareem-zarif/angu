@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TitleCasePipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SellerDashboardService, SellerDashboardStats } from '../../services/seller-dashboard.service';
 import { LocalStorageNotificationService, LocalNotification, NotificationType } from '../../services/local-storage-notification.service';
@@ -15,7 +15,7 @@ import { SellerOrdersService } from '../../services/seller-orders.service';
 @Component({
   selector: 'app-seller-header',
   standalone: true,
-  imports: [CommonModule, FormsModule, TitleCasePipe],
+  imports: [CommonModule, FormsModule, TitleCasePipe, RouterLink],
   templateUrl: './seller-header.html',
   styleUrl: './seller-header.css'
 })
@@ -336,6 +336,13 @@ export class SellerHeaderComponent implements OnInit, OnDestroy {
     if (!notification.isRead) {
       this.markNotificationAsRead(notification.id);
     }
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.showUserMenu = false;
+    this.showNotifications = false;
+    this.router.navigate(['/products']);
   }
 
   goToProducts() {

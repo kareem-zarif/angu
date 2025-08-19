@@ -119,6 +119,7 @@ export const routes: Routes = [
     canActivate: [SellerGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'logout', loadComponent: () => import('./components/shared/logout/logout').then(m => m.LogoutComponent) },
       { path: 'chat/signalr/:customerId', component: SignalrChat },
       {
         path: 'dashboard',

@@ -169,11 +169,16 @@ export class Auth {
   }
 
   logout() {
-    localStorage.removeItem('user');
-    this.currentUserSource.next(null);
-    this.wishlistService.clearCache(); // ✨
-    console.log('cache Cleared');
-    console.log('User logged out');
+    try {
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+      this.currentUserSource.next(null);
+      this.wishlistService.clearCache();
+      console.log('User logged out, caches cleared');
+    } catch (e) {
+      console.warn('Logout cleanup warning:', e);
+      this.currentUserSource.next(null);
+    }
   }
 
   loadCurrentUserFromStorage() {

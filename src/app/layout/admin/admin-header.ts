@@ -236,7 +236,8 @@ export class AdminHeaderComponent implements OnInit, OnDestroy {
 
   logout(): void {
     console.log('Logging out...');
-    this.router.navigate(['/']); // Navigate to home or login page
+    this.auth.logout();
+    this.router.navigate(['/products']);
   }
 
   goToOrders(): void {

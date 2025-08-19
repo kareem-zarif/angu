@@ -264,7 +264,7 @@ export class Header implements OnInit, OnDestroy, AfterViewInit {
   logout(): void {
     this.authService.logout();
     this.resetAddressState();
-    this.router.navigate(['/']);
+    this.router.navigate(['/products']);
   }
 
   navigateToRegister(): void {

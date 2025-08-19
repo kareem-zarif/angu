@@ -39,7 +39,8 @@ export class ProductService {
     // Check if we have a valid cache
     const now = Date.now();
     if (this.productsCache.length > 0 && (now - this.lastFetchTime) < this.cacheDuration) {
-      return of(this.productsCache);
+      // Always serve approved-only view from cache
+      return of(this.processProductImages(this.productsCache));
     }
 
     this.loadingSubject.next(true);
@@ -330,8 +331,10 @@ export class ProductService {
       }),
       map(newProduct => this.processProductImage(newProduct)),
       tap(newProduct => {
-        // Update cache
-        this.productsCache.push(newProduct);
+        // Update cache with approved products only
+        if (newProduct.approvalStatus === ProductApprovalStatus.Approved) {
+          this.productsCache.push(newProduct);
+        }
         // Notify admin about new product submission
         const currentSellerId = this.auth.getCurrentUser()?.UserId;
         if (currentSellerId && newProduct.name) {
@@ -391,10 +394,16 @@ export class ProductService {
       }),
       tap(updatedProduct => {
         console.log('Product update successful, updating cache');
-        // Update cache
+        // Maintain approved-only cache
         const index = this.productsCache.findIndex(p => p.id === updatedProduct.id);
-        if (index !== -1) {
-          this.productsCache[index] = updatedProduct;
+        if (updatedProduct.approvalStatus === ProductApprovalStatus.Approved) {
+          if (index !== -1) {
+            this.productsCache[index] = updatedProduct;
+          } else {
+            this.productsCache.push(updatedProduct);
+          }
+        } else if (index !== -1) {
+          this.productsCache.splice(index, 1);
         }
       }),
       catchError(error => {
