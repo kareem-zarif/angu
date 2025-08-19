@@ -33,14 +33,14 @@
 
         <!-- Products Grid -->
         <div *ngIf="!loading && !error"
-          class="products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+          class="products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <div *ngFor="let product of displayedProducts"
-            class="product-card bg-white rounded-lg shadow-md overflow-hidden relative"
+            class="product-card group bg-white rounded-xl shadow-md overflow-hidden relative border border-gray-100 hover:shadow-xl transition-all"
             [class.animate-fade-in]="animationsEnabled" (click)="navigateToProductDetails(product, $event)"
             (mouseenter)="onProductHover(product.id)" (mouseleave)="onProductLeave()">
 
             <!-- Wishlist button -->
-            <button class="absolute top-2 right-2 z-10 p-1 rounded-full shadow-md "
+            <button class="absolute top-3 right-3 z-10 p-2 rounded-full shadow bg-white/80 backdrop-blur hover:bg-white transition"
               (click)="toggleWishlist(product, $event)">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"
                 [ngClass]="{'text-red-500': isInWishlist(product.id), 'text-gray-400': !isInWishlist(product.id)}"
@@ -51,32 +51,32 @@
             </button>
 
             <!-- Product image -->
-            <div class="relative h-48 overflow-hidden">
+            <div class="relative h-56 overflow-hidden">
               <img
                 [src]="product.productPicsPathes && product.productPicsPathes.length > 0 ? product.productPicsPathes[0] : 'assets/placeholder.png'"
-                [alt]="product.name" class=" h-full object-cover transition-transform duration-300 mx-auto"
-                [ngClass]="{'scale-110': hoveredProductId === product.id}">
+                [alt]="product.name" class=" h-full object-cover transition-transform duration-300 mx-auto group-hover:scale-105">
+              <div class="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent"></div>
             </div>
 
             <!-- Product details -->
-            <div class="p-4 text-right">
+            <div class="p-4 text-right space-y-3">
               <!-- Product title and description -->
-              <h3 class="text-lg font-bold text-[#483C21] mb-1">{{ product.name }}</h3>
-              <p class="text-sm text-gray-600 mb-2 line-clamp-2">{{ product.description }}</p>
+              <h3 class="text-base font-semibold text-[#483C21] leading-snug line-clamp-1">{{ product.name }}</h3>
+              <p class="text-sm text-gray-500 line-clamp-2">{{ product.description }}</p>
 
               <!-- Sample button -->
-              <button class="btn btn-sm w-full mb-3 bg-[#483C21] text-white hover:bg-[#322a19]"
+              <button class="btn btn-sm w-full bg-[#483C21] text-white hover:bg-[#322a19]"
                 (click)="requestSample(product, $event)">
               {{ 'PRODUCT_LIST.REQUEST_SAMPLE' | translate }}
               </button>
 
               <!-- Rating -->
-              <div class="flex mb-2">
+              <div class="flex">
                 <app-rating [rating]="product.rating || 0"></app-rating>
               </div>
 
               <!-- Price section -->
-              <div class="flex flex-col">
+              <div class="flex flex-col gap-2">
                 <!-- Original price (if discounted) -->
                 <div *ngIf="product.pricePer50Piece && product.pricePerPiece" class="flex items-center justify-between">
                   <span class="text-sm text-gray-500 line-through">{{ product.pricePerPiece |
@@ -89,17 +89,17 @@
                 </div>
 
                 <!-- Current price -->
-                <div class="flex justify-between items-center mt-1">
-                  <span class="text-[#483C21] font-bold">{{ product.pricePerPiece | currency:'EGP':'symbol':'1.0-0'
+                <div class="flex justify-between items-center">
+                  <span class="text-[#483C21] font-bold text-lg">{{ product.pricePerPiece | currency:'EGP':'symbol':'1.0-0'
                     }}</span>
-                  <button class="bg-[#483C21] text-white px-3 py-1 rounded-md hover:bg-[#322a19] transition-colors"
+                  <button class="bg-[#483C21] text-white px-3 py-1.5 rounded-md hover:bg-[#322a19] transition-colors"
                     (click)="addToCart(product, $event)">
               {{ 'PRODUCT_LIST.ADD_TO_CART' | translate }}
                   </button>
                 </div>
 
                 <!-- Tier prices -->
-                <div *ngIf="product.pricePer50Piece || product.pricePer100Piece" class="mt-2 text-xs text-gray-600">
+                <div *ngIf="product.pricePer50Piece || product.pricePer100Piece" class="mt-1 text-xs text-gray-600">
                   <div *ngIf="product.pricePer50Piece" class="flex justify-between">
                     <span>  {{ 'PRODUCT_LIST.PRICE_PER_50' | translate }} </span>
                     <span>{{ product.pricePer50Piece | currency:'EGP':'symbol':'1.0-0' }}</span>
