@@ -72,7 +72,7 @@
                 <span class="text-lg font-bold text-[#483C21] mr-1">{{ product.rating || 0 }}</span>
                 <app-rating [rating]="product.rating || 0"></app-rating>
               </div>
-              <span class="text-sm text-gray-500 ml-2">| 91%  {{ 'PRODUCT_DETIALS.POSTIVE' | translate }}</span>
+              <!-- <span class="text-sm text-gray-500 ml-2">| 91%  {{ 'PRODUCT_DETIALS.POSTIVE' | translate }}</span> -->
             </div>
 
             <!-- Product title -->
@@ -196,9 +196,15 @@
 <div class="mt-10 p-6 border-t">
   <h2 class="text-2xl font-bold mb-6 text-[#483C21]"> ({{ 'PRODUCT_DETIALS.Review' | translate }}) </h2>
 
-  <div *ngIf="product?.reviews?.length; else noReviews">
-    <div *ngFor="let review of product.reviews" class="mb-6 p-4 bg-[#f9f9f9] rounded-lg shadow-sm border border-gray-200">
+  <!-- Loading Reviews -->
+  <div *ngIf="loadingReviews" class="flex justify-center items-center py-8">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+    <span class="ml-3 text-gray-600">Loading reviews...</span>
+  </div>
 
+  <!-- Reviews List -->
+  <div *ngIf="!loadingReviews && reviews.length > 0" class="space-y-6">
+    <div *ngFor="let review of reviews" class="p-4 bg-[#f9f9f9] rounded-lg shadow-sm border border-gray-200">
       <div class="flex items-center justify-between mb-2">
         <h3 class="text-lg font-semibold text-gray-800">
           <i class="fas fa-user-circle mr-2 text-[#483C21]"></i>
@@ -207,22 +213,28 @@
         <div class="flex items-center">
           <app-rating [rating]="review.rating"></app-rating>
           <span class="ml-2 text-sm font-medium text-gray-600">({{ review.rating }}/5)</span>
-           <p class="text-gray-700 italic">"{{ review.comment }}"</p>
-
         </div>
       </div>
-
-      <ng-template #noReviews>
-        <p class="text-gray-500 text-center italic">لا توجد تقييمات لهذا المنتج بعد.</p>
-      </ng-template>
+      <p class="text-gray-700 italic">"{{ review.comment }}"</p>
     </div>
   </div>
 
-  <ng-template #noReviews>
-    <p class="text-gray-500 text-center italic">{{ 'PRODUCT_DETIALS.NO_REVIEWS' | translate }}.</p>
-  </ng-template>
+  <!-- No Reviews -->
+  <div *ngIf="!loadingReviews && reviews.length === 0" class="text-center py-8">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+    </svg>
+    <p class="mt-2 text-gray-500 italic">{{ 'PRODUCT_DETIALS.NO_REVIEWS' | translate }}</p>
+    <p class="text-sm text-gray-400">Be the first to review this product!</p>
+  </div>
 </div>
-<app-add-review *ngIf="product?.id" [productId]="product.id"></app-add-review>
+
+<!-- Add Review Component -->
+<app-add-review 
+  *ngIf="product?.id" 
+  [productId]="product.id"
+  (reviewAdded)="onReviewAdded()">
+</app-add-review>
 
 
     <!-- ****************************** -->

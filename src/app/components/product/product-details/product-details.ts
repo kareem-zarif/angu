@@ -12,6 +12,8 @@ import { TranslateModule } from '@ngx-translate/core';
 import { SubCategoryService } from '../../../services/sub-category.service';
 import { Auth } from '../../../services/auth';
 import { AddReviewComponent } from '../../add-review/add-review';
+import { ReviewService } from '../../../services/review-service';
+import { ReviewResDto } from '../../../models/i-reviews';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -32,6 +34,8 @@ export class ProductDetails implements OnInit, OnDestroy {
   categoryName: string = '';
   subCategoryName: string = '';
   currentUserId: string | undefined = undefined;
+  reviews: ReviewResDto[] = [];
+  loadingReviews: boolean = false;
 
   // Dynamic breadcrumbs
   breadcrumbs: { label: string, link?: string }[] = [
@@ -49,6 +53,7 @@ export class ProductDetails implements OnInit, OnDestroy {
     private cartService: CartService,
     private supplierService: SupplierService,
     private subCategoryService: SubCategoryService,
+    private reviewService: ReviewService,
     private _auth: Auth
   ) { }
 
@@ -109,6 +114,9 @@ export class ProductDetails implements OnInit, OnDestroy {
           this.supplierName = 'Unknown Supplier';
         }
 
+        // Load reviews for this product
+        this.loadReviews(id);
+
         this.loading = false;
       },
       error: (error) => {
@@ -117,6 +125,34 @@ export class ProductDetails implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  loadReviews(productId: string): void {
+    console.log('Loading reviews for product:', productId);
+    this.loadingReviews = true;
+    this.reviewService.getReviewsByProduct(productId).subscribe({
+      next: (reviews) => {
+        console.log('Reviews loaded:', reviews);
+        this.reviews = reviews;
+        this.loadingReviews = false;
+      },
+      error: (error) => {
+        console.error('Error loading reviews:', error);
+        this.reviews = [];
+        this.loadingReviews = false;
+      }
+    });
+  }
+
+  onReviewAdded(): void {
+    console.log('Review added event received, refreshing data...');
+    // Refresh reviews when a new review is added
+    if (this.product?.id) {
+      this.loadReviews(this.product.id);
+      
+      // Also refresh the product data to update the rating
+      this.loadProduct(this.product.id);
+    }
   }
 
   loadSubCategoryInfo(subCategoryId: string): void {
